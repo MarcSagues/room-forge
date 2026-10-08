@@ -34,15 +34,20 @@ export const PANEL_SIZES = {
 
 /**
  * Editor layout: top bar, catalog, viewport, properties and bottom bar.
- * The viewport is an empty region until the R3F canvas lands (P2-06).
+ * `viewport` is the content of the central region (the R3F canvas, mounted by the app); the ui
+ * module does not import the scene engine.
  */
-export function EditorShell() {
+export function EditorShell({ viewport }: { viewport?: ReactNode }) {
   const { mode, wide } = useShellMode();
-  if (mode === 'viewer') return <ViewerShell />;
-  return mode === 'full' ? <DockedShell wide={wide} /> : <DrawerShell />;
+  if (mode === 'viewer') return <ViewerShell viewport={viewport} />;
+  return mode === 'full' ? (
+    <DockedShell wide={wide} viewport={viewport} />
+  ) : (
+    <DrawerShell viewport={viewport} />
+  );
 }
 
-function DockedShell({ wide }: { wide: boolean }) {
+function DockedShell({ wide, viewport }: { wide: boolean; viewport: ReactNode }) {
   const left = useCollapsiblePanel();
   const right = useCollapsiblePanel();
   const { defaultLayout, onLayoutChanged } = useDefaultLayout({
@@ -79,7 +84,7 @@ function DockedShell({ wide }: { wide: boolean }) {
         </Panel>
         <ResizeHandle />
         <Panel id="viewport" minSize={320}>
-          <Viewport />
+          <Viewport>{viewport}</Viewport>
         </Panel>
         <ResizeHandle />
         <Panel
@@ -100,7 +105,7 @@ function DockedShell({ wide }: { wide: boolean }) {
 }
 
 /** 768–1023 px: the panels open as drawers over the viewport instead of taking its width. */
-function DrawerShell() {
+function DrawerShell({ viewport }: { viewport: ReactNode }) {
   const [open, setOpen] = useState<'left' | 'right' | null>(null);
   const toggleLeft = useCallback(() => setOpen((o) => (o === 'left' ? null : 'left')), []);
   const toggleRight = useCallback(() => setOpen((o) => (o === 'right' ? null : 'right')), []);
@@ -124,7 +129,7 @@ function DrawerShell() {
         <Drawer side="left" open={open === 'left'} onClose={close}>
           <CatalogPanel hidden={open !== 'left'} />
         </Drawer>
-        <Viewport />
+        <Viewport>{viewport}</Viewport>
         <Drawer side="right" open={open === 'right'} onClose={close}>
           <PropertiesPanel hidden={open !== 'right'} />
         </Drawer>
@@ -134,13 +139,13 @@ function DrawerShell() {
 }
 
 /** < 768 px: view-only, no panels or editing chrome (DESIGN_SYSTEM §3). */
-function ViewerShell() {
+function ViewerShell({ viewport }: { viewport: ReactNode }) {
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-background">
       <p role="status" className="shrink-0 border-b bg-card px-4 py-2 text-center text-fg-muted">
         {t('shell.viewerBanner')}
       </p>
-      <Viewport />
+      <Viewport>{viewport}</Viewport>
     </div>
   );
 }
@@ -225,16 +230,16 @@ function PropertiesPanel({ hidden, className }: { hidden: boolean; className?: s
   );
 }
 
-/** Focusable so keyboard users reach it in order; P2-06 mounts the canvas inside. */
-function Viewport() {
+/** Focusable so keyboard users reach it in order. Shows a hint when no canvas is mounted. */
+function Viewport({ children }: { children?: ReactNode }) {
   return (
     <main
       // biome-ignore lint/a11y/noNoninteractiveTabindex: the viewport will take keyboard input (P3-08).
       tabIndex={0}
       aria-label={t('shell.viewport')}
-      className="flex h-full min-h-0 flex-1 items-center justify-center bg-canvas outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+      className="relative flex h-full min-h-0 flex-1 items-center justify-center bg-canvas outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
     >
-      <p className="text-fg-subtle">{t('shell.viewportHint')}</p>
+      {children ?? <p className="text-fg-subtle">{t('shell.viewportHint')}</p>}
     </main>
   );
 }

@@ -19,7 +19,7 @@ Limitaciones: la página oficial de pitfalls **no** cubre `dispose`, selectores 
 
 ### 2.1 Renderizar solo cuando hay cambios — *Fuente*
 - `<Canvas frameloop="demand">`: el render ocurre cuando cambian props; los cambios por mutación directa (controles de cámara) requieren `invalidate()`. Los controles de drei lo hacen solos. Las llamadas a `invalidate()` se **coalescen** (marcan «hace falta un frame»).
-- **Aplicación:** modo por defecto del editor. Puente `document:changed → invalidate()`. Para animaciones RGB, un ticker único limitado a 30 fps mientras haya efectos activos (P5-08).
+- **Aplicación:** modo por defecto del editor. Puente `document:changed`/`selection:changed → invalidate()` y helper `mutate()` (**implementado en P2-06**, `scene-engine/canvas`). Verificado con E2E: escena en reposo = 0 frames durante 5 s; un comando o un `undo` = exactamente 1 frame; sin programas de shader nuevos. Para animaciones RGB, un ticker único limitado a 30 fps mientras haya efectos activos (P5-08).
 
 ### 2.2 Nada de React en el camino caliente — *Fuente*
 - `setState` en `useFrame`, `setInterval` o `onPointerMove` provoca re-renders sin beneficio; hay que mutar por `ref` y escalar con `delta`.

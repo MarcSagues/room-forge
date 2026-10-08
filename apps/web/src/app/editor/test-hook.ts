@@ -1,9 +1,18 @@
+import { createRoom, type EditorSession, resizeRoom } from '@roomforge/core';
+import type { RenderInfo, SceneHandle } from '@/scene-engine';
+
 /**
  * Test hook for Playwright (TESTING_STRATEGY §5). Only builds with `NEXT_PUBLIC_E2E=1` expose
  * `window.__RF__`; production builds never define the variable, so the hook is compiled out.
- * Empty for now: the session and `renderer.info` are added with P2-06.
  */
-export type RoomForgeTestHook = Record<string, never>;
+export interface RoomForgeTestHook {
+  /** The live editor session: tests execute commands and read state through it. */
+  session: EditorSession;
+  /** Command factories, so a test can run them inside the page. */
+  commands: { createRoom: typeof createRoom; resizeRoom: typeof resizeRoom };
+  /** Renderer counters; `null` until the canvas is mounted. */
+  info(): RenderInfo | null;
+}
 
 declare global {
   interface Window {
@@ -13,7 +22,19 @@ declare global {
 
 export const E2E_ENABLED = process.env.NEXT_PUBLIC_E2E === '1';
 
-export function installTestHook(target: Window, enabled: boolean = E2E_ENABLED): void {
-  if (!enabled) return;
-  target.__RF__ ??= {};
+export function installTestHook(
+  target: Window,
+  deps: { session: EditorSession; getScene: () => SceneHandle | null },
+  enabled: boolean = E2E_ENABLED,
+): () => void {
+  if (!enabled) return () => {};
+  const hook: RoomForgeTestHook = {
+    session: deps.session,
+    commands: { createRoom, resizeRoom },
+    info: () => deps.getScene()?.renderInfo() ?? null,
+  };
+  target.__RF__ = hook;
+  return () => {
+    if (target.__RF__ === hook) delete target.__RF__;
+  };
 }
