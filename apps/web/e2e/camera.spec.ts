@@ -74,7 +74,10 @@ test('the camera starts in perspective, framing the default room, with no consol
   expect(errors).toEqual([]);
 });
 
-// P2-08: keys 1 / 2 switch the view and finish within the 600 ms budget (plus frame cadence).
+// P2-08: keys 1 / 2 switch the view within the 600 ms budget. The transition is time-based and
+// lands on the first frame after 450 ms, so wall-clock time is the budget plus at most two frame
+// gaps (waiting for the first frame, and for the landing one). On a CPU-rendered CI runner frames
+// can be far apart, so the gap is measured, not assumed.
 test('keys 2 and 1 switch to the plan view and back', async ({ page }) => {
   await openEditor(page);
   const before = await snapshot(page);
@@ -85,25 +88,30 @@ test('keys 2 and 1 switch to the plan view and back', async ({ page }) => {
     window.addEventListener('keydown', () => {
       bag.t0 = performance.now();
     });
-    const poll = () => {
+    const poll = (now: number) => {
       const camera = window.__RF__?.camera.snapshot();
-      if (bag.t0 && !bag.elapsed && camera?.view === 'top' && !camera.transitioning) {
-        bag.elapsed = performance.now() - bag.t0;
+      if (bag.t0 !== undefined && bag.elapsed === undefined) {
+        if (bag.last !== undefined) bag.maxGap = Math.max(bag.maxGap ?? 0, now - bag.last);
+        bag.last = now;
+        if (camera?.view === 'top' && !camera.transitioning) bag.elapsed = now - bag.t0;
       }
       requestAnimationFrame(poll);
     };
-    poll();
+    requestAnimationFrame(poll);
   });
 
   await page.keyboard.press('2');
   // Wait for the in-page measurement itself: the camera can be seen landed before the poll
   // above has recorded it in that same frame.
-  const elapsed = await page
-    .waitForFunction(() => (window as unknown as Record<string, number | undefined>).elapsed)
+  const timing = await page
+    .waitForFunction(() => {
+      const bag = window as unknown as Record<string, number | undefined>;
+      return bag.elapsed === undefined ? undefined : { elapsed: bag.elapsed, gap: bag.maxGap ?? 0 };
+    })
     .then((handle) => handle.jsonValue());
-  expect(elapsed).toBeGreaterThan(0);
-  // The animation itself lasts 450 ms (unit-tested); allow for software-rendered frame cadence.
-  expect(elapsed).toBeLessThanOrEqual(800);
+  if (!timing) throw new Error('the view switch was not timed');
+  expect(timing.elapsed).toBeGreaterThan(0);
+  expect(timing.elapsed).toBeLessThanOrEqual(600 + 2 * timing.gap);
 
   const top = await snapshot(page);
   expect(top.view).toBe('top');
