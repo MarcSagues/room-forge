@@ -147,7 +147,7 @@ Contrastes calculados (WCAG 2.x):
 | Orbitar | Botón derecho / arrastrar fondo | — |
 | Desplazar | Botón central / `Shift`+arrastrar | `W A S D` (opcional) |
 | Zoom | Rueda | `+` `−` |
-| Seleccionar | Clic | `Esc` deselecciona |
+| Seleccionar | Clic (`Shift`+clic añade/quita) | `Esc` deselecciona |
 | Mover | Arrastrar objeto sobre el suelo | Flechas (paso de snap), `Shift` = ×10 |
 | Rotar | Asa circular · `R` (+15°) · `Shift+R` (−15°) | `Alt` = sin snap |
 | Duplicar | `Alt`+arrastrar | `Ctrl/⌘+D` |

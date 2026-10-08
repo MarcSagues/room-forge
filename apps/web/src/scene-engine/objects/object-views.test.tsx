@@ -143,6 +143,20 @@ describe(`granular subscriptions with a real session (${LIMITS.maxObjects} objec
     expect(renderCount(viewRenderKey(`o${COUNT - 1}` as ObjectId))).toBe(1);
   });
 
+  it('hover and selection changes re-render no view and not the list (P3-03)', async () => {
+    await mount(session);
+    startRenderCounting();
+    await act(async () => {
+      session.setHover('o5' as ObjectId);
+      session.setHover('o6' as ObjectId);
+      session.setHover(null);
+      session.select(['o7' as ObjectId]);
+      session.select([]);
+    });
+    expect(otherViewRenders(COUNT - 1, [])).toBe(0);
+    expect(renderCount(LIST_RENDER_KEY)).toBe(0);
+  });
+
   it('removing an object unmounts its view and unregisters it', async () => {
     const { registry } = await mount(session);
     await act(async () => {

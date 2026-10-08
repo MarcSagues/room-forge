@@ -1,13 +1,14 @@
 'use client';
 
 import { useShallow } from 'zustand/react/shallow';
-import { EntityRegistryProvider } from '../objects/entity-registry';
+import { Picking, SelectionOutline } from '../interaction/selection';
+import { type EntityRegistry, EntityRegistryProvider } from '../objects/entity-registry';
 import { ObjectList } from '../objects/object-views';
 import { RoomMesh } from '../room/room-mesh';
 import { useSessionState } from './use-session-state';
 
 /** Everything drawn inside the canvas: lights, every room and every object of the document. */
-export function SceneContent() {
+export function SceneContent({ registry }: { registry?: EntityRegistry }) {
   const roomIds = useSessionState(useShallow((state) => state.document.roomOrder));
   return (
     <>
@@ -15,8 +16,10 @@ export function SceneContent() {
       {roomIds.map((id) => (
         <RoomMesh key={id} roomId={id} />
       ))}
-      <EntityRegistryProvider>
+      <EntityRegistryProvider {...(registry ? { registry } : {})}>
         <ObjectList />
+        <SelectionOutline />
+        <Picking />
       </EntityRegistryProvider>
     </>
   );

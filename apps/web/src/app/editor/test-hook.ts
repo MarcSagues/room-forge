@@ -1,4 +1,12 @@
-import { createRoom, type EditorSession, type RoomId, resizeRoom } from '@roomforge/core';
+import {
+  addObject,
+  createRoom,
+  type EditorSession,
+  type ObjectId,
+  type RoomId,
+  removeObjects,
+  resizeRoom,
+} from '@roomforge/core';
 import type { RenderInfo, RoomDisplay, SceneCamera, SceneHandle } from '@/scene-engine';
 
 /**
@@ -9,13 +17,20 @@ export interface RoomForgeTestHook {
   /** The live editor session: tests execute commands and read state through it. */
   session: EditorSession;
   /** Command factories, so a test can run them inside the page. */
-  commands: { createRoom: typeof createRoom; resizeRoom: typeof resizeRoom };
+  commands: {
+    createRoom: typeof createRoom;
+    resizeRoom: typeof resizeRoom;
+    addObject: typeof addObject;
+    removeObjects: typeof removeObjects;
+  };
   /** Renderer counters; `null` until the canvas is mounted. */
   info(): RenderInfo | null;
   /** Camera state and the same moves a user can make; inert until the canvas is mounted. */
   camera: SceneCamera;
   /** How a room is drawn (wall opacity and height, ceiling); `null` until it is drawn. */
   roomDisplay(roomId: RoomId): RoomDisplay | null;
+  /** Screen position (page pixels) of an object, to click it like a user; `null` if not drawn. */
+  project(id: ObjectId): { x: number; y: number } | null;
 }
 
 declare global {
@@ -34,7 +49,7 @@ export function installTestHook(
   if (!enabled) return () => {};
   const hook: RoomForgeTestHook = {
     session: deps.session,
-    commands: { createRoom, resizeRoom },
+    commands: { createRoom, resizeRoom, addObject, removeObjects },
     info: () => deps.getScene()?.renderInfo() ?? null,
     camera: {
       fit: () => deps.getScene()?.camera.fit(),
@@ -43,6 +58,7 @@ export function installTestHook(
       dolly: (distance) => deps.getScene()?.camera.dolly(distance),
     },
     roomDisplay: (roomId) => deps.getScene()?.roomDisplay(roomId) ?? null,
+    project: (id) => deps.getScene()?.project(id) ?? null,
   };
   target.__RF__ = hook;
   return () => {

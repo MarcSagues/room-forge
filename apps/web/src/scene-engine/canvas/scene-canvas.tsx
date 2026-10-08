@@ -1,11 +1,19 @@
 'use client';
 
 import { addAfterEffect, Canvas, useThree } from '@react-three/fiber';
-import { type EditorSession, type RoomId, WALL_IDS, type WallId } from '@roomforge/core';
+import {
+  type CatalogProvider,
+  type EditorSession,
+  type ObjectId,
+  type RoomId,
+  WALL_IDS,
+  type WallId,
+} from '@roomforge/core';
 import { type RefObject, useEffect, useMemo, useRef } from 'react';
-import { type Material, type Mesh, NeutralToneMapping, type Object3D } from 'three';
+import { type Material, type Mesh, NeutralToneMapping, type Object3D, Vector3 } from 'three';
 import type { CameraHandle, CameraSnapshot } from '../camera/camera-director';
 import { CameraRig } from '../camera/camera-rig';
+import { createEntityRegistry, type EntityRegistry } from '../objects/entity-registry';
 import { roomObjectName } from '../room/room-mesh';
 import { watchContext } from './context-events';
 import { connectInvalidate } from './invalidate-bridge';
@@ -30,6 +38,11 @@ export interface RoomDisplay {
 export interface SceneHandle {
   /** `null` when the room is not drawn. */
   roomDisplay(roomId: RoomId): RoomDisplay | null;
+  /**
+   * Where an object's centre appears on screen, in page pixels (`clientX/Y`); `null` if it is not
+   * drawn or is behind the camera. Lets tests and tools click objects like a user would.
+   */
+  project(id: ObjectId): { x: number; y: number } | null;
   /** Renderer counters (frame, draw calls, triangles, programs...). */
   renderInfo(): RenderInfo;
   /** Run a direct three.js mutation and request a frame. */
@@ -40,6 +53,8 @@ export interface SceneHandle {
 
 export interface SceneCanvasProps {
   session: EditorSession;
+  /** Object sizes for placeholders and picking; unknown ids draw as placeholder boxes. */
+  catalog?: CatalogProvider;
   onReady?: (handle: SceneHandle) => void;
   onContextLost?: () => void;
   onContextRestored?: () => void;
@@ -57,6 +72,7 @@ const showStatsByDefault = process.env.NODE_ENV !== 'production';
 export function SceneCanvas(props: SceneCanvasProps) {
   const {
     session,
+    catalog,
     onReady,
     onContextLost,
     onContextRestored,
@@ -64,6 +80,7 @@ export function SceneCanvas(props: SceneCanvasProps) {
   } = props;
   const statsRef = useRef<HTMLPreElement>(null);
   const cameraRef = useRef<CameraHandle | null>(null);
+  const registry = useMemo(() => createEntityRegistry(), []);
   return (
     <div className="relative size-full">
       {/* The camera rig owns the cameras (R3F's default one is replaced as soon as it mounts). */}
@@ -75,13 +92,13 @@ export function SceneCanvas(props: SceneCanvasProps) {
           gl.toneMapping = NeutralToneMapping;
         }}
       >
-        <SceneSessionProvider session={session}>
+        <SceneSessionProvider session={session} {...(catalog ? { catalog } : {})}>
           <SessionBridge />
           <ContextWatcher onLost={onContextLost} onRestored={onContextRestored} />
           <CameraRig handleRef={cameraRef} />
-          <ReadyReporter onReady={onReady} camera={cameraRef} />
+          <ReadyReporter onReady={onReady} camera={cameraRef} registry={registry} />
           {showStats && <StatsWriter target={statsRef} />}
-          <SceneContent />
+          <SceneContent registry={registry} />
         </SceneSessionProvider>
       </Canvas>
       {showStats && (
@@ -127,10 +144,12 @@ function ContextWatcher(props: {
 function ReadyReporter(props: {
   onReady: ((handle: SceneHandle) => void) | undefined;
   camera: RefObject<CameraHandle | null>;
+  registry: EntityRegistry;
 }) {
-  const { camera } = props;
+  const { camera, registry } = props;
   const gl = useThree((state) => state.gl);
   const scene = useThree((state) => state.scene);
+  const get = useThree((state) => state.get);
   const invalidate = useThree((state) => state.invalidate);
   const callback = useRef(props.onReady);
   callback.current = props.onReady;
@@ -138,6 +157,7 @@ function ReadyReporter(props: {
     () => ({
       renderInfo: () => readRenderInfo(gl.info),
       roomDisplay: (roomId) => readRoomDisplay(scene, roomId),
+      project: (id) => projectEntity(registry.get(id), get().camera, gl.domElement),
       mutate: createMutate(invalidate),
       invalidate: () => invalidate(),
       // The rig mounts after this handle may be built, so every call looks it up when it happens.
@@ -148,12 +168,31 @@ function ReadyReporter(props: {
         dolly: (distance) => camera.current?.dolly(distance),
       },
     }),
-    [gl, scene, invalidate, camera],
+    [gl, scene, get, invalidate, camera, registry],
   );
   useEffect(() => {
     callback.current?.(handle);
   }, [handle]);
   return null;
+}
+
+const projected = new Vector3();
+
+function projectEntity(
+  object: Object3D | undefined,
+  camera: Parameters<Vector3['project']>[0],
+  canvas: HTMLCanvasElement,
+): { x: number; y: number } | null {
+  if (!object) return null;
+  object.updateWorldMatrix(true, false);
+  // A little above the floor, where the placeholder box is.
+  projected.set(0, 0.1, 0).applyMatrix4(object.matrixWorld).project(camera);
+  if (projected.z > 1) return null;
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: rect.left + ((projected.x + 1) / 2) * rect.width,
+    y: rect.top + ((1 - projected.y) / 2) * rect.height,
+  };
 }
 
 function readRoomDisplay(scene: Object3D, roomId: RoomId): RoomDisplay | null {

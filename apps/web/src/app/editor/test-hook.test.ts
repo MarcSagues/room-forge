@@ -36,7 +36,12 @@ describe('installTestHook', () => {
     installTestHook(window, { session, getScene: () => scene }, true);
     const hook = window.__RF__;
     expect(hook?.session).toBe(session);
-    expect(Object.keys(hook?.commands ?? {}).sort()).toEqual(['createRoom', 'resizeRoom']);
+    expect(Object.keys(hook?.commands ?? {}).sort()).toEqual([
+      'addObject',
+      'createRoom',
+      'removeObjects',
+      'resizeRoom',
+    ]);
     expect(hook?.info()).toEqual(info);
   });
 
