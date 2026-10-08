@@ -104,7 +104,7 @@ Nota: `@codex fix it` existe pero **no se usa**; en este flujo corrige Claude (u
 
 Prohibido para agentes: fusionar en `main`, fusionar en `develop` sin orden explícita del propietario, activar *auto-merge*, lanzar el workflow de producción, `git push` directo a `develop`/`main`, `git push --force`, borrar `develop`/`main`, tocar secretos.
 
-No hay protección de ramas en GitHub (repo privado, plan gratuito): estas reglas se cumplen por convención, con un hook `pre-push` local (P1-02) y el despliegue manual. Ver [DEPLOYMENT §6](DEPLOYMENT.md#6-política-de-ramas-y-despliegue-sin-protecciones-de-github).
+No hay protección de ramas en GitHub (repo privado, plan gratuito): estas reglas se cumplen por convención, con un hook `pre-push` local (`.husky/pre-push`) y el despliegue manual. Ver [DEPLOYMENT §6](DEPLOYMENT.md#6-política-de-ramas-y-despliegue-sin-protecciones-de-github).
 
 ## 8. Hotfix
 

@@ -11,7 +11,10 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const tsc = createRequire(import.meta.url).resolve('typescript/bin/tsc');
 
 const run = (project) =>
-  spawnSync(process.execPath, [tsc, '-p', project, '--pretty', 'false'], { cwd: root, encoding: 'utf8' });
+  spawnSync(process.execPath, [tsc, '-p', project, '--pretty', 'false'], {
+    cwd: root,
+    encoding: 'utf8',
+  });
 
 const fail = (message, output = '') => {
   console.error(`✖ ${message}\n${output}`);
@@ -23,7 +26,8 @@ if (good.status !== 0) fail('packages/core sources do not compile', good.stdout 
 
 const bad = run('tsconfig.negative.json');
 const out = bad.stdout + bad.stderr;
-if (bad.status === 0) fail('DOM fixture compiled: packages/core must not have access to DOM types', out);
+if (bad.status === 0)
+  fail('DOM fixture compiled: packages/core must not have access to DOM types', out);
 
 // TS2304 "Cannot find name 'window'" / TS2584 "Cannot find name 'document'. Do you need to change your target library?"
 const mentions = (name) => new RegExp(`error TS(2304|2584): Cannot find name '${name}'`).test(out);

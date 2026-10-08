@@ -29,8 +29,12 @@ pnpm install
 pnpm dev                 # http://localhost:3000  (/, /editor/)
 pnpm build               # export estático → apps/web/out
 pnpm typecheck
+pnpm check                 # typecheck + biome + fronteras de módulos + pureza de core + tests de reglas
+pnpm lint / pnpm format  # Biome
 pnpm check:core-purity   # verifica que packages/core no puede usar el DOM
 ```
+
+Los hooks de git (husky) se instalan solos con `pnpm install`: formato en `pre-commit`, Conventional Commits en `commit-msg` y bloqueo de pushes directos a `develop`/`main` en `pre-push` (GitHub no puede protegerlas en este repo; ver [DEPLOYMENT §6](docs/DEPLOYMENT.md)).
 
 Estructura: `apps/web` (Next.js 16, export estático) · `packages/core` (TypeScript puro; [ADR-0001](docs/ADR/0001-monorepo-core-package.md)).
 
