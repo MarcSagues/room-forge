@@ -1,10 +1,16 @@
 import type { ViewMode } from '@roomforge/core';
 
-export type HotkeyAction = { type: 'view'; view: ViewMode } | { type: 'fit' };
+export type HotkeyAction =
+  | { type: 'view'; view: ViewMode }
+  | { type: 'fit' }
+  | { type: 'cycleWalls' }
+  | { type: 'toggleCeiling' };
 
 export interface HotkeyHandlers {
   setView(view: ViewMode): void;
   fit(): void;
+  cycleWalls(): void;
+  toggleCeiling(): void;
 }
 
 interface KeyPress {
@@ -44,8 +50,16 @@ export function resolveHotkey(press: KeyPress): HotkeyAction | null {
     case 'Digit2':
     case 'Numpad2':
       return { type: 'view', view: 'top' };
+  }
+  switch (press.key.toLowerCase()) {
+    case 'f':
+      return { type: 'fit' };
+    case 'w':
+      return { type: 'cycleWalls' };
+    case 'c':
+      return { type: 'toggleCeiling' };
     default:
-      return press.key.toLowerCase() === 'f' ? { type: 'fit' } : null;
+      return null;
   }
 }
 
@@ -56,7 +70,9 @@ export function installHotkeys(target: Window, handlers: HotkeyHandlers): () => 
     if (!action) return;
     event.preventDefault();
     if (action.type === 'view') handlers.setView(action.view);
-    else handlers.fit();
+    else if (action.type === 'fit') handlers.fit();
+    else if (action.type === 'cycleWalls') handlers.cycleWalls();
+    else handlers.toggleCeiling();
   };
   target.addEventListener('keydown', onKeyDown);
   return () => target.removeEventListener('keydown', onKeyDown);

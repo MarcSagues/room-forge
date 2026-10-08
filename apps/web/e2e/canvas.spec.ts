@@ -69,13 +69,14 @@ test('a document change renders exactly one frame', async ({ page }) => {
 
 const geometries = (page: Page) => page.evaluate(() => window.__RF__?.info()?.geometries ?? -1);
 
-// P2-07: the default 4 × 4.5 m room is floor + ceiling + 4 walls (+ 2 grid layers).
-test('the default room draws as 8 calls and 52 triangles', async ({ page }) => {
+// P2-07: the default 4 × 4.5 m room is floor + ceiling + 4 walls (+ 2 grid layers). Since P2-10
+// the ceiling is hidden while editing: three.js neither draws it nor uploads its geometry.
+test('the default room draws as 7 calls and 50 triangles', async ({ page }) => {
   await openEditor(page);
   const info = await page.evaluate(() => window.__RF__?.info());
-  expect(info?.calls).toBe(8);
-  expect(info?.triangles).toBe(2 + 2 + 4 * 12);
-  expect(info?.geometries).toBe(8);
+  expect(info?.calls).toBe(7);
+  expect(info?.triangles).toBe(2 + 4 * 12);
+  expect(info?.geometries).toBe(7);
 });
 
 // P2-07: resizing rebuilds geometry; the old buffers must be freed (no GPU memory growth).
@@ -89,7 +90,7 @@ test('resizing the room many times does not leak geometries', async ({ page }) =
   }
   await page.waitForTimeout(300);
   expect(await geometries(page)).toBe(baseline);
-  expect((await page.evaluate(() => window.__RF__?.info()))?.triangles).toBe(52);
+  expect((await page.evaluate(() => window.__RF__?.info()))?.triangles).toBe(50);
 });
 
 test('changing the document does not compile new shader programs', async ({ page }) => {
