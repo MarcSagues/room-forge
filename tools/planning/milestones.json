@@ -1,0 +1,12 @@
+[
+  { "id": "M0", "title": "M0 · Fase 0 — Investigación y arquitectura", "description": "Documentación, decisiones y repositorio listo para trabajar." },
+  { "id": "M1", "title": "M1 · Fase 1 — Fundamentos del proyecto", "description": "Monorepo, calidad automatizada, CI, shell del editor, previews." },
+  { "id": "M2", "title": "M2 · Fase 2 — Motor 3D", "description": "Core de dominio (comandos, historial) y motor de escena base." },
+  { "id": "M3", "title": "M3 · Fase 3 — Editor interactivo", "description": "Selección, mover, rotar, snap, propiedades, atajos, puertas y ventanas." },
+  { "id": "M4", "title": "M4 · Fase 4 — Catálogo de objetos", "description": "Pipeline de assets, manifiesto, 30 objetos con licencia limpia." },
+  { "id": "M5", "title": "M5 · Fase 5 — Materiales e iluminación", "description": "Materiales, luces RGB, día/noche, bloom, calidad adaptativa." },
+  { "id": "M6", "title": "M6 · Fase 6 — Persistencia y exportación", "description": "IndexedDB, autoguardado, JSON, PNG, enlaces." },
+  { "id": "M7", "title": "M7 · Fase 7 — Testing y optimización", "description": "E2E, visual, presupuestos, accesibilidad, móvil, seguridad." },
+  { "id": "M8", "title": "M8 · Fase 8 — Beta pública", "description": "Landing, plantillas, producción, feedback, release v0.1.0-beta." },
+  { "id": "M9", "title": "M9 · Fase 9 — IA y monetización", "description": "Cuentas, nube, IA, pagos, marketplace (post-MVP)." }
+]

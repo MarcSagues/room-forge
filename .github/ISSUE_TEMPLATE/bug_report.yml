@@ -1,0 +1,73 @@
+name: Bug report
+description: Report a defect in RoomForge
+title: "[Bug] "
+labels: ["type:bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. **Do not include personal data.** Attaching your project file is optional and explicit.
+  - type: input
+    id: version
+    attributes:
+      label: App version / commit
+      description: Shown in Settings → About (or the footer of the page).
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and OS
+      placeholder: "Chrome 130 on Windows 11"
+    validations:
+      required: true
+  - type: input
+    id: gpu
+    attributes:
+      label: GPU / graphics quality setting
+      placeholder: "Intel Iris Xe — quality: Auto"
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      description: critical = data loss / crash / cannot save; major = main feature degraded; minor = annoyance.
+      options:
+        - severity:critical
+        - severity:major
+        - severity:minor
+    validations:
+      required: true
+  - type: dropdown
+    id: regression
+    attributes:
+      label: Is this a regression?
+      options:
+        - "Don't know"
+        - "Yes — it worked in an earlier version"
+        - "No"
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshots, console errors, exported project (optional)

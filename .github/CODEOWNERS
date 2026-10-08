@@ -1,0 +1,8 @@
+# Every change needs review from the project owner.
+# (Review by Codex is requested with `@codex review`; CODEOWNERS is for humans.)
+*                       @MarcSagues
+
+# Decisions and automation are owner-only by design.
+/docs/ADR/              @MarcSagues
+/.github/               @MarcSagues
+/AGENTS.md              @MarcSagues

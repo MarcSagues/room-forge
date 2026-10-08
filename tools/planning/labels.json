@@ -1,0 +1,42 @@
+[
+  { "name": "type:epic", "color": "5319E7", "description": "Épica: agrupa issues de una fase" },
+  { "name": "type:feature", "color": "1D76DB", "description": "Funcionalidad de producto" },
+  { "name": "type:task", "color": "0E8A16", "description": "Tarea técnica o de proceso" },
+  { "name": "type:spike", "color": "FBCA04", "description": "Investigación acotada en el tiempo con decisión como resultado" },
+  { "name": "type:bug", "color": "D73A4A", "description": "Defecto" },
+
+  { "name": "P0-critical", "color": "B60205", "description": "P0 — Crítico: bloquea el MVP" },
+  { "name": "P1-important", "color": "D93F0B", "description": "P1 — Importante: debe estar en el MVP" },
+  { "name": "P2-improvement", "color": "FBCA04", "description": "P2 — Mejora: deseable, puede salir después" },
+  { "name": "P3-future", "color": "C5DEF5", "description": "P3 — Futuro: documentado, no planificado" },
+
+  { "name": "area:core", "color": "BFD4F2", "description": "packages/core: dominio, comandos, historial" },
+  { "name": "area:scene", "color": "BFD4F2", "description": "Motor de escena 3D (R3F/three)" },
+  { "name": "area:ui", "color": "BFD4F2", "description": "Interfaz de usuario" },
+  { "name": "area:ux", "color": "BFD4F2", "description": "Experiencia de usuario / interacción" },
+  { "name": "area:catalog", "color": "BFD4F2", "description": "Catálogo y assets 3D" },
+  { "name": "area:persistence", "color": "BFD4F2", "description": "Guardado, importación, compartir" },
+  { "name": "area:export", "color": "BFD4F2", "description": "Exportación de imágenes y archivos" },
+  { "name": "area:infra", "color": "BFD4F2", "description": "Repositorio, CI/CD, despliegue" },
+  { "name": "area:testing", "color": "BFD4F2", "description": "Estrategia y herramientas de test" },
+  { "name": "area:perf", "color": "BFD4F2", "description": "Rendimiento" },
+  { "name": "area:a11y", "color": "BFD4F2", "description": "Accesibilidad" },
+  { "name": "area:docs", "color": "BFD4F2", "description": "Documentación" },
+  { "name": "area:ai", "color": "BFD4F2", "description": "Inteligencia artificial" },
+  { "name": "area:product", "color": "BFD4F2", "description": "Producto, negocio, legal" },
+
+  { "name": "size:XS", "color": "EDEDED", "description": "≈ 0,25 días ideales" },
+  { "name": "size:S", "color": "EDEDED", "description": "≈ 0,5 días ideales" },
+  { "name": "size:M", "color": "EDEDED", "description": "≈ 1 día ideal" },
+  { "name": "size:L", "color": "EDEDED", "description": "≈ 2 días ideales" },
+  { "name": "size:XL", "color": "EDEDED", "description": "≈ 4 días ideales — dividir antes de empezar" },
+
+  { "name": "blocked", "color": "000000", "description": "Bloqueada por otra issue o por una acción externa" },
+  { "name": "needs-decision", "color": "FF7A45", "description": "Requiere una decisión (ADR o del propietario)" },
+  { "name": "human-required", "color": "FF7A45", "description": "Requiere una acción humana (cuentas, secretos, aprobaciones)" },
+  { "name": "post-mvp", "color": "C5DEF5", "description": "Fuera del MVP; documentada para el futuro" },
+  { "name": "regression", "color": "D73A4A", "description": "Algo que funcionaba y dejó de hacerlo" },
+  { "name": "severity:critical", "color": "B60205", "description": "Bug: pérdida de datos, crash o bloqueo total" },
+  { "name": "severity:major", "color": "D93F0B", "description": "Bug: funcionalidad principal degradada" },
+  { "name": "severity:minor", "color": "FBCA04", "description": "Bug: molestia con workaround" }
+]

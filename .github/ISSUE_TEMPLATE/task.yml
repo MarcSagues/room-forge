@@ -1,0 +1,55 @@
+name: Task (planned work)
+description: Small, independent, executable unit of work (mirrors docs/issues format)
+title: "[Pxx-nn] "
+labels: ["type:task"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Descripción
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Contexto
+      description: Links to PRD/ARCHITECTURE/ADR sections.
+    validations:
+      required: true
+  - type: textarea
+    id: requirements
+    attributes:
+      label: Requisitos
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Criterios de aceptación
+      value: |
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+  - type: input
+    id: depends
+    attributes:
+      label: Depende de
+      placeholder: "#12, #15"
+  - type: dropdown
+    id: size
+    attributes:
+      label: Estimación
+      options:
+        - XS (≈0,25 d)
+        - S (≈0,5 d)
+        - M (≈1 d)
+        - L (≈2 d)
+    validations:
+      required: true
+  - type: textarea
+    id: tests
+    attributes:
+      label: Tests esperados
+    validations:
+      required: true
