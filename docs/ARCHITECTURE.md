@@ -25,7 +25,7 @@
 | ESLint/Prettier (implícito) | **Biome 2** + dependency-cruiser | Una sola herramienta rápida; las fronteras arquitectónicas se verifican con dependency-cruiser. | [0008](ADR/0008-tooling.md) |
 | Assets 3D | **Estrategia híbrida** GLB CC0 + objetos paramétricos; decisión final tras spike | Es el riesgo n.º 1 del proyecto. | [0007](ADR/0007-asset-strategy.md) |
 
-Versiones verificadas en el registro npm el 2026-10-08 (se fijan definitivamente en P1-01): Next 16.4, React 19.3, three 0.186, @react-three/fiber 9.8 (peer `react >=19 <19.4`), @react-three/drei 10.7, Zustand 5.0, Immer 11, zod 4.6, Tailwind 4.3, Vitest 5, Playwright 1.64, Biome 2.5. TypeScript 7.0 aparece como última versión: **verificar compatibilidad con Next/Vitest/Biome antes de adoptarlo** (si hay fricción, usar la última 5.x/6.x estable).
+Versiones verificadas en el registro npm el 2026-10-08 (se fijan definitivamente en P1-01): Next 16.4, React 19.3, three 0.186, @react-three/fiber 9.8 (peer `react >=19 <19.4`), @react-three/drei 10.7, Zustand 5.0, Immer 11, zod 4.6, Tailwind 4.3, Vitest 5, Playwright 1.64, Biome 2.5. TypeScript 7.0 es la última versión, pero se **fija 6.0.3**: Next 16.4 compila con ambas, mientras que dependency-cruiser (que hace cumplir las fronteras) aún no soporta TS ≥ 7 (verificado en P1-01; ver [ADR-0008](ADR/0008-tooling.md)).
 
 ## 2. Vista de capas
 

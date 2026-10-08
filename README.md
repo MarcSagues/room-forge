@@ -2,7 +2,7 @@
 
 Diseña habitaciones, despachos y **setups gaming** en 3D desde el navegador: arrastra muebles, cambia materiales, añade **iluminación LED/RGB** y alterna entre **día y noche**. Sin instalar nada, sin saber 3D.
 
-> **Estado: Fase 0 — investigación, arquitectura y planificación.** Todavía no hay código de producto. Todo el diseño está en [`docs/`](docs/README.md).
+> **Estado: Fase 1 — fundamentos.** Documentación y backlog completos ([`docs/`](docs/README.md)); scaffold del monorepo en curso (P1-01). Todavía no hay funcionalidad de producto.
 
 ## Empieza por aquí
 
@@ -19,6 +19,20 @@ Diseña habitaciones, despachos y **setups gaming** en 3D desde el navegador: ar
 ## Stack (propuesto)
 
 Next.js 16 (export estático) · React 19 · TypeScript · Tailwind v4 + shadcn/ui · Zustand + Immer · three.js + React Three Fiber + drei · IndexedDB (`idb`) · Vitest + Playwright · GitHub Actions · Cloudflare.
+
+## Desarrollo
+
+Requisitos: Node 22 (`.nvmrc`) y pnpm 12 (`packageManager`).
+
+```bash
+pnpm install
+pnpm dev                 # http://localhost:3000  (/, /editor/)
+pnpm build               # export estático → apps/web/out
+pnpm typecheck
+pnpm check:core-purity   # verifica que packages/core no puede usar el DOM
+```
+
+Estructura: `apps/web` (Next.js 16, export estático) · `packages/core` (TypeScript puro; [ADR-0001](docs/ADR/0001-monorepo-core-package.md)).
 
 ## Backlog
 

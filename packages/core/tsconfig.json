@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // No DOM, no Node, no React: using window/document/process is a compile error (ADR-0001).
+    "lib": ["ES2023"],
+    "types": []
+  },
+  "include": ["src"]
+}

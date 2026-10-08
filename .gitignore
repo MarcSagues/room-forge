@@ -1,10 +1,11 @@
-# Minimal ignore list for the planning phase. P1-01 extends it for the pnpm/Next.js workspace.
 node_modules/
 .pnpm-store/
 .next/
 out/
 dist/
 coverage/
+next-env.d.ts
+*.tsbuildinfo
 playwright-report/
 test-results/
 
