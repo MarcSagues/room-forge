@@ -9,6 +9,8 @@ module.exports = {
     exclude: { path: '(^|/)(\\.next|out|coverage)/' },
     tsConfig: { fileName: path.join(__dirname, 'apps/web/tsconfig.json') },
     tsPreCompilationDeps: true,
+    // Only its `resolve.alias` is used (the `@/*` alias of apps/web); see the file for details.
+    webpackConfig: { fileName: path.join(__dirname, 'tools/checks/depcruise-resolve.cjs') },
     enhancedResolveOptions: {
       exportsFields: ['exports'],
       conditionNames: ['import', 'require', 'node', 'default', 'types'],

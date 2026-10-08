@@ -183,15 +183,15 @@ La identidad visual debe ser coherente desde el principio. Q1 del PRD (idiomas) 
 - `/dev/ui` excluida del sitemap/producción (solo en desarrollo o detrás de flag).
 
 ### Criterios de aceptación
-- [ ] Contraste de los pares documentados ≥ ratios de DESIGN_SYSTEM §2.1 (verificado con script).
-- [ ] Cambiar de tema no produce destello (FOUC) en recarga.
-- [ ] Sin peticiones a dominios externos en la pestaña Network.
-- [ ] `/dev/ui` muestra todos los estados (hover, focus-visible, disabled).
+- [x] Contraste de los pares documentados ≥ ratios de DESIGN_SYSTEM §2.1 (verificado con script).
+- [x] Cambiar de tema no produce destello (FOUC) en recarga.
+- [x] Sin peticiones a dominios externos en la pestaña Network.
+- [x] `/dev/ui` muestra todos los estados (hover, focus-visible, disabled).
 
 ### Tests esperados
 - Test RTL de `Button`/`Input` (foco visible, disabled).
 - Test unitario del script de contraste.
-- Axe en `/dev/ui` sin violaciones graves.
+- Axe en `/dev/ui` sin violaciones graves. (verificado en P1-05 con axe-core en un navegador real, ambos temas: 0 violaciones; se automatiza con Playwright en P1-07).
 
 ## ISSUE P1-06 — Shell del editor: layout de 5 regiones con paneles redimensionables
 

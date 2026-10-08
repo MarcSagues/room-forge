@@ -1,0 +1,77 @@
+/*
+ * RoomForge design tokens — single source of truth (docs/DESIGN_SYSTEM.md §2).
+ * Dark is the default theme; light is selected with <html data-theme="light">.
+ * tools/checks/contrast.test.mjs verifies the WCAG contrast of these values and that
+ * they are at least the ratios documented in DESIGN_SYSTEM.md §2.1.
+ */
+
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg-canvas: #0b0d12;
+  --bg-surface: #12151c;
+  --bg-elevated: #1a1e27;
+  --bg-hover: #232834;
+  --border-subtle: #242a35;
+  --border-control: #5f6a7f;
+  --text-primary: #e8ebf2;
+  --text-secondary: #a3acbd;
+  --text-tertiary: #7f889b;
+  --accent: #ff7a45;
+  --accent-hover: #ff8f63;
+  --accent-fg: #1a0b04;
+  --success: #3dd68c;
+  --warning: #f5b73b;
+  --danger: #f2555a;
+  --danger-fg: #1a0b04;
+  --info: #5aa9ff;
+
+  --elev-popover: 0 8px 24px rgb(0 0 0 / 0.35);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --bg-canvas: #f4f5f8;
+  --bg-surface: #ffffff;
+  --bg-elevated: #ffffff;
+  --bg-hover: #eceef3;
+  --border-subtle: #dfe3ea;
+  --border-control: #848da0;
+  --text-primary: #12151c;
+  --text-secondary: #4a5365;
+  --text-tertiary: #646e82;
+  --accent: #c2410c;
+  --accent-hover: #a8350a;
+  --accent-fg: #ffffff;
+  --success: #0f7b4f;
+  --warning: #8a5a00;
+  --danger: #c62828;
+  --danger-fg: #ffffff;
+  --info: #1d5fbf;
+
+  --elev-popover: 0 8px 24px rgb(0 0 0 / 0.12);
+}
+
+/* Semantic names used by the shadcn/ui components, mapped onto our tokens. */
+:root {
+  --background: var(--bg-canvas);
+  --foreground: var(--text-primary);
+  --card: var(--bg-surface);
+  --card-foreground: var(--text-primary);
+  --popover: var(--bg-elevated);
+  --popover-foreground: var(--text-primary);
+  --primary: var(--accent);
+  --primary-foreground: var(--accent-fg);
+  --secondary: var(--bg-elevated);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--bg-elevated);
+  --muted-foreground: var(--text-secondary);
+  --accent-surface: var(--bg-hover);
+  --destructive: var(--danger);
+  --destructive-foreground: var(--danger-fg);
+  --border: var(--border-subtle);
+  --input: var(--border-control);
+  --ring: var(--accent);
+}
