@@ -40,6 +40,7 @@ const invalid = {
   'ui-imports-persistence': 'ui-no-persistence',
   'persistence-imports-three': 'persistence-no-three',
   circular: 'no-circular',
+  'production-imports-test-support': 'no-test-support-in-production',
 };
 
 for (const [fixture, rule] of Object.entries(invalid)) {
