@@ -122,9 +122,9 @@ Configurar Vitest con dos proyectos: `core` (entorno `node`) y `web` (entorno `h
 - Scripts: `test`, `test:watch`, `test:coverage`.
 
 ### Criterios de aceptación
-- [ ] `pnpm test` ejecuta ambos proyectos y pasa.
-- [ ] `pnpm test:coverage` genera informe HTML y lcov.
-- [ ] Tiempo de `pnpm --filter core test` < 3 s.
+- [x] `pnpm test` ejecuta ambos proyectos y pasa.
+- [x] `pnpm test:coverage` genera informe HTML y lcov.
+- [x] Tiempo de `pnpm --filter core test` < 3 s.
 
 ### Tests esperados
 - Los propios tests de humo.

@@ -29,7 +29,8 @@ pnpm install
 pnpm dev                 # http://localhost:3000  (/, /editor/)
 pnpm build               # export estático → apps/web/out
 pnpm typecheck
-pnpm check                 # typecheck + biome + fronteras de módulos + pureza de core + tests de reglas
+pnpm check                 # typecheck + biome + fronteras de módulos + pureza de core + tests de reglas + vitest
+pnpm test / test:watch / test:coverage   # Vitest (core en Node, web en happy-dom + Testing Library)
 pnpm lint / pnpm format  # Biome
 pnpm check:core-purity   # verifica que packages/core no puede usar el DOM
 ```
