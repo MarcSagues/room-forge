@@ -253,6 +253,24 @@ Emisor tipado mínimo en `core/session` (≈30 líneas, sin dependencias). Sirve
 
 El estado **reactivo** de la UI se obtiene del store (`useStore(store, selector)`); los eventos son para *efectos*, no para pintar.
 
+### 5.1 Orden garantizado de los eventos
+
+Tras un comando, `undo`, `redo` o carga, el store ya contiene el documento nuevo **y la selección reconciliada** antes de emitir nada, de modo que todo oyente ve un estado coherente. Se emite, en este orden:
+
+1. `document:changed` — siempre.
+2. `history:changed` — solo si cambia el estado del historial.
+3. `selection:changed` — solo si la reconciliación quitó ids (p. ej. se borró un objeto seleccionado).
+
+`select()` emite únicamente `selection:changed`, y solo si la selección cambia realmente. Las pruebas `selection-session.test.ts` fijan este orden.
+
+### 5.2 Estado de sesión (no deshacible, no persistente)
+
+`selection`, `hover` y `activeTool` viven en el store de la sesión junto al documento, pero **no** pasan por comandos ni por el historial: seleccionar no crea entradas de historial y `undo` no los restaura.
+
+- `select(ids, mode)` con `mode` = `replace` (por defecto) | `add` | `toggle`. Acepta listas aunque el MVP seleccione una entidad (multi-selección futura). Los ids que no existen se ignoran; `replace` sin ids válidos limpia la selección.
+- Tras cada cambio del documento se **reconcilian** selección y *hover*: se descartan los ids que ya no existen (también tras `undo`/`redo`, que **no** los recuperan).
+- El emisor expone `listenerCount()` para comprobar que las suscripciones se liberan (sin fugas).
+
 ## 6. Motor de escena (`scene-engine`)
 
 ### 6.1 Principios

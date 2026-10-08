@@ -177,9 +177,9 @@ Emisor de eventos tipado (`document:changed`, `history:changed`, `selection:chan
 - Selección pensada para ≥1 id (multi-selección futura) aunque el MVP use 1.
 
 ### Criterios de aceptación
-- [ ] Eliminar un objeto seleccionado limpia la selección y emite `selection:changed`.
-- [ ] `unsubscribe` evita fugas (comprobado con contador de listeners).
-- [ ] Orden de eventos documentado y verificado (`document:changed` antes de `selection:changed`).
+- [x] Eliminar un objeto seleccionado limpia la selección y emite `selection:changed`.
+- [x] `unsubscribe` evita fugas (comprobado con contador de listeners).
+- [x] Orden de eventos documentado y verificado (`document:changed` antes de `selection:changed`).
 
 ### Tests esperados
 - Unitarios de emisor y de reconciliación de selección.
