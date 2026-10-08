@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { ObjectIdSchema, OpeningIdSchema, RoomIdSchema } from './ids';
 import { LIMITS } from './limits';
+import type { DeepReadonly } from './readonly';
 
 // Zod 4 numbers are finite: NaN and ±Infinity are rejected everywhere (I7).
 
@@ -167,63 +168,78 @@ export const SceneDocumentSchema = z
     lighting: LightingSchema,
   })
   .superRefine((doc, ctx) => {
-    const issue = (path: (string | number)[], message: string) =>
+    for (const { path, message } of documentStructureIssues(doc)) {
       ctx.addIssue({ code: 'custom', path, message });
-
-    // Map keys are the entity ids, and ids are unique across the whole document (I1).
-    const seen = new Set<string>();
-    for (const map of ['rooms', 'openings', 'objects'] as const) {
-      for (const [id, entity] of Object.entries(doc[map])) {
-        if (entity.id !== id) issue([map, id, 'id'], `Id "${entity.id}" does not match its key`);
-        if (seen.has(id)) issue([map, id], `Duplicate id "${id}"`);
-        seen.add(id);
-      }
-    }
-
-    checkOrder(doc.roomOrder, doc.rooms, 'roomOrder', issue);
-    checkOrder(doc.objectOrder, doc.objects, 'objectOrder', issue);
-
-    if (Object.keys(doc.rooms).length > LIMITS.maxRooms) {
-      issue(['rooms'], `At most ${LIMITS.maxRooms} rooms`);
-    }
-    if (Object.keys(doc.objects).length > LIMITS.maxObjects) {
-      issue(['objects'], `At most ${LIMITS.maxObjects} objects`);
-    }
-
-    // References exist (I1). Cycles and depth (I2) are checked with the other invariants.
-    for (const [id, object] of Object.entries(doc.objects)) {
-      if (!Object.hasOwn(doc.rooms, object.roomId)) {
-        issue(['objects', id, 'roomId'], `References unknown room "${object.roomId}"`);
-      }
-      if (object.parentId === object.id) {
-        issue(['objects', id, 'parentId'], 'An object cannot be its own parent');
-      } else if (object.parentId !== null && !Object.hasOwn(doc.objects, object.parentId)) {
-        issue(['objects', id, 'parentId'], `References unknown parent "${object.parentId}"`);
-      }
-    }
-
-    const perWall = new Map<string, number>();
-    for (const [id, opening] of Object.entries(doc.openings)) {
-      if (!Object.hasOwn(doc.rooms, opening.roomId)) {
-        issue(['openings', id, 'roomId'], `References unknown room "${opening.roomId}"`);
-      }
-      const wallKey = `${opening.roomId}:${opening.wall}`;
-      const count = (perWall.get(wallKey) ?? 0) + 1;
-      perWall.set(wallKey, count);
-      if (count === LIMITS.maxOpeningsPerWall + 1) {
-        issue(
-          ['openings', id],
-          `At most ${LIMITS.maxOpeningsPerWall} openings on the ${opening.wall} wall of room "${opening.roomId}"`,
-        );
-      }
     }
   });
 export type SceneDocument = z.infer<typeof SceneDocumentSchema>;
 
+export interface DocumentIssue {
+  path: (string | number)[];
+  message: string;
+}
+
+/**
+ * Document-wide structure (I1 and count limits): map keys are entity ids, ids are unique across
+ * maps, order lists name every entity once, references exist. Shared by the schema (imports) and
+ * the session invariants (after every command). Cycles and depth (I2) live with the invariants.
+ */
+export function documentStructureIssues(doc: DeepReadonly<SceneDocument>): DocumentIssue[] {
+  const issues: DocumentIssue[] = [];
+  const issue = (path: (string | number)[], message: string) => issues.push({ path, message });
+
+  const seen = new Set<string>();
+  for (const map of ['rooms', 'openings', 'objects'] as const) {
+    for (const [id, entity] of Object.entries(doc[map])) {
+      if (entity.id !== id) issue([map, id, 'id'], `Id "${entity.id}" does not match its key`);
+      if (seen.has(id)) issue([map, id], `Duplicate id "${id}"`);
+      seen.add(id);
+    }
+  }
+
+  checkOrder(doc.roomOrder, doc.rooms, 'roomOrder', issue);
+  checkOrder(doc.objectOrder, doc.objects, 'objectOrder', issue);
+
+  if (Object.keys(doc.rooms).length > LIMITS.maxRooms) {
+    issue(['rooms'], `At most ${LIMITS.maxRooms} rooms`);
+  }
+  if (Object.keys(doc.objects).length > LIMITS.maxObjects) {
+    issue(['objects'], `At most ${LIMITS.maxObjects} objects`);
+  }
+
+  for (const [id, object] of Object.entries(doc.objects)) {
+    if (!Object.hasOwn(doc.rooms, object.roomId)) {
+      issue(['objects', id, 'roomId'], `References unknown room "${object.roomId}"`);
+    }
+    if (object.parentId === object.id) {
+      issue(['objects', id, 'parentId'], 'An object cannot be its own parent');
+    } else if (object.parentId !== null && !Object.hasOwn(doc.objects, object.parentId)) {
+      issue(['objects', id, 'parentId'], `References unknown parent "${object.parentId}"`);
+    }
+  }
+
+  const perWall = new Map<string, number>();
+  for (const [id, opening] of Object.entries(doc.openings)) {
+    if (!Object.hasOwn(doc.rooms, opening.roomId)) {
+      issue(['openings', id, 'roomId'], `References unknown room "${opening.roomId}"`);
+    }
+    const wallKey = `${opening.roomId}:${opening.wall}`;
+    const count = (perWall.get(wallKey) ?? 0) + 1;
+    perWall.set(wallKey, count);
+    if (count === LIMITS.maxOpeningsPerWall + 1) {
+      issue(
+        ['openings', id],
+        `At most ${LIMITS.maxOpeningsPerWall} openings on the ${opening.wall} wall of room "${opening.roomId}"`,
+      );
+    }
+  }
+  return issues;
+}
+
 /** An order list must name every entity of its map exactly once. */
 function checkOrder(
   order: readonly string[],
-  map: Record<string, unknown>,
+  map: Readonly<Record<string, unknown>>,
   field: 'roomOrder' | 'objectOrder',
   issue: (path: (string | number)[], message: string) => void,
 ) {

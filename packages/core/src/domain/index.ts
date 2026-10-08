@@ -15,7 +15,10 @@ export {
   RoomIdSchema,
 } from './ids';
 export { LIMITS } from './limits';
+export type { DeepReadonly } from './readonly';
 export {
+  type DocumentIssue,
+  documentStructureIssues,
   type HexColor,
   HexColorSchema,
   LightEffectSchema,

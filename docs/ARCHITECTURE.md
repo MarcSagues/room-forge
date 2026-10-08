@@ -156,12 +156,12 @@ flowchart LR
 ### 4.1 Contrato
 
 ```ts
-// packages/core/src/commands/types.ts  (ilustrativo — se implementa en P2-02)
+// packages/core/src/session/types.ts  (implementado en P2-02; resumen)
 export interface Command<A = unknown> {
   readonly type: string;                 // 'object/move'
   readonly label: string;                // texto para «Deshacer: Mover escritorio»
   readonly mergeKey?: string;            // para coalescing (p. ej. `move:${id}`)
-  apply(draft: Draft<SceneDocument>, ctx: CommandContext): void;  // muta el borrador de Immer
+  apply(draft: Draft<SceneDocument>, ctx: CommandContext): CommandError | void;  // muta el borrador; devolver un error aborta
 }
 export type CommandResult =
   | { ok: true; patches: Patch[]; inverse: Patch[] }
@@ -214,6 +214,8 @@ Esc durante el arrastre → restaura el transform original **sin** tocar el docu
 | I5 | Dimensiones de sala dentro de límites (2–12 m lado, 2,2–4 m alto; configurables). |
 | I6 | `catalogId` desconocido **no es error**: se conserva con marcador (no se pierde información al importar). |
 | I7 | Valores numéricos finitos (sin NaN/Infinity). |
+
+Implementación (P2-02): `checkInvariants` en `packages/core/src/session/invariants.ts`. La estructura (I1), el apilado (I2) y la geometría (I3, I4) se comprueban sobre todo el documento tras cada comando; los valores de campo (límites I5, finitos I7) solo en las entidades que tocan los *patches*. I3 se aplica a objetos cuya superficie predeterminada en el catálogo es `floor`; los que no están en el catálogo se omiten (I6). I2 en el MVP: un objeto solo puede apoyarse en un objeto de suelo de su misma sala.
 
 Las invariantes se prueban con **tests basados en propiedades** (fast-check): para cualquier secuencia aleatoria de comandos válidos, `undo` completo ⇒ documento original; `undo+redo` ⇒ igual; los invariantes se mantienen.
 
