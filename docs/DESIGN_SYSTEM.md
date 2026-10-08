@@ -22,16 +22,19 @@ Todos los valores de texto verificados con ratio WCAG (cálculo reproducible: ve
 | `--bg-canvas` | `#0B0D12` | `#F4F5F8` | Fondo de la app |
 | `--bg-surface` | `#12151C` | `#FFFFFF` | Paneles |
 | `--bg-elevated` | `#1A1E27` | `#FFFFFF` | Popovers, inputs, menús |
+| `--bg-hover` | `#232834` | `#ECEEF3` | Fondo de elementos en hover/selección suave |
 | `--border-subtle` | `#242A35` | `#DFE3EA` | Separadores (decorativos) |
 | `--border-control` | `#5F6A7F` | `#848DA0` | Borde de inputs/botones (≥3:1, WCAG 1.4.11) |
 | `--text-primary` | `#E8EBF2` | `#12151C` | Texto principal |
 | `--text-secondary` | `#A3ACBD` | `#4A5365` | Etiquetas, ayudas |
 | `--text-tertiary` | `#7F889B` | `#646E82` | Placeholders, metadatos |
 | `--accent` | `#FF7A45` | `#C2410C` | Acción primaria, selección, foco |
+| `--accent-hover` | `#FF8F63` | `#A8350A` | Acción primaria en hover |
 | `--accent-fg` | `#1A0B04` | `#FFFFFF` | Texto sobre acento |
 | `--success` | `#3DD68C` | `#0F7B4F` | Guardado, válido |
 | `--warning` | `#F5B73B` | `#8A5A00` | Avisos, colisión leve |
 | `--danger` | `#F2555A` | `#C62828` | Errores, destructivo, colocación inválida |
+| `--danger-fg` | `#1A0B04` | `#FFFFFF` | Texto sobre `--danger` (botón destructivo) |
 | `--info` | `#5AA9FF` | `#1D5FBF` | Información |
 
 Contrastes calculados (WCAG 2.x):
@@ -76,6 +79,15 @@ Contrastes calculados (WCAG 2.x):
 | Día ↔ noche | 700 ms | ease-in-out |
 
 `prefers-reduced-motion`: sin transiciones de cámara animadas (corte directo), sin efectos RGB animados por defecto.
+
+### 2.5 Implementación (P1-05)
+
+- **Tokens:** `apps/web/src/ui/tokens.css` (variables CSS, tema oscuro por defecto; `<html data-theme="light">` para el claro). `apps/web/src/app/globals.css` los expone a Tailwind v4 con `@theme inline`: `bg-canvas`, `bg-surface`, `bg-elevated`, `bg-hover`, `text-fg`, `text-fg-muted`, `text-fg-subtle`, `border-subtle`, `border-control`, `bg-ember`/`text-ember`, `text-success|warning|danger|info`. Los nombres semánticos de shadcn/ui (`background`, `primary`, `muted`, `destructive`…) se mapean sobre estos tokens.
+- **Tema:** preferencia `system | light | dark` (por defecto `dark`) en `localStorage` (`rf.theme`). Un script bloqueante en `<head>` (`public/theme-init.js`) fija `data-theme` antes del primer pintado, sin parpadeo; `ui/theme.ts` + `ui/use-theme.ts` lo gestionan en el cliente.
+- **Componentes:** shadcn/ui (base Radix) en `apps/web/src/ui/components/`, adaptados a los tokens y a TypeScript estricto. Se importan siempre desde el índice público `@/ui` (regla de fronteras).
+- **i18n mínima:** `ui/i18n/` (EN/ES, claves tipadas, sin librería).
+- **Catálogo vivo:** `/dev/ui` (solo en desarrollo: `page.dev.tsx` + `pageExtensions`; no se exporta a producción).
+- **Verificación:** `tools/checks/contrast.test.mjs` comprueba WCAG de los valores reales y que superan las razones de la tabla de §2.1.
 
 ## 3. Layout del editor
 

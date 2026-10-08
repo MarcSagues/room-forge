@@ -17,7 +17,7 @@ pnpm monorepo · `packages/core` (TypeScript puro) · `apps/web` (Next.js 16 exp
 
 ```bash
 pnpm install --frozen-lockfile   # ✔
-pnpm dev                         # ✔ next dev (apps/web)
+pnpm dev                         # ✔ next dev (apps/web); catálogo de componentes en /dev/ui
 pnpm build                       # ✔ next export → apps/web/out
 pnpm typecheck                   # ✔ tsc en cada paquete
 pnpm check:core-purity           # ✔ core no compila código que use window/document

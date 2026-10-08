@@ -26,7 +26,7 @@ Requisitos: Node 22 (`.nvmrc`) y pnpm 12 (`packageManager`).
 
 ```bash
 pnpm install
-pnpm dev                 # http://localhost:3000  (/, /editor/)
+pnpm dev                 # http://localhost:3000  (/, /editor/, /dev/ui/ = kit de componentes, solo en desarrollo)
 pnpm build               # export estático → apps/web/out
 pnpm typecheck
 pnpm check                 # typecheck + biome + fronteras de módulos + pureza de core + tests de reglas + vitest
