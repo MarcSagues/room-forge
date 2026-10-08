@@ -285,6 +285,8 @@ Tras un comando, `undo`, `redo` o carga, el store ya contiene el documento nuevo
 6. **Picking barato:** *colliders proxy* (una caja invisible por objeto) en vez de raycast contra mallas completas; arrastre por **intersección analítica rayo–plano** (no raycast contra el suelo).
 7. **Paredes estilo Sims:** modos *arriba / corte / abajo*; las paredes que miran a la cámara se atenúan por producto escalar cámara–normal.
 
+**Geometría de colocación (`core/geometry`, P3-01):** funciones puras sin three en coordenadas de sala (`x ∈ [0, ancho]`, `z ∈ [0, fondo]`, rotación en Y como three.js; los modelos miran a +z y su cara trasera por defecto es `z-`). `snapToGrid` (5/10/25/50 cm) y `snapAngle` (15/45/90°) idempotentes; `footprintExtents`/`footprintInside` (huella OBB, tolerancia 1 mm, que también usa la invariante I3); `intersectRayFloor`; `solvePlacement` → `{ position, rotationY, valid, reason, wall, guides }`. Orden: *snap* angular → detección de pared sobre la posición **sin** rejilla (huella a < 15 cm; gana el hueco menor y, en empate, la pared a la que ya mira; se descartan las que no caben girado) → cara trasera contra la pared y rejilla solo a lo largo de ella → *clamp* a la sala sobre la rejilla (o centrado si ninguna línea cabe). Resolver su propio resultado no lo cambia (propiedad).
+
 ### 6.2 Bucle de render bajo demanda
 
 ```mermaid

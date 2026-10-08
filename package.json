@@ -22,7 +22,7 @@
     "prepare": "husky",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "PERF_BUDGETS=off vitest run --coverage"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
