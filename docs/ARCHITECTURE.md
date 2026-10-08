@@ -239,6 +239,14 @@ Las invariantes se prueban con **tests basados en propiedades** (fast-check): pa
 | Escena | `scene/setLightingMode` (día/noche), `scene/setSettings` |
 | Compuestos | `batch` / gestos |
 
+**Políticas de los comandos de objeto (P3-02, `core/commands/object.ts`).** Todos aceptan listas de ids (multi-selección futura); una lista vacía es `invalid` y un id inexistente `not-found`.
+
+- `object/add`: un objeto de suelo (superficie predeterminada `floor`, sin padre) que quedaría fuera de la sala se lleva a la posición válida más cercana (`solvePlacement` sin *snap* a pared); si no cabe en la sala, `invalid`. El objeto n.º 301 devuelve `limit-reached`. Los `catalogId` desconocidos se guardan tal cual (I6).
+- `object/move` / `object/rotate`: valores absolutos, **sin clamp** (el controlador de arrastre ya resuelve una posición legal); si el resultado viola I3 se rechaza y el documento no cambia. Se fusionan por `mergeKey` (`object/move:<ids>`).
+- `object/setProps`: nombre (`null` lo borra), `locked`, `hidden`, escala (`null` la restablece) y `params` (se fusionan).
+- `object/remove`: elimina también los objetos apoyados en los eliminados.
+- `object/duplicate`: copia también los objetos apoyados en los duplicados, cuyas copias se apoyan en la copia del padre (mismo transform local); duplicar solo un hijo lo deja sobre el mismo padre. Las copias raíz se desplazan `DUPLICATE_OFFSET` (25 cm en x y z) y, si son de suelo, se mantienen dentro de la sala. Supera el límite ⇒ `limit-reached`.
+
 ## 5. Eventos
 
 Emisor tipado mínimo en `core/session` (≈30 líneas, sin dependencias). Sirve para efectos laterales desacoplados: autosave, invalidación de render, analítica.

@@ -10,7 +10,13 @@ export interface CommandContext {
   readonly catalog: CatalogProvider;
 }
 
-export type CommandErrorCode = 'invariant' | 'conflict' | 'not-found' | 'invalid' | 'exception';
+export type CommandErrorCode =
+  | 'invariant'
+  | 'conflict'
+  | 'not-found'
+  | 'invalid'
+  | 'limit-reached'
+  | 'exception';
 
 export interface CommandError {
   readonly code: CommandErrorCode;
