@@ -11,6 +11,24 @@
     "dev": "pnpm --filter @roomforge/web dev",
     "build": "pnpm --filter @roomforge/web build",
     "typecheck": "pnpm -r --if-present typecheck",
-    "check:core-purity": "pnpm --filter @roomforge/core check:no-dom"
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "check:deps": "depcruise --config .dependency-cruiser.cjs apps/web/src packages/core/src",
+    "check:core-purity": "pnpm --filter @roomforge/core check:no-dom",
+    "test:arch": "node --test \"tools/checks/**/*.test.mjs\"",
+    "check": "pnpm typecheck && pnpm lint && pnpm check:deps && pnpm check:core-purity && pnpm test:arch",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.15",
+    "@commitlint/cli": "21.2.3",
+    "@commitlint/config-conventional": "21.2.3",
+    "dependency-cruiser": "18.5.0",
+    "husky": "9.1.7",
+    "lint-staged": "17.6.0",
+    "typescript": "6.0.3"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,mjs,cjs,json,jsonc}": "biome check --write --no-errors-on-unmatched --files-ignore-unknown=true"
   }
 }

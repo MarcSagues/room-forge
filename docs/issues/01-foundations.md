@@ -91,13 +91,13 @@ Configurar Biome (formato + lint), reglas estrictas de TS, dependency-cruiser co
 - Opcional: reglas de permisos del proyecto en `.claude/settings.json` que impidan a Claude Code `git push` a `develop`/`main` y `--force`.
 
 ### Criterios de aceptación
-- [ ] `pnpm check` falla si se introduce un import prohibido (probado con un commit de prueba descartado).
-- [ ] Un mensaje de commit no convencional es rechazado localmente.
-- [ ] `git push origin develop` y `git push origin main` desde una rama local son rechazados por el hook (probado), y `git push origin <rama-de-trabajo>` funciona.
-- [ ] El tiempo de `pnpm lint` en repo vacío < 5 s.
+- [x] `pnpm check` falla si se introduce un import prohibido (probado con un commit de prueba descartado).
+- [x] Un mensaje de commit no convencional es rechazado localmente.
+- [x] `git push origin develop` y `git push origin main` desde una rama local son rechazados por el hook (probado), y `git push origin <rama-de-trabajo>` funciona.
+- [x] El tiempo de `pnpm lint` en repo vacío < 5 s.
 
 ### Tests esperados
-- Fixtures de arquitectura: 2 archivos de ejemplo (uno válido, uno inválido) ejecutados por un script de verificación de reglas (`tools/arch-check`).
+- Fixtures de arquitectura: 2 archivos de ejemplo (uno válido, uno inválido) ejecutados por un script de verificación de reglas (`tools/checks`).
 
 ## ISSUE P1-03 — Vitest y React Testing Library: configuración y tests de humo
 

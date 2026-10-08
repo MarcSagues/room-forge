@@ -13,7 +13,7 @@ Lee primero: [docs/PRD.md](docs/PRD.md) · [docs/ARCHITECTURE.md](docs/ARCHITECT
 
 pnpm monorepo · `packages/core` (TypeScript puro) · `apps/web` (Next.js 16 export estático, React 19, R3F 9, drei, three, Tailwind v4, shadcn/ui, Zustand, Immer, zod, idb) · Biome · Vitest + RTL + fast-check · Playwright · Cloudflare. Versiones definitivas en P1-01.
 
-## Comandos (los marcados ✔ ya existen; el resto llega con P1-02…P1-04)
+## Comandos (los marcados ✔ ya existen; el resto llega con P1-03 y P1-04)
 
 ```bash
 pnpm install --frozen-lockfile   # ✔
@@ -21,10 +21,14 @@ pnpm dev                         # ✔ next dev (apps/web)
 pnpm build                       # ✔ next export → apps/web/out
 pnpm typecheck                   # ✔ tsc en cada paquete
 pnpm check:core-purity           # ✔ core no compila código que use window/document
-pnpm check            # biome + tsc + dependency-cruiser (+ tests rápidos)
-pnpm test             # vitest (core en node, web en happy-dom)
-pnpm test:coverage
-pnpm e2e              # playwright (requiere build)
+pnpm lint                        # ✔ biome check (formato + lint + imports)
+pnpm format                      # ✔ biome check --write
+pnpm check:deps                  # ✔ dependency-cruiser: fronteras entre módulos
+pnpm test:arch                   # ✔ tests de las reglas de arquitectura y de los hooks (node --test)
+pnpm check                       # ✔ typecheck + lint + deps + core-purity + test:arch
+pnpm test                        # vitest (core en node, web en happy-dom) — P1-03
+pnpm test:coverage               # P1-03
+pnpm e2e                         # playwright (requiere build) — P1-07
 node tools/planning/github-import.mjs validate   # valida docs/issues (disponible ya)
 ```
 

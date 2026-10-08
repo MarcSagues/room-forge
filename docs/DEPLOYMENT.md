@@ -169,7 +169,7 @@ En un repositorio privado del plan gratuito, `gh api repos/MarcSagues/room-forge
 
 | Regla | Cómo se cumple (sin protección en GitHub) |
 |---|---|
-| Todo cambio entra por PR a `develop` | Convención + [AGENTS.md](../AGENTS.md) (prohíbe `push` directo) + hook `pre-push` local que rechaza empujar a `develop`/`main` (se añade en P1-02; el propietario puede saltarlo con `ROOMFORGE_ALLOW_PROTECTED_PUSH=1`) |
+| Todo cambio entra por PR a `develop` | Convención + [AGENTS.md](../AGENTS.md) (prohíbe `push` directo) + hook `pre-push` local (`.husky/pre-push`, activo tras `pnpm install`) que rechaza empujar a `develop`/`main` (el propietario puede saltarlo con `ROOMFORGE_ALLOW_PROTECTED_PUSH=1`) |
 | CI verde antes de fusionar | Se mira siempre el resultado; no hay bloqueo técnico |
 | Sin `force-push` ni borrado de `develop`/`main` | Convención + hook `pre-push` + AGENTS.md |
 | Squash en `develop`, *merge commit* en `main`, sin *auto-merge* | **Ajustes del repositorio** (sí disponibles en el plan gratuito): rebase deshabilitado, *auto-merge* deshabilitado, borrar rama al fusionar |
