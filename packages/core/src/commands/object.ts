@@ -151,11 +151,14 @@ function targets(draft: Draft<SceneDocument>, ids: readonly ObjectId[]) {
 }
 
 /**
- * `object/move`: absolute positions (room-local, or local to the parent). No clamping: drag
+ * `object/move`: absolute positions (room-local, or local to the parent) and, optionally, the
+ * rotation a wall snap chose during the same drag. No clamping: drag
  * controllers already solve a legal position, so an illegal one is rejected by the invariants
  * and the document stays as it was. Consecutive moves of the same objects coalesce.
  */
-export function moveObjects(moves: readonly { id: ObjectId; position: Vec3 }[]): Command {
+export function moveObjects(
+  moves: readonly { id: ObjectId; position: Vec3; rotationY?: number }[],
+): Command {
   const ids = moves.map((move) => move.id);
   return {
     type: 'object/move',
@@ -167,7 +170,14 @@ export function moveObjects(moves: readonly { id: ObjectId; position: Vec3 }[]):
       for (const [index, move] of moves.entries()) {
         const position = Vec3Schema.safeParse(move.position);
         if (!position.success) return invalid(describeIssues(position.error));
-        (found[index] as Draft<PlacedObject>).transform.position = position.data;
+        const target = found[index] as Draft<PlacedObject>;
+        target.transform.position = position.data;
+        // A drag that snapped to a wall also turns the object: same gesture, same command.
+        if (move.rotationY !== undefined) {
+          const angle = finite.safeParse(move.rotationY);
+          if (!angle.success) return invalid(describeIssues(angle.error));
+          target.transform.rotationY = normalizeAngle(angle.data);
+        }
       }
     },
   };

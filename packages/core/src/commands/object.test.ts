@@ -187,6 +187,19 @@ describe('object/move and object/rotate', () => {
     expect(doc().objects[MONITOR]?.transform.position).toEqual([0.1, 0.75, 0]);
   });
 
+  it('can set the rotation in the same move (wall snap during a drag)', () => {
+    const { session, doc } = setup();
+    const result = session.execute(
+      moveObjects([{ id: DESK, position: [0.3, 0, 1.5], rotationY: Math.PI / 2 + 2 * Math.PI }]),
+    );
+    expect(result.ok).toBe(true);
+    expect(doc().objects[DESK]?.transform.position).toEqual([0.3, 0, 1.5]);
+    expect(doc().objects[DESK]?.transform.rotationY).toBeCloseTo(Math.PI / 2);
+    expect(
+      session.execute(moveObjects([{ id: DESK, position: [2, 0, 1.5], rotationY: Number.NaN }])).ok,
+    ).toBe(false);
+  });
+
   it('rejects a move that leaves the room without changing the document', () => {
     const { session, doc } = setup();
     const before = doc();
