@@ -12,6 +12,7 @@ import {
   MAX_DISTANCE_FACTOR,
   MAX_POLAR_ANGLE,
   orbitLimits,
+  overheadPose,
   type Pose,
   sceneBounds,
   type Vec3,
@@ -209,6 +210,29 @@ describe('fitTop', () => {
     const { zoom } = fitTop(sceneBounds([room(4, 4, 2.6)]), { width: 0, height: 0 });
     expect(Number.isFinite(zoom)).toBe(true);
     expect(zoom).toBeGreaterThan(0);
+  });
+});
+
+describe('overheadPose', () => {
+  it('hovers straight above the target at the distance that matches the ortho zoom', () => {
+    const { pose, zoom } = fitTop(sceneBounds([room(6, 4, 2.6)]), VIEWPORT);
+    const overhead = overheadPose(pose.target, zoom, FOV, VIEWPORT.height);
+    expect(overhead.target).toEqual(pose.target);
+    expect(overhead.position[0]).toBeCloseTo(pose.target[0], 10);
+    expect(overhead.position[1]).toBeCloseTo(
+      equivalentDistance(zoom, FOV, VIEWPORT.height) + pose.target[1],
+      6,
+    );
+    // Same north-up tilt as the plan camera, so the swap between cameras does not spin the view.
+    expect(overhead.position[2] - overhead.target[2]).toBeCloseTo(
+      pose.position[2] - pose.target[2],
+      10,
+    );
+  });
+
+  it('is not constrained: matching the other camera exactly matters more than the limits', () => {
+    const overhead = overheadPose([0, 0, 0], 5000, FOV, VIEWPORT.height);
+    expect(overhead.position[1]).toBeLessThan(0.3);
   });
 });
 

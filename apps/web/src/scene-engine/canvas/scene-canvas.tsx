@@ -4,12 +4,19 @@ import { addAfterEffect, Canvas, useThree } from '@react-three/fiber';
 import type { EditorSession } from '@roomforge/core';
 import { type RefObject, useEffect, useMemo, useRef } from 'react';
 import { NeutralToneMapping } from 'three';
+import type { CameraHandle, CameraSnapshot } from '../camera/camera-director';
+import { CameraRig } from '../camera/camera-rig';
 import { watchContext } from './context-events';
 import { connectInvalidate } from './invalidate-bridge';
 import { createMutate, type Mutate } from './mutate';
 import { formatRenderInfo, type RenderInfo, readRenderInfo } from './render-info';
 import { SceneContent } from './scene-content';
 import { SceneSessionProvider, useSceneSession } from './scene-context';
+
+/** The camera as the host sees it; `snapshot` is null until the rig is mounted. */
+export interface SceneCamera extends Omit<CameraHandle, 'snapshot'> {
+  snapshot(): CameraSnapshot | null;
+}
 
 /** What the host (app, E2E hook) can do with a mounted scene. */
 export interface SceneHandle {
@@ -18,6 +25,7 @@ export interface SceneHandle {
   /** Run a direct three.js mutation and request a frame. */
   mutate: Mutate;
   invalidate(): void;
+  camera: SceneCamera;
 }
 
 export interface SceneCanvasProps {
@@ -45,13 +53,14 @@ export function SceneCanvas(props: SceneCanvasProps) {
     showStats = showStatsByDefault,
   } = props;
   const statsRef = useRef<HTMLPreElement>(null);
+  const cameraRef = useRef<CameraHandle | null>(null);
   return (
     <div className="relative size-full">
+      {/* The camera rig owns the cameras (R3F's default one is replaced as soon as it mounts). */}
       <Canvas
         frameloop="demand"
         dpr={[1, 2]}
         gl={{ antialias: true, powerPreference: 'high-performance' }}
-        camera={{ position: [6, 5, 6], fov: 50, near: 0.1, far: 200 }}
         onCreated={({ gl }) => {
           gl.toneMapping = NeutralToneMapping;
         }}
@@ -59,7 +68,8 @@ export function SceneCanvas(props: SceneCanvasProps) {
         <SceneSessionProvider session={session}>
           <SessionBridge />
           <ContextWatcher onLost={onContextLost} onRestored={onContextRestored} />
-          <ReadyReporter onReady={onReady} />
+          <CameraRig handleRef={cameraRef} />
+          <ReadyReporter onReady={onReady} camera={cameraRef} />
           {showStats && <StatsWriter target={statsRef} />}
           <SceneContent />
         </SceneSessionProvider>
@@ -104,18 +114,29 @@ function ContextWatcher(props: {
   return null;
 }
 
-function ReadyReporter({ onReady }: { onReady: ((handle: SceneHandle) => void) | undefined }) {
+function ReadyReporter(props: {
+  onReady: ((handle: SceneHandle) => void) | undefined;
+  camera: RefObject<CameraHandle | null>;
+}) {
+  const { camera } = props;
   const gl = useThree((state) => state.gl);
   const invalidate = useThree((state) => state.invalidate);
-  const callback = useRef(onReady);
-  callback.current = onReady;
+  const callback = useRef(props.onReady);
+  callback.current = props.onReady;
   const handle = useMemo<SceneHandle>(
     () => ({
       renderInfo: () => readRenderInfo(gl.info),
       mutate: createMutate(invalidate),
       invalidate: () => invalidate(),
+      // The rig mounts after this handle may be built, so every call looks it up when it happens.
+      camera: {
+        fit: () => camera.current?.fit(),
+        snapshot: () => camera.current?.snapshot() ?? null,
+        orbit: (azimuth, polar) => camera.current?.orbit(azimuth, polar),
+        dolly: (distance) => camera.current?.dolly(distance),
+      },
     }),
-    [gl, invalidate],
+    [gl, invalidate, camera],
   );
   useEffect(() => {
     callback.current?.(handle);

@@ -1,5 +1,5 @@
 import { createEditorSession, createEmptyDocument } from '@roomforge/core';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { emptyCatalog } from '@/asset-library';
 import type { RenderInfo, SceneHandle } from '@/scene-engine';
 import { E2E_ENABLED, installTestHook } from './test-hook';
@@ -43,6 +43,27 @@ describe('installTestHook', () => {
   it('reports no render info until the canvas is mounted', () => {
     installTestHook(window, { session, getScene: () => null }, true);
     expect(window.__RF__?.info()).toBeNull();
+  });
+
+  it('forwards camera calls to the mounted scene and is inert before that', () => {
+    installTestHook(window, { session, getScene: () => null }, true);
+    expect(window.__RF__?.camera.snapshot()).toBeNull();
+    expect(() => window.__RF__?.camera.fit()).not.toThrow();
+
+    const camera = {
+      fit: vi.fn(),
+      snapshot: vi.fn(() => null),
+      orbit: vi.fn(),
+      dolly: vi.fn(),
+    };
+    const scene = { camera } as unknown as SceneHandle;
+    installTestHook(window, { session, getScene: () => scene }, true);
+    window.__RF__?.camera.fit();
+    window.__RF__?.camera.orbit(0.5, -0.1);
+    window.__RF__?.camera.dolly(2);
+    expect(camera.fit).toHaveBeenCalledOnce();
+    expect(camera.orbit).toHaveBeenCalledWith(0.5, -0.1);
+    expect(camera.dolly).toHaveBeenCalledWith(2);
   });
 
   it('cleans up after itself, but never removes a newer hook', () => {

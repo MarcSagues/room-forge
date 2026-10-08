@@ -166,6 +166,20 @@ export function fitTop(bounds: Bounds, viewport: Viewport): TopFit {
   };
 }
 
+/**
+ * Perspective pose straight above `target` that frames the same area as an orthographic camera with
+ * `zoom`: the two cameras swap in the middle of a view change without the picture jumping.
+ */
+export function overheadPose(
+  target: Vec3,
+  zoom: number,
+  fov: number,
+  viewportHeight: number,
+): Pose {
+  const distance = equivalentDistance(zoom, fov, viewportHeight);
+  return { target, position: [target[0], target[1] + distance, target[2] + TOP_TILT] };
+}
+
 /** Orthographic zoom (px per metre) that shows the same height at the target as a perspective camera. */
 export function equivalentZoom(distance: number, fov: number, viewportHeight: number): number {
   return viewportHeight / (2 * distance * Math.tan((fov * Math.PI) / 360));
