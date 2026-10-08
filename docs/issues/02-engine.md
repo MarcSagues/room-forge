@@ -239,9 +239,9 @@ Las aperturas (huecos) se añaden en P3-12; el generador debe diseñarse para ac
 - Rejilla de suelo (visible en edición).
 
 ### Criterios de aceptación
-- [ ] Salas de 2×2 m a 12×12 m, altura 2,2–4 m se generan sin huecos ni z-fighting visibles.
-- [ ] Cambiar dimensiones solo recalcula la geometría afectada (test de memoización).
-- [ ] La función pura devuelve vértices/índices con conteo esperado y *bounding box* exacto.
+- [x] Salas de 2×2 m a 12×12 m, altura 2,2–4 m se generan sin huecos ni z-fighting visibles.
+- [x] Cambiar dimensiones solo recalcula la geometría afectada (test de memoización).
+- [x] La función pura devuelve vértices/índices con conteo esperado y *bounding box* exacto.
 
 ### Tests esperados
 - Unitarios de `buildRoomGeometry` (bounding box, nº de triángulos, normales hacia el interior).

@@ -67,6 +67,31 @@ test('a document change renders exactly one frame', async ({ page }) => {
   expect((await frame(page)) - afterCommand).toBe(1);
 });
 
+const geometries = (page: Page) => page.evaluate(() => window.__RF__?.info()?.geometries ?? -1);
+
+// P2-07: the default 4 × 4.5 m room is floor + ceiling + 4 walls (+ 2 grid layers).
+test('the default room draws as 8 calls and 52 triangles', async ({ page }) => {
+  await openEditor(page);
+  const info = await page.evaluate(() => window.__RF__?.info());
+  expect(info?.calls).toBe(8);
+  expect(info?.triangles).toBe(2 + 2 + 4 * 12);
+  expect(info?.geometries).toBe(8);
+});
+
+// P2-07: resizing rebuilds geometry; the old buffers must be freed (no GPU memory growth).
+test('resizing the room many times does not leak geometries', async ({ page }) => {
+  await openEditor(page);
+  const baseline = await geometries(page);
+  for (let i = 0; i < 12; i += 1) {
+    const before = await frame(page);
+    expect(await resizeFirstRoom(page, 3 + (i % 5) * 0.5)).toBe(true);
+    await page.waitForFunction((f) => (window.__RF__?.info()?.frame ?? 0) > f, before);
+  }
+  await page.waitForTimeout(300);
+  expect(await geometries(page)).toBe(baseline);
+  expect((await page.evaluate(() => window.__RF__?.info()))?.triangles).toBe(52);
+});
+
 test('changing the document does not compile new shader programs', async ({ page }) => {
   await openEditor(page);
   const before = await programs(page);

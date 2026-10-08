@@ -346,6 +346,15 @@ flowchart LR
 - Opciones: 1×/2×/4× (límite por memoria/`MAX_TEXTURE_SIZE`), fondo transparente opcional, ocultar rejilla/gizmos.
 - Debe pasar por el mismo pipeline que el viewport (incluye bloom) para que «lo que ves es lo que exportas».
 
+### 6.7 Geometría de sala (`scene-engine/room`, P2-07)
+
+- **Funciones puras** (`buildRoomGeometry`, `buildWallMesh`, `buildGridLines`) devuelven `MeshData` (`Float32Array`/`Uint32Array`) sin importar three; `toBufferGeometry` solo envuelve los arrays (sin copiarlos). Se prueban sin WebGL.
+- **Marco de pared:** `x` a lo largo de la pared (desde su esquina inicial, sentido horario visto desde arriba), `y` arriba, cara interior en `z = 0` con normal `+z` y cuerpo en `z ∈ [-grosor, 0]`. Las aperturas llegan como contornos `{u0,u1,v0,v1}` en ese marco (el `offset` de dominio, más el desplazamiento por grosor en N/S).
+- **Anillo de paredes:** norte y sur miden `ancho + 2·grosor`; este y oeste, `fondo`. Así las esquinas cierran sin solapes (sin z-fighting) y el interior queda en `x ∈ [0,ancho]`, `z ∈ [0,fondo]`.
+- **Memoización:** el constructor cachea suelo/techo por `(ancho, fondo[, alto])` y cada pared por `(largo, alto, grosor, huecos)` en cachés acotadas (48 entradas). Cambiar solo el alto no reconstruye el suelo; cambiar un hueco solo reconstruye su pared. Los contadores `stats.builds` lo hacen comprobable.
+- **Recursos GPU:** `useDisposable` libera la geometría al cambiar la entrada o desmontar (R3F solo libera lo que crea él). Prueba E2E: 12 redimensionados seguidos no aumentan `renderer.info.memory.geometries`.
+- **Presupuesto de referencia:** sala por defecto sin aperturas = 8 *draw calls*, 52 triángulos, 8 geometrías (4 paredes + suelo + techo + 2 mallas de rejilla).
+
 ## 7. Biblioteca de assets (`asset-library`)
 
 ```mermaid
