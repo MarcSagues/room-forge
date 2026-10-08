@@ -10,12 +10,14 @@ export interface CommandContext {
   readonly catalog: CatalogProvider;
 }
 
-export type CommandErrorCode = 'invariant' | 'not-found' | 'invalid' | 'exception';
+export type CommandErrorCode = 'invariant' | 'conflict' | 'not-found' | 'invalid' | 'exception';
 
 export interface CommandError {
   readonly code: CommandErrorCode;
   readonly message: string;
   readonly violations?: readonly InvariantViolation[];
+  /** Entities that block the command (e.g. objects a smaller room would leave outside). */
+  readonly conflicts?: readonly string[];
 }
 
 /**
