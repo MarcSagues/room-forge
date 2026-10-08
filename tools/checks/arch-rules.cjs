@@ -33,6 +33,8 @@ function buildRules({ web = 'apps/web/src', core = 'packages/core/src' } = {}) {
   ].join('|');
   // Matches both an unresolved bare specifier ("react", "three/examples/...") and a resolved path.
   const pkg = (names) => `(^|node_modules/)(${names.join('|')})(/|$)`;
+  // Test files and core's test support (builders, fast-check arbitraries).
+  const testSupport = `\\.(test|spec)\\.[jt]sx?$|^${c}/testing/`;
 
   return [
     {
@@ -99,10 +101,18 @@ function buildRules({ web = 'apps/web/src', core = 'packages/core/src' } = {}) {
     },
     {
       name: 'not-to-dev-dep',
-      comment: 'Production sources must not import devDependencies.',
+      comment:
+        'Production sources must not import devDependencies (core test support, e.g. fast-check arbitraries, may).',
       severity: 'error',
-      from: { path: `^(${w}|${c})/`, pathNot: '\\.(test|spec)\\.[jt]sx?$' },
+      from: { path: `^(${w}|${c})/`, pathNot: testSupport },
       to: { dependencyTypes: ['npm-dev'] },
+    },
+    {
+      name: 'no-test-support-in-production',
+      comment: 'Only tests may import core test support (@roomforge/core/testing).',
+      severity: 'error',
+      from: { path: `^(${w}|${c})/`, pathNot: testSupport },
+      to: { path: `^${c}/testing/` },
     },
   ];
 }

@@ -1,6 +1,6 @@
 # RoomForge — Modelo de dominio
 
-> Estado: **borrador para aprobación** · Los tipos son **ilustrativos** (se materializan como schemas zod en P2-01).
+> Estado: **implementado en P2-01**. La fuente de verdad son los schemas zod de [`packages/core/src/domain`](../packages/core/src/domain/schemas.ts); los tipos de §3 se comprueban contra ellos con un test de tipos (`domain/types.test.ts`).
 > Contexto: [ARCHITECTURE.md](ARCHITECTURE.md) · Evolución: [FUTURE_VERSIONS.md](FUTURE_VERSIONS.md)
 
 ## 1. Convenciones
@@ -119,7 +119,7 @@ classDiagram
 
 > `CatalogItem` **no** es parte del documento: vive en el catálogo (manifiesto versionado con la app). El documento solo guarda `catalogId` + overrides. Esto mantiene los archivos pequeños y permite actualizar assets sin migrar proyectos.
 
-## 3. Definiciones de tipos (ilustrativas)
+## 3. Definiciones de tipos
 
 ```ts
 // ── Identificadores ─────────────────────────────────────────────
@@ -253,6 +253,14 @@ Ver [ARCHITECTURE §4.3](ARCHITECTURE.md#43-invariantes-del-documento-verificado
 | Tamaño de archivo importado | ≤ 5 MB |
 | Longitud de nombres | ≤ 80 caracteres |
 | Luminarias con luz real simultánea | Según calidad (4 / 8 / 12); el resto, solo emisivo |
+
+Límites adicionales fijados en P2-01 (constante `LIMITS` en `packages/core/src/domain/limits.ts`): ≤ 16 salas; coordenadas en ±100 m; escala en (0, 10]; velocidad de efecto en (0, 10]; paleta ≤ 8 colores; ≤ 16 ranuras de material y ≤ 32 parámetros por objeto; claves e IDs de catálogo/preset ≤ 80 caracteres.
+
+Diferencias con los tipos de §3 decididas al implementar:
+- Los IDs aceptan 1–32 caracteres URL-safe (`[A-Za-z0-9_-]`; los generados tienen 10) y **no** pueden ser `__proto__`, `constructor` ni `prototype`, porque son claves de objetos del documento (lo detectó el test de propiedades).
+- `Vec2`/`Vec3` son tuplas mutables en el tipo; la inmutabilidad la garantiza Immer, no el tipo.
+- Los campos opcionales son *exactos*: se omiten, nunca valen `undefined` (`exactOptionalPropertyTypes`).
+- Las puertas deben tener `sill = 0`.
 
 ## 6. Versionado y migraciones
 
