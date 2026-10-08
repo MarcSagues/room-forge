@@ -12,7 +12,7 @@ Equipo de uno + agentes de IA. Se prioriza velocidad de feedback, pocas herramie
 |---|---|
 | Formato + lint | **Biome 2** |
 | Fronteras de módulos | **dependency-cruiser** (`pnpm check:deps`) |
-| Tipos | **TypeScript** estricto (`strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`); versión final tras verificar compatibilidad |
+| Tipos | **TypeScript** estricto (`strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`); **fijado en 6.0.3** (verificado en P1-01, ver abajo) |
 | Unit/integración | **Vitest** (core en entorno `node`; web en `happy-dom`) + **React Testing Library** |
 | Propiedades | **fast-check** |
 | E2E / visual / a11y | **Playwright** (+ axe) |
@@ -32,7 +32,7 @@ Equipo de uno + agentes de IA. Se prioriza velocidad de feedback, pocas herramie
 ## Consecuencias
 - (+) `pnpm check` (format+lint+types+deps+tests) en segundos.
 - (−) Sin reglas `eslint-config-next` (se compensan con Biome y revisión).
-- (−) TypeScript 7 (versión más reciente en npm) podría no estar soportado por todo el toolchain: comprobar en P1-01.
+- (−) **TypeScript 7.0.2** (última en npm) no se adopta todavía. Verificado en P1-01 (2026-10-08): `next build` de Next 16.4 funciona con 7.0.2 **y** con 6.0.3, pero **dependency-cruiser 18.5 no soporta TypeScript ≥ 7** (su propio aviso: «Support for typescript@>=7 will follow when its API is published and stable»), y es la pieza que hace cumplir las fronteras de módulos. Se fija `typescript@6.0.3`. Revisar al actualizar dependency-cruiser; la migración a 7 es un cambio de versión + comprobar `pnpm check`.
 
 ## Verificación
 P1-02/P1-03/P1-04: CI verde con todas las comprobaciones; un PR de prueba rompe a propósito una frontera y CI falla.

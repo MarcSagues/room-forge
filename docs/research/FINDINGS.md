@@ -19,7 +19,7 @@
 | vitest | 5.0.3 | |
 | @playwright/test | 1.64.0 | |
 | @biomejs/biome | 2.5.15 | |
-| typescript | 7.0.2 | **Verificar** compatibilidad con Next/Vitest/Biome antes de adoptar; alternativa: última 5.x/6.x. |
+| typescript | 7.0.2 (última) → **6.0.3 fijada** | Verificado en P1-01: Next 16.4 compila con 7.0.2 y 6.0.3, pero dependency-cruiser 18.5 no soporta TS ≥ 7. Revisar al actualizar dependency-cruiser. |
 | fast-check | 4.10.2 | Tests basados en propiedades. |
 | dependency-cruiser | 18.5.0 | Reglas de frontera. |
 | @gltf-transform/cli | 4.5.1 | Pipeline de assets. |
@@ -71,5 +71,5 @@ Ver [PRODUCT §7](../PRODUCT.md#7-panorama-competitivo-resumen). Fiabilidad **ba
 | ¿Calidad visual alcanzable con assets CC0 + paramétricos? | P4-01 |
 | ¿Comportamiento real de `dispose` y recompilación de shaders con el pool de luces? | P2-06, P5-05 |
 | ¿WebGL estable en CI (SwiftShader) para E2E y regresión visual? | P1-07 |
-| ¿TypeScript 7 es viable con todo el toolchain? | P1-01 |
+| ¿TypeScript 7 es viable con todo el toolchain? | **Resuelto en P1-01:** no todavía (dependency-cruiser); se usa 6.0.3 |
 | ¿Términos exactos de Cloudflare para uso comercial? | P8-03 |

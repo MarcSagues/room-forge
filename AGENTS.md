@@ -5,7 +5,7 @@
 ## Proyecto
 
 **RoomForge**: plataforma web para diseñar habitaciones, despachos y setups gaming en 3D con simulación de iluminación LED/RGB. Local-first, sin backend en el MVP.
-Estado actual: **Fase 0 — solo documentación y planificación; todavía no hay código de producto.** No empieces a implementar fuera de una issue.
+Estado actual: **Fase 1 en curso** (scaffold del monorepo; aún no hay funcionalidad de producto). No empieces a implementar fuera de una issue.
 
 Lee primero: [docs/PRD.md](docs/PRD.md) · [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [docs/DOMAIN_MODEL.md](docs/DOMAIN_MODEL.md) · la issue asignada (y su épica).
 
@@ -13,15 +13,18 @@ Lee primero: [docs/PRD.md](docs/PRD.md) · [docs/ARCHITECTURE.md](docs/ARCHITECT
 
 pnpm monorepo · `packages/core` (TypeScript puro) · `apps/web` (Next.js 16 export estático, React 19, R3F 9, drei, three, Tailwind v4, shadcn/ui, Zustand, Immer, zod, idb) · Biome · Vitest + RTL + fast-check · Playwright · Cloudflare. Versiones definitivas en P1-01.
 
-## Comandos (disponibles tras P1-01…P1-04; hasta entonces no existen)
+## Comandos (los marcados ✔ ya existen; el resto llega con P1-02…P1-04)
 
 ```bash
-pnpm install --frozen-lockfile
+pnpm install --frozen-lockfile   # ✔
+pnpm dev                         # ✔ next dev (apps/web)
+pnpm build                       # ✔ next export → apps/web/out
+pnpm typecheck                   # ✔ tsc en cada paquete
+pnpm check:core-purity           # ✔ core no compila código que use window/document
 pnpm check            # biome + tsc + dependency-cruiser (+ tests rápidos)
 pnpm test             # vitest (core en node, web en happy-dom)
 pnpm test:coverage
 pnpm e2e              # playwright (requiere build)
-pnpm build            # next export → apps/web/out
 node tools/planning/github-import.mjs validate   # valida docs/issues (disponible ya)
 ```
 
