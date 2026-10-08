@@ -96,14 +96,11 @@ test('keys 2 and 1 switch to the plan view and back', async ({ page }) => {
   });
 
   await page.keyboard.press('2');
-  await page.waitForFunction(
-    () =>
-      window.__RF__?.camera.snapshot()?.view === 'top' &&
-      !window.__RF__.camera.snapshot()?.transitioning,
-  );
-  const elapsed = await page.evaluate(
-    () => (window as unknown as Record<string, number | undefined>).elapsed ?? -1,
-  );
+  // Wait for the in-page measurement itself: the camera can be seen landed before the poll
+  // above has recorded it in that same frame.
+  const elapsed = await page
+    .waitForFunction(() => (window as unknown as Record<string, number | undefined>).elapsed)
+    .then((handle) => handle.jsonValue());
   expect(elapsed).toBeGreaterThan(0);
   // The animation itself lasts 450 ms (unit-tested); allow for software-rendered frame cadence.
   expect(elapsed).toBeLessThanOrEqual(800);

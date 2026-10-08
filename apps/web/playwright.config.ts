@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const PORT = 4173;
+// E2E_PORT avoids reusing an unrelated server already listening on 4173 locally.
+const PORT = Number(process.env.E2E_PORT ?? 4173);
 const isCI = Boolean(process.env.CI);
 
 /**
