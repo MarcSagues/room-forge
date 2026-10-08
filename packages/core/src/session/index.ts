@@ -1,7 +1,6 @@
 export { createEmitter, type Emitter, type SessionEvents, type Unsubscribe } from './events';
 export {
   checkInvariants,
-  GEOMETRY_TOLERANCE,
   type InvariantId,
   type InvariantScope,
   type InvariantViolation,

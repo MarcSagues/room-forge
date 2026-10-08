@@ -4,6 +4,11 @@ import { buildDocument, createFakeClock, createFixtureCatalog, createSeqIdGen } 
 import { createEditorSession } from './session';
 import type { Command } from './types';
 
+// core has no Node types: read the variable without them.
+const perfBudgetsOff =
+  (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env
+    ?.PERF_BUDGETS === 'off';
+
 const DESK = 'desk-1' as ObjectId;
 const MONITOR = 'monitor-1' as ObjectId;
 
@@ -149,7 +154,9 @@ describe('EditorSession.execute', () => {
     expect(seen).toEqual(['new-1', 1000, 1.2]);
   });
 
-  it('runs 10 000 trivial commands in under 500 ms', () => {
+  // Timing budgets are meaningless under coverage instrumentation with the whole suite running in
+  // parallel, so `pnpm test:coverage` sets PERF_BUDGETS=off; `pnpm check` (also in CI) asserts it.
+  it.skipIf(perfBudgetsOff)('runs 10 000 trivial commands in under 500 ms', () => {
     const { session } = setup();
     const run = () => {
       const start = Date.now();
@@ -157,7 +164,7 @@ describe('EditorSession.execute', () => {
       return Date.now() - start;
     };
     run(); // warm-up (JIT)
-    // Best of three, so a busy CI runner or coverage instrumentation does not make it flaky.
+    // Best of three, so a busy CI runner does not make it flaky.
     const best = Math.min(run(), run(), run());
     expect(session.getState().document.lighting.ambient).toBe(0.99);
     expect(best).toBeLessThan(500);

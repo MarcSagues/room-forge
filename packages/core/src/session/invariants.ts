@@ -11,10 +11,8 @@ import {
   type SceneDocument,
   type WallId,
 } from '../domain';
+import { footprintInside, GEOMETRY_TOLERANCE } from '../geometry';
 import type { CatalogProvider } from '../ports';
-
-/** Geometric checks allow 1 mm of slack for floating-point rounding. */
-export const GEOMETRY_TOLERANCE = 0.001;
 
 /**
  * Which rule a violation breaks (ARCHITECTURE §4.3). `schema` covers field values: ranges, room
@@ -143,19 +141,9 @@ function footprintViolations(doc: Doc, catalog: CatalogProvider): InvariantViola
 
     const [x, , z] = object.transform.position;
     const [sx, , sz] = object.transform.scale ?? [1, 1, 1];
-    const cos = Math.abs(Math.cos(object.transform.rotationY));
-    const sin = Math.abs(Math.sin(object.transform.rotationY));
     const w = item.size.w * sx;
     const d = item.size.d * sz;
-    const halfX = (cos * w + sin * d) / 2;
-    const halfZ = (sin * w + cos * d) / 2;
-    const t = GEOMETRY_TOLERANCE;
-    if (
-      x - halfX < -t ||
-      z - halfZ < -t ||
-      x + halfX > room.shape.width + t ||
-      z + halfZ > room.shape.depth + t
-    ) {
+    if (!footprintInside(room.shape, x, z, w, d, object.transform.rotationY)) {
       violations.push({
         invariant: 'I3',
         path: ['objects', id, 'transform'],
