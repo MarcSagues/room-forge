@@ -1,0 +1,41 @@
+import type { Patch } from 'immer';
+import type { CommandError } from './types';
+
+export interface SessionEvents {
+  'document:changed': { patches: readonly Patch[]; source: 'command' | 'undo' | 'redo' | 'load' };
+  'session:error': { error: CommandError };
+}
+
+export type Unsubscribe = () => void;
+
+export interface Emitter<E> {
+  on<K extends keyof E>(type: K, handler: (payload: E[K]) => void): Unsubscribe;
+  emit<K extends keyof E>(type: K, payload: E[K]): void;
+}
+
+/**
+ * Minimal typed emitter for side effects (autosave, render invalidation). Every handler runs even
+ * if one throws; the first error is rethrown afterwards so it is not swallowed.
+ */
+export function createEmitter<E>(): Emitter<E> {
+  const handlers = new Map<keyof E, Set<(payload: never) => void>>();
+  return {
+    on(type, handler) {
+      const set = handlers.get(type) ?? new Set();
+      set.add(handler as (payload: never) => void);
+      handlers.set(type, set);
+      return () => set.delete(handler as (payload: never) => void);
+    },
+    emit(type, payload) {
+      let failure: { error: unknown } | undefined;
+      for (const handler of [...(handlers.get(type) ?? [])]) {
+        try {
+          (handler as (payload: E[typeof type]) => void)(payload);
+        } catch (error) {
+          failure ??= { error };
+        }
+      }
+      if (failure) throw failure.error;
+    },
+  };
+}
