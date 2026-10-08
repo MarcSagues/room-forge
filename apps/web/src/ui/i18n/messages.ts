@@ -45,6 +45,9 @@ export const en = {
   'shell.tool.daynight': 'Day / Night',
   'shell.soon': 'Coming soon',
   'shell.loading': 'Loading the editor…',
+  'properties.selectedCount': '{count} objects selected',
+  'properties.unnamed': 'Unnamed object',
+  'properties.catalogItem': 'Catalog item',
 } as const;
 
 export type MessageKey = keyof typeof en;
@@ -92,4 +95,7 @@ export const es: Record<MessageKey, string> = {
   'shell.tool.daynight': 'Día / Noche',
   'shell.soon': 'Próximamente',
   'shell.loading': 'Cargando el editor…',
+  'properties.selectedCount': '{count} objetos seleccionados',
+  'properties.unnamed': 'Objeto sin nombre',
+  'properties.catalogItem': 'Artículo del catálogo',
 };

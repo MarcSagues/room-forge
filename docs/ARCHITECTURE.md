@@ -386,6 +386,14 @@ flowchart LR
 - **Sin recompilar shaders:** los materiales de pared son `transparent` desde el inicio; cambiar la opacidad no cambia el programa (E2E: `renderer.info.programs` constante al ciclar).
 - **Techo:** oculto al editar; `C` activa la vista previa, que solo lo muestra en perspectiva (en planta siempre oculto). Oculto, three.js no lo dibuja ni sube su geometría: sala por defecto = 7 *draw calls*, 50 triángulos, 7 geometrías.
 
+### 6.10 Selección y hover (P3-03, `scene-engine/interaction`)
+
+- **Proxies de colisión:** una caja invisible por objeto (tamaño del catálogo, o el cubo de 0,5 m si el catálogo no lo conoce), en el marco local del objeto. `pickEntity(ray, proxies)` hace un test analítico rayo–OBB y devuelve el más cercano; con 100 objetos cuesta muy por debajo de 0,5 ms (test). Paredes, suelo y techo nunca son candidatos, así que un clic atraviesa las paredes atenuadas; los objetos ocultos o bloqueados se excluyen.
+- **Sin React en el camino caliente:** `attachPicking` escucha el canvas; `pointermove` solo guarda el puntero y como mucho hay **un pick por frame de animación** (`requestAnimationFrame`, no un frame de render). `setHover` solo se llama cuando cambia el objeto bajo el puntero, y ningún componente se suscribe a `hover`: mover el puntero sobre el mismo objeto no renderiza nada (E2E) y ninguna vista se re-renderiza por hover o selección (test de renders).
+- **Clic:** botón izquierdo sin arrastre (< 4 px) selecciona; Shift alterna; clic en vacío o `Esc` deseleccionan. La cámara deja el botón izquierdo libre.
+- **Contornos:** dos `LineSegments` compartidos (hover al 60 % del acento, selección al 100 %) que se colocan en `useFrame` sobre el `Object3D` del registro; sin prueba de profundidad para verse a través de paredes atenuadas. Cambiar hover/selección solo pide un frame.
+- **Panel de propiedades:** `SelectionSummary` (ui) recibe la sesión y muestra nombre y artículo del catálogo del primer seleccionado, un recuento si hay varios, o la pista si no hay ninguno; se limpia al borrar el objeto (la sesión reconcilia la selección).
+
 ## 7. Biblioteca de assets (`asset-library`)
 
 ```mermaid

@@ -37,17 +37,32 @@ export const PANEL_SIZES = {
  * `viewport` is the content of the central region (the R3F canvas, mounted by the app); the ui
  * module does not import the scene engine.
  */
-export function EditorShell({ viewport }: { viewport?: ReactNode }) {
+export function EditorShell({
+  viewport,
+  properties,
+}: {
+  viewport?: ReactNode;
+  /** Content of the Properties tab (the app passes the selection details); a hint by default. */
+  properties?: ReactNode;
+}) {
   const { mode, wide } = useShellMode();
   if (mode === 'viewer') return <ViewerShell viewport={viewport} />;
   return mode === 'full' ? (
-    <DockedShell wide={wide} viewport={viewport} />
+    <DockedShell wide={wide} viewport={viewport} properties={properties} />
   ) : (
-    <DrawerShell viewport={viewport} />
+    <DrawerShell viewport={viewport} properties={properties} />
   );
 }
 
-function DockedShell({ wide, viewport }: { wide: boolean; viewport: ReactNode }) {
+function DockedShell({
+  wide,
+  viewport,
+  properties,
+}: {
+  wide: boolean;
+  viewport: ReactNode;
+  properties: ReactNode;
+}) {
   const left = useCollapsiblePanel();
   const right = useCollapsiblePanel();
   const { defaultLayout, onLayoutChanged } = useDefaultLayout({
@@ -97,7 +112,9 @@ function DockedShell({ wide, viewport }: { wide: boolean; viewport: ReactNode })
           maxSize={PANEL_SIZES.right.max}
           onResize={right.onResize}
         >
-          <PropertiesPanel hidden={!right.expanded} className="border-l" />
+          <PropertiesPanel hidden={!right.expanded} className="border-l">
+            {properties}
+          </PropertiesPanel>
         </Panel>
       </Group>
     </ShellFrame>
@@ -105,7 +122,7 @@ function DockedShell({ wide, viewport }: { wide: boolean; viewport: ReactNode })
 }
 
 /** 768–1023 px: the panels open as drawers over the viewport instead of taking its width. */
-function DrawerShell({ viewport }: { viewport: ReactNode }) {
+function DrawerShell({ viewport, properties }: { viewport: ReactNode; properties: ReactNode }) {
   const [open, setOpen] = useState<'left' | 'right' | null>(null);
   const toggleLeft = useCallback(() => setOpen((o) => (o === 'left' ? null : 'left')), []);
   const toggleRight = useCallback(() => setOpen((o) => (o === 'right' ? null : 'right')), []);
@@ -131,7 +148,7 @@ function DrawerShell({ viewport }: { viewport: ReactNode }) {
         </Drawer>
         <Viewport>{viewport}</Viewport>
         <Drawer side="right" open={open === 'right'} onClose={close}>
-          <PropertiesPanel hidden={open !== 'right'} />
+          <PropertiesPanel hidden={open !== 'right'}>{properties}</PropertiesPanel>
         </Drawer>
       </div>
     </ShellFrame>
@@ -209,7 +226,15 @@ function CatalogPanel({ hidden, className }: { hidden: boolean; className?: stri
   );
 }
 
-function PropertiesPanel({ hidden, className }: { hidden: boolean; className?: string }) {
+function PropertiesPanel({
+  hidden,
+  className,
+  children,
+}: {
+  hidden: boolean;
+  className?: string;
+  children?: ReactNode;
+}) {
   return (
     <SidePanel id={RIGHT_ID} label={t('shell.rightPanel')} hidden={hidden} className={className}>
       <Tabs defaultValue="properties" className="min-h-0 flex-1 gap-0">
@@ -220,7 +245,7 @@ function PropertiesPanel({ hidden, className }: { hidden: boolean; className?: s
           </TabsList>
         </div>
         <TabsContent value="properties">
-          <PanelHint>{t('shell.propertiesHint')}</PanelHint>
+          {children ?? <PanelHint>{t('shell.propertiesHint')}</PanelHint>}
         </TabsContent>
         <TabsContent value="scene">
           <PanelHint>{t('shell.sceneHint')}</PanelHint>

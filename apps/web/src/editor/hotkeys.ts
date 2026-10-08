@@ -4,13 +4,15 @@ export type HotkeyAction =
   | { type: 'view'; view: ViewMode }
   | { type: 'fit' }
   | { type: 'cycleWalls' }
-  | { type: 'toggleCeiling' };
+  | { type: 'toggleCeiling' }
+  | { type: 'deselect' };
 
 export interface HotkeyHandlers {
   setView(view: ViewMode): void;
   fit(): void;
   cycleWalls(): void;
   toggleCeiling(): void;
+  deselect(): void;
 }
 
 interface KeyPress {
@@ -52,6 +54,8 @@ export function resolveHotkey(press: KeyPress): HotkeyAction | null {
       return { type: 'view', view: 'top' };
   }
   switch (press.key.toLowerCase()) {
+    case 'escape':
+      return { type: 'deselect' };
     case 'f':
       return { type: 'fit' };
     case 'w':
@@ -72,7 +76,8 @@ export function installHotkeys(target: Window, handlers: HotkeyHandlers): () => 
     if (action.type === 'view') handlers.setView(action.view);
     else if (action.type === 'fit') handlers.fit();
     else if (action.type === 'cycleWalls') handlers.cycleWalls();
-    else handlers.toggleCeiling();
+    else if (action.type === 'toggleCeiling') handlers.toggleCeiling();
+    else handlers.deselect();
   };
   target.addEventListener('keydown', onKeyDown);
   return () => target.removeEventListener('keydown', onKeyDown);

@@ -53,6 +53,12 @@ describe('resolveHotkey', () => {
     expect(resolveHotkey(press({ code: 'KeyC', key: 'c', ctrlKey: true }))).toBeNull();
   });
 
+  it('maps Escape to clearing the selection, but not while typing', () => {
+    expect(resolveHotkey(press({ code: 'Escape', key: 'Escape' }))).toEqual({ type: 'deselect' });
+    const input = document.createElement('input');
+    expect(resolveHotkey(press({ code: 'Escape', key: 'Escape', target: input }))).toBeNull();
+  });
+
   it('maps F to fit, whatever the letter case', () => {
     expect(resolveHotkey(press({ code: 'KeyF', key: 'f' }))).toEqual({ type: 'fit' });
     expect(resolveHotkey(press({ code: 'KeyF', key: 'F' }))).toEqual({ type: 'fit' });
@@ -116,6 +122,7 @@ describe('installHotkeys', () => {
       fit: vi.fn(),
       cycleWalls: vi.fn(),
       toggleCeiling: vi.fn(),
+      deselect: vi.fn(),
     };
     cleanup = installHotkeys(window, handlers);
 
@@ -124,11 +131,13 @@ describe('installHotkeys', () => {
     keydown({ code: 'KeyF', key: 'f' });
     keydown({ code: 'KeyW', key: 'w' });
     keydown({ code: 'KeyC', key: 'c' });
+    keydown({ code: 'Escape', key: 'Escape' });
 
     expect(handlers.setView.mock.calls).toEqual([['top'], ['perspective']]);
     expect(handlers.fit).toHaveBeenCalledOnce();
     expect(handlers.cycleWalls).toHaveBeenCalledOnce();
     expect(handlers.toggleCeiling).toHaveBeenCalledOnce();
+    expect(handlers.deselect).toHaveBeenCalledOnce();
     expect(top.defaultPrevented).toBe(true);
   });
 
@@ -138,6 +147,7 @@ describe('installHotkeys', () => {
       fit: vi.fn(),
       cycleWalls: vi.fn(),
       toggleCeiling: vi.fn(),
+      deselect: vi.fn(),
     });
     expect(keydown({ code: 'KeyQ', key: 'q' }).defaultPrevented).toBe(false);
   });
@@ -148,6 +158,7 @@ describe('installHotkeys', () => {
       fit: vi.fn(),
       cycleWalls: vi.fn(),
       toggleCeiling: vi.fn(),
+      deselect: vi.fn(),
     };
     installHotkeys(window, handlers)();
     keydown({ code: 'KeyF', key: 'f' });

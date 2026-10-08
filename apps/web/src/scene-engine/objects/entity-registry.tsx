@@ -11,6 +11,8 @@ import type { Object3D } from 'three';
 export interface EntityRegistry {
   get(id: EntityId): Object3D | undefined;
   readonly size: number;
+  /** Mounted entities, for picking (no copy: do not register while iterating). */
+  entries(): IterableIterator<[EntityId, Object3D]>;
   /** Returns the unregister function. Re-registering an id replaces the previous object. */
   register(id: EntityId, object: Object3D): () => void;
 }
@@ -22,6 +24,7 @@ export function createEntityRegistry(): EntityRegistry {
     get size() {
       return objects.size;
     },
+    entries: () => objects.entries(),
     register(id, object) {
       objects.set(id, object);
       return () => {

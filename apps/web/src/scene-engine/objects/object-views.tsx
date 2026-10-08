@@ -2,10 +2,11 @@
 
 import type { ObjectId, RoomId } from '@roomforge/core';
 import { memo } from 'react';
+import { useSceneCatalog } from '../canvas/scene-context';
 import { useSessionState } from '../canvas/use-session-state';
 import { useChildIds, useEntity, useEntityIds } from './entity-hooks';
 import { useRegisterEntity } from './entity-registry';
-import { placeholderResources } from './placeholder-resources';
+import { objectSize, placeholderResources } from './placeholder-resources';
 import { countRender } from './render-count';
 
 export const LIST_RENDER_KEY = 'ObjectList';
@@ -48,9 +49,12 @@ export const ObjectView = memo(function ObjectView({ id }: { id: ObjectId }) {
   countRender(viewRenderKey(id));
   const transform = useEntity(id, (object) => object.transform);
   const hidden = useEntity(id, (object) => object.hidden);
+  const catalogId = useEntity(id, (object) => object.catalogId);
+  const catalog = useSceneCatalog();
   const register = useRegisterEntity(id);
-  if (!transform) return null;
+  if (!transform || catalogId === undefined) return null;
   const { geometry, material } = placeholderResources();
+  const size = objectSize(catalog, catalogId);
   return (
     <group
       ref={register}
@@ -60,7 +64,12 @@ export const ObjectView = memo(function ObjectView({ id }: { id: ObjectId }) {
       scale={transform.scale ?? 1}
       visible={hidden !== true}
     >
-      <mesh geometry={geometry} material={material} dispose={null} />
+      <mesh
+        geometry={geometry}
+        material={material}
+        scale={[size.w, size.h, size.d]}
+        dispose={null}
+      />
       <ChildObjects parentId={id} />
     </group>
   );
