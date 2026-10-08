@@ -8,6 +8,7 @@ import { watchContext } from './context-events';
 import { connectInvalidate } from './invalidate-bridge';
 import { createMutate, type Mutate } from './mutate';
 import { formatRenderInfo, type RenderInfo, readRenderInfo } from './render-info';
+import { SceneContent } from './scene-content';
 import { SceneSessionProvider, useSceneSession } from './scene-context';
 
 /** What the host (app, E2E hook) can do with a mounted scene. */
@@ -60,7 +61,7 @@ export function SceneCanvas(props: SceneCanvasProps) {
           <ContextWatcher onLost={onContextLost} onRestored={onContextRestored} />
           <ReadyReporter onReady={onReady} />
           {showStats && <StatsWriter target={statsRef} />}
-          <PlaceholderScene />
+          <SceneContent />
         </SceneSessionProvider>
       </Canvas>
       {showStats && (
@@ -137,14 +138,4 @@ function StatsWriter({ target }: { target: RefObject<HTMLPreElement | null> }) {
     return addAfterEffect(write);
   }, [gl, target]);
   return null;
-}
-
-/** Stand-in until the room mesh (P2-07): a ground grid and a light so the canvas is not blank. */
-function PlaceholderScene() {
-  return (
-    <>
-      <ambientLight intensity={0.6} />
-      <gridHelper args={[12, 12, '#5f6a7f', '#2a303c']} />
-    </>
-  );
 }
