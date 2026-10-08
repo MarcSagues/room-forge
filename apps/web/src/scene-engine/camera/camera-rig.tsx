@@ -4,7 +4,7 @@ import { CameraControls, type CameraControlsImpl } from '@react-three/drei/core/
 import { useFrame, useThree } from '@react-three/fiber';
 import { type RefObject, useEffect, useMemo, useRef } from 'react';
 import { OrthographicCamera, PerspectiveCamera } from 'three';
-import { useSceneSession } from '../canvas/scene-context';
+import { useSceneSession, useTransientStore } from '../canvas/scene-context';
 import {
   CAMERA_FAR,
   CAMERA_FOV,
@@ -36,6 +36,7 @@ function createCameras() {
  */
 export function CameraRig({ handleRef }: { handleRef: RefObject<CameraHandle | null> }) {
   const session = useSceneSession();
+  const transient = useTransientStore();
   const get = useThree((state) => state.get);
   const set = useThree((state) => state.set);
   const invalidate = useThree((state) => state.invalidate);
@@ -74,6 +75,12 @@ export function CameraRig({ handleRef }: { handleRef: RefObject<CameraHandle | n
       set({ camera: previousCamera });
     };
   }, [session, cameras, get, set, invalidate, handleRef]);
+
+  // The camera does not orbit or pan while an object is being dragged.
+  useEffect(
+    () => transient.subscribe(() => director.current?.setInputBlocked(transient.drag() !== null)),
+    [transient],
+  );
 
   useEffect(() => {
     sizeRef.current = size;

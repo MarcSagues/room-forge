@@ -56,6 +56,7 @@ export function installTestHook(
       snapshot: () => deps.getScene()?.camera.snapshot() ?? null,
       orbit: (azimuth, polar) => deps.getScene()?.camera.orbit(azimuth, polar),
       dolly: (distance) => deps.getScene()?.camera.dolly(distance),
+      setInputBlocked: (blocked) => deps.getScene()?.camera.setInputBlocked(blocked),
     },
     roomDisplay: (roomId) => deps.getScene()?.roomDisplay(roomId) ?? null,
     project: (id) => deps.getScene()?.project(id) ?? null,

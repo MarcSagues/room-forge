@@ -11,11 +11,18 @@ function setup() {
   const pick = vi.fn((ndcX: number) => (ndcX < 0 ? ('a' as ObjectId) : null));
   const onHover = vi.fn();
   const onClick = vi.fn();
+  const drag = {
+    start: vi.fn((_id: ObjectId, _x: number, _y: number) => true),
+    move: vi.fn(),
+    end: vi.fn(),
+    cancel: vi.fn(),
+  };
   const detach = attachPicking({
     element,
     pick,
     onHover,
     onClick,
+    drag,
     requestFrame: (callback) => frames.push(callback),
     cancelFrame: (handle) => {
       frames[handle - 1] = () => {};
@@ -26,7 +33,7 @@ function setup() {
   };
   const pointer = (type: string, x: number, init: PointerEventInit = {}) =>
     element.dispatchEvent(new PointerEvent(type, { clientX: x, clientY: 50, ...init }));
-  return { element, pick, onHover, onClick, detach, flush, pointer };
+  return { element, pick, onHover, onClick, drag, detach, flush, pointer };
 }
 
 let ctx: ReturnType<typeof setup>;
@@ -101,5 +108,67 @@ describe('attachPicking: click', () => {
     ctx.flush();
     expect(ctx.onClick).not.toHaveBeenCalled();
     expect(ctx.pick).not.toHaveBeenCalled();
+  });
+});
+
+describe('attachPicking: drag', () => {
+  it('starts a drag after the click slop on an object, from where it was pressed', () => {
+    ctx.pointer('pointerdown', 20, { button: 0 });
+    ctx.pointer('pointermove', 20 + CLICK_SLOP_PX + 2);
+    expect(ctx.drag.start).toHaveBeenCalledWith('a', -0.8, 0);
+  });
+
+  it('moves at most once per frame, passes Alt, and ends without a click', () => {
+    ctx.pointer('pointerdown', 20, { button: 0 });
+    ctx.pointer('pointermove', 30);
+    ctx.pointer('pointermove', 40);
+    ctx.pointer('pointermove', 50, { altKey: true });
+    ctx.flush();
+    expect(ctx.drag.move).toHaveBeenCalledTimes(1);
+    expect(ctx.drag.move).toHaveBeenCalledWith(-0.5, 0, true);
+    ctx.pointer('pointerup', 60, { button: 0 });
+    // The pending position is applied before ending.
+    expect(ctx.drag.move).toHaveBeenLastCalledWith(-0.4, 0, false);
+    expect(ctx.drag.end).toHaveBeenCalledOnce();
+    expect(ctx.onClick).not.toHaveBeenCalled();
+  });
+
+  it('does not hover while dragging', () => {
+    ctx.pointer('pointerdown', 20, { button: 0 });
+    ctx.pointer('pointermove', 40);
+    ctx.flush();
+    expect(ctx.pick).toHaveBeenCalledTimes(1); // only the press
+    expect(ctx.onHover).not.toHaveBeenCalled();
+  });
+
+  it('never drags from empty space, and a refused drag is not a click either', () => {
+    ctx.pointer('pointerdown', 150, { button: 0 });
+    ctx.pointer('pointermove', 170);
+    ctx.pointer('pointerup', 170, { button: 0 });
+    expect(ctx.drag.start).not.toHaveBeenCalled();
+
+    ctx.drag.start.mockReturnValueOnce(false);
+    ctx.pointer('pointerdown', 20, { button: 0 });
+    ctx.pointer('pointermove', 40);
+    ctx.pointer('pointerup', 40, { button: 0 });
+    expect(ctx.drag.end).not.toHaveBeenCalled();
+    expect(ctx.onClick).not.toHaveBeenCalled();
+  });
+
+  it('Escape cancels the drag instead of ending it', () => {
+    ctx.pointer('pointerdown', 20, { button: 0 });
+    ctx.pointer('pointermove', 40);
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(ctx.drag.cancel).toHaveBeenCalledOnce();
+    ctx.pointer('pointerup', 40, { button: 0 });
+    expect(ctx.drag.end).not.toHaveBeenCalled();
+    expect(ctx.onClick).not.toHaveBeenCalled();
+  });
+
+  it('cancels a drag in progress on cleanup', () => {
+    ctx.pointer('pointerdown', 20, { button: 0 });
+    ctx.pointer('pointermove', 40);
+    ctx.detach();
+    expect(ctx.drag.cancel).toHaveBeenCalledOnce();
   });
 });

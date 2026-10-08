@@ -5,6 +5,7 @@ import type { ObjectId } from '@roomforge/core';
 import { useEffect, useMemo, useRef } from 'react';
 import {
   BoxGeometry,
+  Color,
   EdgesGeometry,
   LineBasicMaterial,
   LineSegments,
@@ -12,26 +13,40 @@ import {
   Raycaster,
   Vector2,
 } from 'three';
-import { useSceneCatalog, useSceneSession } from '../canvas/scene-context';
+import { useSceneCatalog, useSceneSession, useTransientStore } from '../canvas/scene-context';
 import { useEntityRegistry } from '../objects/entity-registry';
 import { objectSize } from '../objects/placeholder-resources';
+import { MoveController } from './move-controller';
+import { attachNudge } from './nudge-controller';
 import { type PickProxy, pickEntity } from './pick';
 import { attachPicking } from './picking-controller';
+import { tokenColor } from './token-color';
 
 const raycaster = new Raycaster();
 const ndc = new Vector2();
 
+/** Arrow keys move the selection one snap step (Shift ×10). */
+export function KeyboardNudge() {
+  const session = useSceneSession();
+  const catalog = useSceneCatalog();
+  const transient = useTransientStore();
+  useEffect(() => attachNudge({ session, catalog, transient }), [session, catalog, transient]);
+  return null;
+}
+
 /**
- * Click and hover selection (P3-03). Rays are tested against one invisible box per object; hidden
- * and locked objects are skipped, and walls, floor and ceiling are never candidates, so clicking
- * through a faded wall reaches the objects behind it. Nothing here touches React state.
+ * Click, hover and drag (P3-03, P3-04). Rays are tested against one invisible box per object;
+ * hidden and locked objects are skipped, and walls, floor and ceiling are never candidates, so
+ * clicking through a faded wall reaches the objects behind it. Nothing here touches React state.
  */
 export function Picking() {
   const session = useSceneSession();
   const catalog = useSceneCatalog();
   const registry = useEntityRegistry();
+  const transient = useTransientStore();
   const element = useThree((state) => state.gl.domElement);
   const get = useThree((state) => state.get);
+  const invalidate = useThree((state) => state.invalidate);
 
   useEffect(() => {
     // Reused between picks: one proxy object per entity, refreshed in place.
@@ -56,10 +71,14 @@ export function Picking() {
         proxy.size = objectSize(catalog, object.catalogId);
         proxies.push(proxy);
       }
+      return pickEntity(rayAt(x, y), proxies)?.id ?? null;
+    };
+    const rayAt = (x: number, y: number) => {
       ndc.set(x, y);
       raycaster.setFromCamera(ndc, get().camera);
-      return pickEntity(raycaster.ray, proxies)?.id ?? null;
+      return raycaster.ray;
     };
+    const mover = new MoveController({ session, catalog, registry, transient, invalidate });
     return attachPicking({
       element,
       pick,
@@ -68,8 +87,21 @@ export function Picking() {
         if (id) session.select([id], additive ? 'toggle' : 'replace');
         else if (!additive) session.select([]);
       },
+      drag: {
+        start: (id, x, y) => {
+          if (!mover.begin(id, rayAt(x, y))) return false;
+          // Dragging an object selects it, so the outline follows it.
+          if (!session.getState().selection.includes(id)) session.select([id], 'replace');
+          return true;
+        },
+        move: (x, y, free) => mover.update(rayAt(x, y), free),
+        end: () => {
+          mover.end();
+        },
+        cancel: () => mover.cancel(),
+      },
     });
-  }, [session, catalog, registry, element, get]);
+  }, [session, catalog, registry, transient, element, get, invalidate]);
 
   return null;
 }
@@ -80,13 +112,6 @@ const outlineGeometry = () => {
   edges ??= new EdgesGeometry(new BoxGeometry(1, 1, 1).translate(0, 0.5, 0));
   return edges;
 };
-
-/** Accent colour from the design tokens (`--accent`), with the dark-theme value as fallback. */
-function accentColor(): string {
-  if (typeof document === 'undefined') return '#ff7a45';
-  const value = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
-  return value || '#ff7a45';
-}
 
 /** Outlines slightly larger than the object so they do not z-fight with its faces. */
 const INFLATE = 1.02;
@@ -100,22 +125,24 @@ export function SelectionOutline() {
   const session = useSceneSession();
   const catalog = useSceneCatalog();
   const registry = useEntityRegistry();
+  const transient = useTransientStore();
   const invalidate = useThree((state) => state.invalidate);
   const hover = useRef<LineSegments>(null);
   const selection = useRef<LineSegments>(null);
   const lines = useMemo(() => {
-    const color = accentColor();
+    const accent = new Color(tokenColor('--accent', '#ff7a45'));
+    const danger = new Color(tokenColor('--danger', '#f2555a'));
     const make = (opacity: number) => {
       const line = new LineSegments(
         outlineGeometry(),
-        new LineBasicMaterial({ color, transparent: true, opacity, depthTest: false }),
+        new LineBasicMaterial({ color: accent, transparent: true, opacity, depthTest: false }),
       );
       line.matrixAutoUpdate = false;
       line.visible = false;
       line.renderOrder = 10;
       return line;
     };
-    return { hover: make(0.6), selection: make(1) };
+    return { hover: make(0.6), selection: make(1), accent, danger };
   }, []);
 
   useEffect(() => {
@@ -137,6 +164,9 @@ export function SelectionOutline() {
   useFrame(() => {
     const { hover: hovered, selection: selected, document } = session.getState();
     const selectedId = (selected[0] ?? null) as ObjectId | null;
+    // Red while the dragged pose is not legal (the drop would be refused).
+    const drag = transient.drag();
+    lines.selection.material.color.copy(drag && !drag.valid ? lines.danger : lines.accent);
     place(lines.selection, selectedId);
     place(lines.hover, hovered === selectedId ? null : (hovered as ObjectId | null));
 
