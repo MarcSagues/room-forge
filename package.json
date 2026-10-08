@@ -10,6 +10,8 @@
   "scripts": {
     "dev": "pnpm --filter @roomforge/web dev",
     "build": "pnpm --filter @roomforge/web build",
+    "start:static": "pnpm --filter @roomforge/web start:static",
+    "e2e": "pnpm --filter @roomforge/web e2e",
     "typecheck": "pnpm -r --if-present typecheck",
     "lint": "biome check .",
     "format": "biome check --write .",
