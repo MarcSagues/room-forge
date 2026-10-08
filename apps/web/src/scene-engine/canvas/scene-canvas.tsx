@@ -1,11 +1,12 @@
 'use client';
 
 import { addAfterEffect, Canvas, useThree } from '@react-three/fiber';
-import type { EditorSession } from '@roomforge/core';
+import { type EditorSession, type RoomId, WALL_IDS, type WallId } from '@roomforge/core';
 import { type RefObject, useEffect, useMemo, useRef } from 'react';
-import { NeutralToneMapping } from 'three';
+import { type Material, type Mesh, NeutralToneMapping, type Object3D } from 'three';
 import type { CameraHandle, CameraSnapshot } from '../camera/camera-director';
 import { CameraRig } from '../camera/camera-rig';
+import { roomObjectName } from '../room/room-mesh';
 import { watchContext } from './context-events';
 import { connectInvalidate } from './invalidate-bridge';
 import { createMutate, type Mutate } from './mutate';
@@ -18,8 +19,17 @@ export interface SceneCamera extends Omit<CameraHandle, 'snapshot'> {
   snapshot(): CameraSnapshot | null;
 }
 
+/** How a room is drawn right now (wall opacity, wall height scale, ceiling), read from the scene. */
+export interface RoomDisplay {
+  wallOpacity: Record<WallId, number>;
+  wallHeightScale: number;
+  ceilingVisible: boolean;
+}
+
 /** What the host (app, E2E hook) can do with a mounted scene. */
 export interface SceneHandle {
+  /** `null` when the room is not drawn. */
+  roomDisplay(roomId: RoomId): RoomDisplay | null;
   /** Renderer counters (frame, draw calls, triangles, programs...). */
   renderInfo(): RenderInfo;
   /** Run a direct three.js mutation and request a frame. */
@@ -120,12 +130,14 @@ function ReadyReporter(props: {
 }) {
   const { camera } = props;
   const gl = useThree((state) => state.gl);
+  const scene = useThree((state) => state.scene);
   const invalidate = useThree((state) => state.invalidate);
   const callback = useRef(props.onReady);
   callback.current = props.onReady;
   const handle = useMemo<SceneHandle>(
     () => ({
       renderInfo: () => readRenderInfo(gl.info),
+      roomDisplay: (roomId) => readRoomDisplay(scene, roomId),
       mutate: createMutate(invalidate),
       invalidate: () => invalidate(),
       // The rig mounts after this handle may be built, so every call looks it up when it happens.
@@ -136,12 +148,24 @@ function ReadyReporter(props: {
         dolly: (distance) => camera.current?.dolly(distance),
       },
     }),
-    [gl, invalidate, camera],
+    [gl, scene, invalidate, camera],
   );
   useEffect(() => {
     callback.current?.(handle);
   }, [handle]);
   return null;
+}
+
+function readRoomDisplay(scene: Object3D, roomId: RoomId): RoomDisplay | null {
+  const walls = scene.getObjectByName(roomObjectName.walls(roomId));
+  const ceiling = scene.getObjectByName(roomObjectName.ceiling(roomId));
+  if (!walls || !ceiling) return null;
+  const wallOpacity = {} as Record<WallId, number>;
+  for (const wall of WALL_IDS) {
+    const mesh = scene.getObjectByName(roomObjectName.wall(roomId, wall)) as Mesh | undefined;
+    wallOpacity[wall] = (mesh?.material as Material | undefined)?.opacity ?? Number.NaN;
+  }
+  return { wallOpacity, wallHeightScale: walls.scale.y, ceilingVisible: ceiling.visible };
 }
 
 /**

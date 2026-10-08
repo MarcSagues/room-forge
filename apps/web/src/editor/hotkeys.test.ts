@@ -45,6 +45,14 @@ describe('resolveHotkey', () => {
     });
   });
 
+  it('maps W to cycling the walls and C to the ceiling preview', () => {
+    expect(resolveHotkey(press({ code: 'KeyW', key: 'w' }))).toEqual({ type: 'cycleWalls' });
+    expect(resolveHotkey(press({ code: 'KeyW', key: 'W' }))).toEqual({ type: 'cycleWalls' });
+    expect(resolveHotkey(press({ code: 'KeyC', key: 'c' }))).toEqual({ type: 'toggleCeiling' });
+    // Ctrl/Cmd+C stays with the browser (copy).
+    expect(resolveHotkey(press({ code: 'KeyC', key: 'c', ctrlKey: true }))).toBeNull();
+  });
+
   it('maps F to fit, whatever the letter case', () => {
     expect(resolveHotkey(press({ code: 'KeyF', key: 'f' }))).toEqual({ type: 'fit' });
     expect(resolveHotkey(press({ code: 'KeyF', key: 'F' }))).toEqual({ type: 'fit' });
@@ -103,25 +111,44 @@ describe('installHotkeys', () => {
   };
 
   it('routes views and fit to the handlers and cancels the default action', () => {
-    const handlers = { setView: vi.fn(), fit: vi.fn() };
+    const handlers = {
+      setView: vi.fn(),
+      fit: vi.fn(),
+      cycleWalls: vi.fn(),
+      toggleCeiling: vi.fn(),
+    };
     cleanup = installHotkeys(window, handlers);
 
     const top = keydown({ code: 'Digit2', key: '2' });
     keydown({ code: 'Digit1', key: '1' });
     keydown({ code: 'KeyF', key: 'f' });
+    keydown({ code: 'KeyW', key: 'w' });
+    keydown({ code: 'KeyC', key: 'c' });
 
     expect(handlers.setView.mock.calls).toEqual([['top'], ['perspective']]);
     expect(handlers.fit).toHaveBeenCalledOnce();
+    expect(handlers.cycleWalls).toHaveBeenCalledOnce();
+    expect(handlers.toggleCeiling).toHaveBeenCalledOnce();
     expect(top.defaultPrevented).toBe(true);
   });
 
   it('does not cancel keys it does not handle', () => {
-    cleanup = installHotkeys(window, { setView: vi.fn(), fit: vi.fn() });
+    cleanup = installHotkeys(window, {
+      setView: vi.fn(),
+      fit: vi.fn(),
+      cycleWalls: vi.fn(),
+      toggleCeiling: vi.fn(),
+    });
     expect(keydown({ code: 'KeyQ', key: 'q' }).defaultPrevented).toBe(false);
   });
 
   it('stops listening after cleanup', () => {
-    const handlers = { setView: vi.fn(), fit: vi.fn() };
+    const handlers = {
+      setView: vi.fn(),
+      fit: vi.fn(),
+      cycleWalls: vi.fn(),
+      toggleCeiling: vi.fn(),
+    };
     installHotkeys(window, handlers)();
     keydown({ code: 'KeyF', key: 'f' });
     expect(handlers.fit).not.toHaveBeenCalled();

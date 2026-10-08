@@ -31,6 +31,7 @@ test('editor loads the shell and exposes the E2E hook', async ({ page }) => {
     'camera',
     'commands',
     'info',
+    'roomDisplay',
     'session',
   ]);
   expect(errors).toEqual([]);

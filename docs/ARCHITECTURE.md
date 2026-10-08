@@ -249,6 +249,7 @@ Emisor tipado mínimo en `core/session` (≈30 líneas, sin dependencias). Sirve
 | `history:changed` | `{ canUndo, canRedo, undoLabel, redoLabel }` | UI (botones, tooltips) |
 | `selection:changed` | `{ ids }` | scene-engine (contorno), panel propiedades |
 | `view:changed` | `{ view: 'perspective'\|'top' }` | scene-engine (cámara), barra de estado |
+| `display:changed` | `{ wallMode, showCeiling }` | barra inferior |
 | `gesture:started/ended` | `{ label }` | autosave (pausa durante gesto) |
 | `session:error` | `{ error }` | toasts, telemetría local |
 
@@ -266,7 +267,7 @@ Tras un comando, `undo`, `redo` o carga, el store ya contiene el documento nuevo
 
 ### 5.2 Estado de sesión (no deshacible, no persistente)
 
-`selection`, `hover`, `activeTool` y `view` (`perspective` | `top`) viven en el store de la sesión junto al documento, pero **no** pasan por comandos ni por el historial: seleccionar o cambiar de vista no crea entradas de historial y `undo` no los restaura. `setView(view)` emite `view:changed` solo si la vista cambia.
+`selection`, `hover`, `activeTool`, `view` (`perspective` | `top`), `wallMode` (`up` | `cutaway` | `down`) y `showCeiling` viven en el store de la sesión junto al documento, pero **no** pasan por comandos ni por el historial: seleccionar o cambiar de vista no crea entradas de historial y `undo` no los restaura. `setView(view)` emite `view:changed` solo si la vista cambia; `setWallMode` y `setShowCeiling` emiten `display:changed` solo si cambian.
 
 - `select(ids, mode)` con `mode` = `replace` (por defecto) | `add` | `toggle`. Acepta listas aunque el MVP seleccione una entidad (multi-selección futura). Los ids que no existen se ignoran; `replace` sin ids válidos limpia la selección.
 - Tras cada cambio del documento se **reconcilian** selección y *hover*: se descartan los ids que ya no existen (también tras `undo`/`redo`, que **no** los recuperan).
@@ -366,6 +367,14 @@ flowchart LR
 - **Controles:** el botón izquierdo queda libre para seleccionar; derecho orbita (o desplaza con Shift pulsado; camera-controls no tiene modificadores, así que `shift-pan.ts` cambia la acción del botón), central desplaza, rueda zoom. `prefers-reduced-motion`: corte directo y sin amortiguación.
 - **Invalidación:** una transición pide un frame por frame (`invalidate()` dentro de `useFrame` suma uno más) y al terminar para sola. `setBoundary` marca los controles como «cambiados» y drei pediría un frame extra por cada cambio de sala; el director consume esa marca en el momento para que un cambio de documento siga costando **exactamente un frame**.
 - **Atajos:** `editor/hotkeys.ts` (`1`, `2`, `F`; no se activan al escribir en un campo ni con modificadores; los dígitos se reconocen por tecla física).
+
+### 6.9 Paredes y techo (P2-10)
+
+- **Modos de pared** (`W` cicla `up` → `cutaway` → `down`; por defecto `cutaway`): `up` todas opacas; `cutaway` las paredes entre la cámara y la sala se atenúan; `down` todas se recortan a 0,6 m.
+- **Atenuación (función pura `wall-display.ts`):** producto escalar entre la normal interior de la pared y la dirección horizontal de la cámara; `smoothstep(0,15 → 0,45)` hasta una opacidad mínima de 0,12. Vista desde arriba (dirección vertical) ⇒ ninguna se atenúa. Las traseras (producto ≤ 0) siempre opacas.
+- **Aplicación sin React:** `WallFader` ajusta en `useFrame` la opacidad de cada material y la escala Y del grupo de paredes hacia su objetivo (200 ms; corte directo con `prefers-reduced-motion`) y solo pide frames mientras algo se mueve. El primer frame aterriza en el objetivo (sin animación al cargar).
+- **Sin recompilar shaders:** los materiales de pared son `transparent` desde el inicio; cambiar la opacidad no cambia el programa (E2E: `renderer.info.programs` constante al ciclar).
+- **Techo:** oculto al editar; `C` activa la vista previa, que solo lo muestra en perspectiva (en planta siempre oculto). Oculto, three.js no lo dibuja ni sube su geometría: sala por defecto = 7 *draw calls*, 50 triángulos, 7 geometrías.
 
 ## 7. Biblioteca de assets (`asset-library`)
 

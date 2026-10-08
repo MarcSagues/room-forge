@@ -1,5 +1,6 @@
 'use client';
 
+import { nextWallMode } from '@roomforge/core';
 import { useEffect, useRef, useState } from 'react';
 import { emptyCatalog } from '@/asset-library';
 import { createDemoSession, installHotkeys } from '@/editor';
@@ -19,6 +20,8 @@ export default function EditorApp() {
       installHotkeys(window, {
         setView: (view) => session.setView(view),
         fit: () => scene.current?.camera.fit(),
+        cycleWalls: () => session.setWallMode(nextWallMode(session.getState().wallMode)),
+        toggleCeiling: () => session.setShowCeiling(!session.getState().showCeiling),
       }),
     [session],
   );

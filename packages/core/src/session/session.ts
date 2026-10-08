@@ -15,13 +15,13 @@ import {
   type ToolId,
 } from './selection';
 import type { Command, CommandContext, CommandError, CommandResult } from './types';
-import type { ViewMode } from './view';
+import type { ViewMode, WallMode } from './view';
 
 enablePatches();
 
 /**
  * Everything the editor shows. `document` is undoable; `history` mirrors the undo stack; selection,
- * hover, tool and view are session-only state (never in the history, never persisted).
+ * hover, tool, view and wall display are session-only state (never in the history, never persisted).
  */
 export interface SessionState {
   readonly document: DeepReadonly<SceneDocument>;
@@ -30,6 +30,9 @@ export interface SessionState {
   readonly hover: EntityId | null;
   readonly activeTool: ToolId;
   readonly view: ViewMode;
+  readonly wallMode: WallMode;
+  /** Ceiling preview; the ceiling is hidden while editing and always in the plan view. */
+  readonly showCeiling: boolean;
 }
 
 /** The store without `setState`: only the session writes (ADR-0003). Works with zustand's `useStore`. */
@@ -81,6 +84,9 @@ export interface EditorSession {
   setActiveTool(tool: ToolId): void;
   /** Emits `view:changed` when the view changes. Not undoable. */
   setView(view: ViewMode): void;
+  /** Emits `display:changed` when it changes. Not undoable. */
+  setWallMode(mode: WallMode): void;
+  setShowCeiling(show: boolean): void;
   on: Emitter<SessionEvents>['on'];
 }
 
@@ -115,6 +121,8 @@ export function createEditorSession(options: EditorSessionOptions): EditorSessio
     hover: null,
     activeTool: 'select',
     view: 'perspective',
+    wallMode: 'cutaway',
+    showCeiling: false,
   }));
   let gesture: OpenGesture | undefined;
 
@@ -266,6 +274,18 @@ export function createEditorSession(options: EditorSessionOptions): EditorSessio
       if (view === store.getState().view) return;
       store.setState({ view });
       emitter.emit('view:changed', { view });
+    },
+    setWallMode(wallMode) {
+      const state = store.getState();
+      if (wallMode === state.wallMode) return;
+      store.setState({ wallMode });
+      emitter.emit('display:changed', { wallMode, showCeiling: state.showCeiling });
+    },
+    setShowCeiling(showCeiling) {
+      const state = store.getState();
+      if (showCeiling === state.showCeiling) return;
+      store.setState({ showCeiling });
+      emitter.emit('display:changed', { wallMode: state.wallMode, showCeiling });
     },
     on: emitter.on,
   };

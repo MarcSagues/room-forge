@@ -156,6 +156,8 @@ Contrastes calculados (WCAG 2.x):
 | Alternar snap | Botón | `G` |
 | Vista superior / perspectiva | Selector | `1` / `2` |
 | Encuadrar sala | Botón | `F` |
+| Paredes arriba / corte / abajo | Botón | `W` (cicla) |
+| Techo (vista previa) | Botón | `C` |
 | Día / Noche | Botón | `N` |
 | Paleta de comandos | — | `Ctrl/⌘+K` (P2) |
 | Ayuda de atajos | — | `?` |
