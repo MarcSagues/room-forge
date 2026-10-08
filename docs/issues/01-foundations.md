@@ -146,12 +146,12 @@ Especificación en [DEPLOYMENT §4](../DEPLOYMENT.md). Los checks serán requeri
 - Permisos mínimos (`contents: read`), `concurrency` por rama con cancelación.
 - Matriz no necesaria (Node 22, ubuntu-latest).
 - `dependabot.yml` agrupando por ecosistema semanal.
-- Marcar los checks `ci` como requeridos en `develop` y `main`.
+- Marcar los checks `ci` como requeridos en `develop` y `main` **si el plan de GitHub lo permite** (ver DEPLOYMENT §6); si no, documentar que se vigilan por convención.
 
 ### Criterios de aceptación
 - [ ] Un PR con error de lint/tipos/test/build falla; uno limpio pasa.
 - [ ] Tiempo total de CI < 5 min con caché.
-- [ ] Los checks aparecen como requeridos en la protección de ramas.
+- [ ] Los checks aparecen como requeridos en la protección de ramas (o consta la excepción del modo interino).
 
 ### Tests esperados
 - PR de prueba con fallo intencionado por cada fase del pipeline (se descarta).

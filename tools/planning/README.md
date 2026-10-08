@@ -18,7 +18,7 @@ node tools/planning/github-import.mjs import --repo OWNER/REPO       # DRY-RUN (
 node tools/planning/github-import.mjs import --repo OWNER/REPO --apply --phases 0-8   # escribe (requiere autorización)
 ```
 
-Opciones de `import`: `--phases a-b` (hitos a importar), `--branch` (rama para enlaces a docs, por defecto `develop`), `--delay ms` (pausa entre creaciones, por defecto 1500).
+Opciones de `import`: `--refresh` (con `--apply`: reescribe el cuerpo de las issues ya importadas para sincronizarlas con `docs/issues/*.md`; no cambia título, etiquetas ni estado abierto/cerrado; `--only P0-03,P1-04` lo limita a esas issues), `--phases a-b` (hitos a importar), `--branch` (rama para enlaces a docs, por defecto `develop`), `--delay ms` (pausa entre creaciones, por defecto 1500).
 
 ## Qué valida
 

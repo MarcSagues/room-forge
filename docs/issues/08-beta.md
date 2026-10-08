@@ -108,7 +108,7 @@ Configurar el dominio, HTTPS, despliegue de producción desde `main` con **GitHu
 - Plan de rollback (redeploy del commit anterior) probado.
 
 ### Criterios de aceptación
-- [ ] Un merge `develop → main` no despliega hasta que un revisor humano aprueba el entorno.
+- [ ] Un merge `develop → main` **no despliega por sí solo**: hace falta aprobación humana (revisores del Environment `production` si hay Pro/repo público; si no, despliegue solo por `workflow_dispatch` manual del propietario).
 - [ ] `curl -I` muestra las cabeceras definidas; A+/A en un analizador de cabeceras razonable.
 - [ ] Rollback ejecutado en simulacro en < 10 min.
 - [ ] Términos de Cloudflare revisados y documentados en DEPLOYMENT.

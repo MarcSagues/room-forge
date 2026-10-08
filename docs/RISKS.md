@@ -6,7 +6,7 @@
 
 | | Impacto 1 (bajo) | Impacto 2 (medio) | Impacto 3 (alto) |
 |---|---|---|---|
-| **Prob. 3 (alta)** | R16 | R14, R17 | **R1, R3** |
+| **Prob. 3 (alta)** | R16 | R14, R17, R23 | **R1, R3** |
 | **Prob. 2 (media)** | R13, R21 | R8, R9, R10, R12, R20, R22 | **R2, R4, R5, R6, R11, R15, R18** |
 | **Prob. 1 (baja)** | | R19 | R7 |
 
@@ -36,6 +36,8 @@
 | **R20** | **Privacidad/RGPD** (analítica, enlaces, feedback). | 2 | 2 | 4 | Sin cookies ni PII; fragmento no sale del navegador; feedback sin datos del proyecto; páginas legales. | Cualquier petición con datos de proyecto. | 8 | P8-01, P8-04 |
 | **R21** | **R3F 9 / React 19 / Strict Mode**: efectos duplicados, `react <19.4`, regresiones en actualizaciones. | 2 | 1 | 2 | Controladores idempotentes; E2E; fijar versiones; spike P2-06. | Errores solo en dev/Strict Mode. | 2 | P2-06 |
 | **R22** | **Marcas registradas** en nombres de catálogo o de producto. | 2 | 2 | 4 | Nombres genéricos; comprobar marca «RoomForge» (Q2); revisión legal ligera. | Reclamación o conflicto de marca. | 4, 8 | P0-02, P4-02 |
+
+| **R23** | **Controles de GitHub no disponibles** (plan gratuito + repo privado): sin protección de ramas, rulesets ni revisores de Environment; un agente o un descuido podría empujar a `develop`/`main` o desplegar sin aprobación. | 3 | 2 | 6 | Modo interino por convención ([AGENTS.md](../AGENTS.md)) + producción solo por `workflow_dispatch` manual; decidir GitHub Pro o repo público antes de la beta ([DEPLOYMENT §6](DEPLOYMENT.md#6-protección-de-ramas-y-entornos-a-aplicar-en-p0-03--p1-04--p8-03-con-autorización)). | Primer push directo a `develop`/`main` o despliegue no aprobado. | 0, 8 | P0-03, P8-03 |
 
 ## 3. Top 5 (atención prioritaria)
 
