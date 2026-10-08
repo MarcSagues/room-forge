@@ -56,10 +56,10 @@ Crear la estructura del monorepo según [ARCHITECTURE §2.2](../ARCHITECTURE.md)
 - Scripts raíz: `dev`, `build`, `typecheck`.
 
 ### Criterios de aceptación
-- [ ] `pnpm install && pnpm build` produce `apps/web/out/` con `index.html` y `editor/index.html`.
-- [ ] `pnpm dev` sirve `/` y `/editor` sin errores en consola.
-- [ ] Importar `window` desde `packages/core` falla en `pnpm typecheck`.
-- [ ] `pnpm-lock.yaml` versionado; `engines`/`.nvmrc` fijan Node 22.
+- [x] `pnpm install && pnpm build` produce `apps/web/out/` con `index.html` y `editor/index.html`.
+- [x] `pnpm dev` sirve `/` y `/editor` sin errores en consola.
+- [x] Importar `window` desde `packages/core` falla en `pnpm typecheck`.
+- [x] `pnpm-lock.yaml` versionado; `engines`/`.nvmrc` fijan Node 22.
 
 ### Tests esperados
 - Smoke de build en CI (issue P1-04).
@@ -87,10 +87,13 @@ Configurar Biome (formato + lint), reglas estrictas de TS, dependency-cruiser co
 - `.dependency-cruiser.cjs` con las reglas de la matriz (incluida «`core` no importa react/three/DOM»).
 - Scripts: `lint`, `format`, `check:deps`, y `check` que los agrupe (más typecheck y tests cuando existan).
 - Hook `pre-commit` (lint-staged) y `commit-msg` (commitlint).
+- Hook `pre-push` que **rechaza empujar a `develop`/`main`** (sustituye la protección de ramas que GitHub no ofrece en este plan; override explícito del propietario con `ROOMFORGE_ALLOW_PROTECTED_PUSH=1`; ver DEPLOYMENT §6).
+- Opcional: reglas de permisos del proyecto en `.claude/settings.json` que impidan a Claude Code `git push` a `develop`/`main` y `--force`.
 
 ### Criterios de aceptación
 - [ ] `pnpm check` falla si se introduce un import prohibido (probado con un commit de prueba descartado).
 - [ ] Un mensaje de commit no convencional es rechazado localmente.
+- [ ] `git push origin develop` y `git push origin main` desde una rama local son rechazados por el hook (probado), y `git push origin <rama-de-trabajo>` funciona.
 - [ ] El tiempo de `pnpm lint` en repo vacío < 5 s.
 
 ### Tests esperados
@@ -140,18 +143,18 @@ Configurar Vitest con dos proyectos: `core` (entorno `node`) y `web` (entorno `h
 Workflow `ci.yml` que se ejecuta en PR y en push a `develop`/`main`: instalar (con caché de pnpm), `pnpm check`, `pnpm test:coverage`, `pnpm build`. Subir artefactos de cobertura. Configurar Dependabot agrupado.
 
 ### Contexto
-Especificación en [DEPLOYMENT §4](../DEPLOYMENT.md). Los checks serán requeridos por la protección de ramas.
+Especificación en [DEPLOYMENT §4](../DEPLOYMENT.md). No hay protección de ramas en GitHub (decisión del propietario): los checks se vigilan por convención antes de fusionar ([DEPLOYMENT §6](../DEPLOYMENT.md#6-política-de-ramas-y-despliegue-sin-protecciones-de-github)).
 
 ### Requisitos
 - Permisos mínimos (`contents: read`), `concurrency` por rama con cancelación.
 - Matriz no necesaria (Node 22, ubuntu-latest).
 - `dependabot.yml` agrupando por ecosistema semanal.
-- Marcar los checks `ci` como requeridos en `develop` y `main` **si el plan de GitHub lo permite** (ver DEPLOYMENT §6); si no, documentar que se vigilan por convención.
+- Los checks `ci` y `e2e` se publican con nombres estables y el resultado se consulta siempre antes de fusionar (no hay bloqueo técnico: ver DEPLOYMENT §6).
 
 ### Criterios de aceptación
 - [ ] Un PR con error de lint/tipos/test/build falla; uno limpio pasa.
 - [ ] Tiempo total de CI < 5 min con caché.
-- [ ] Los checks aparecen como requeridos en la protección de ramas (o consta la excepción del modo interino).
+- [ ] Los checks `ci`/`e2e` aparecen en cada PR con un nombre estable y AGENTS.md/WORKFLOW indican que se revisan antes de fusionar.
 
 ### Tests esperados
 - PR de prueba con fallo intencionado por cada fase del pipeline (se descarta).

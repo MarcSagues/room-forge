@@ -31,7 +31,7 @@ flowchart TD
   J --> K[Issue cerrada por Closes #n]
   K --> L{¿Release?}
   L -->|sí| M[10. PR develop → main]
-  M --> N[Aprobación humana del Environment production]
+  M --> N[El propietario fusiona y lanza deploy-production a mano]
   N --> O[Despliegue + tag]
 ```
 
@@ -99,10 +99,12 @@ Nota: `@codex fix it` existe pero **no se usa**; en este flujo corrige Claude (u
 
 | Destino | Quién | Cómo | Condiciones |
 |---|---|---|---|
-| `develop` | **Persona** (Marc) | *Squash and merge* | `check` y `e2e` verdes, conversaciones resueltas, sin P0/P1 abiertos de Codex |
-| `main` | **Persona** | *Merge commit* (PR `develop → main`) | Checklist de release; después, **aprobación del Environment `production`** |
+| `develop` | **Persona** (Marc), o un agente **solo por orden explícita del propietario en el chat** para ese PR | *Squash and merge* | `check` y `e2e` verdes (se vigilan por convención, no hay bloqueo técnico), conversaciones resueltas, sin P0/P1 abiertos de Codex |
+| `main` | **Persona** | *Merge commit* (PR `develop → main`) | Checklist de release; después, **el propietario lanza `deploy-production` a mano** (ver [DEPLOYMENT §6](DEPLOYMENT.md#6-política-de-ramas-y-despliegue-sin-protecciones-de-github)) |
 
-Prohibido para agentes: fusionar, activar *auto-merge*, aprobar entornos, cambiar protecciones, `git push --force`, borrar ramas protegidas, tocar secretos.
+Prohibido para agentes: fusionar en `main`, fusionar en `develop` sin orden explícita del propietario, activar *auto-merge*, lanzar el workflow de producción, `git push` directo a `develop`/`main`, `git push --force`, borrar `develop`/`main`, tocar secretos.
+
+No hay protección de ramas en GitHub (repo privado, plan gratuito): estas reglas se cumplen por convención, con un hook `pre-push` local (P1-02) y el despliegue manual. Ver [DEPLOYMENT §6](DEPLOYMENT.md#6-política-de-ramas-y-despliegue-sin-protecciones-de-github).
 
 ## 8. Hotfix
 

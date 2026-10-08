@@ -53,7 +53,7 @@ node tools/planning/github-import.mjs validate   # valida docs/issues (disponibl
 
 ## Qué NO hacer (sin autorización explícita del propietario en el chat)
 
-- Fusionar PRs, activar *auto-merge*, aprobar entornos de despliegue, cambiar protecciones de rama.
+- Fusionar en `main`; fusionar en `develop` sin orden explícita del propietario en el chat para ese PR; activar *auto-merge*; lanzar el workflow de despliegue a producción; hacer `git push` directo a `develop`/`main` (GitHub **no** protege las ramas en este repo: la regla depende de ti).
 - `git push --force`, reescribir historia compartida, borrar ramas protegidas.
 - Crear/modificar recursos remotos (repos, secretos, proyectos de Cloudflare/Neon/Stripe), publicar o desplegar.
 - Tocar secretos o añadirlos al repositorio; imprimir tokens.

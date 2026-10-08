@@ -264,7 +264,7 @@ Cada una tiene una **propuesta por defecto** con la que se procederá salvo que 
 | Q6 | ¿Herramienta de analítica sin cookies? | Evaluar Cloudflare Web Analytics / Plausible / Umami; o ninguna en la beta. | P8-01 |
 | Q7 | ¿Cuál es el hardware de referencia real (portátil y móvil)? | A indicar por el propietario. | P7-04 |
 | Q8 | ¿Unidades? | Métrico; conmutador imperial P3. | — |
-| Q9 | ¿Hay acceso a Codex cloud para el repo y qué política de aprobación aplica a `main`? | Aprobación humana mediante GitHub Environment `production` (ver [ADR-0009](ADR/0009-git-workflow.md)). | P1-09 |
+| Q9 | ¿Hay acceso a Codex cloud para el repo y qué política de aprobación aplica a `main`? | Sin protecciones de GitHub (decisión del propietario, 2026-10-08): `main` lo fusiona el propietario y producción se despliega a mano (ver [ADR-0009](ADR/0009-git-workflow.md)). | P1-09 |
 | Q10 | ¿Se confirma posponer IA y monetización a tras la beta? | Sí (Fase 9 se planifica con datos de uso). | Roadmap |
 
 ### Decisiones tomadas
@@ -278,7 +278,7 @@ Cada una tiene una **propuesta por defecto** con la que se procederá salvo que 
 | Q3 | Repositorio **privado**; licencia «todos los derechos reservados» hasta decidir. |
 | Q4, Q5, Q6, Q8, Q10 | Se mantienen las propuestas por defecto (estilo estilizado a confirmar en P4-01; puertas/ventanas P1; analítica a decidir en P8-01; métrico; IA y monetización tras la beta). |
 | Q7 | **Abierta**: falta indicar el portátil y el móvil de referencia (necesario antes de P2-11 y P7-04). |
-| Q9 | **Abierta**: confirmar acceso a Codex cloud para el repo (P1-09). Aprobación de producción mediante Environment `production` ([ADR-0009](ADR/0009-git-workflow.md)). |
+| Q9 | **Abierta**: confirmar acceso a Codex cloud para el repo (P1-09). Producción: despliegue manual por el propietario, sin Environments ([ADR-0009](ADR/0009-git-workflow.md)). **Decidido:** ni GitHub Pro ni repo público. |
 
 Cualquiera de estas decisiones puede revisarse reabriendo la issue P0-02.
 
