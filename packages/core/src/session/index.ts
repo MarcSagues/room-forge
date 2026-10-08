@@ -8,6 +8,14 @@ export {
   touchedByPatches,
 } from './invariants';
 export {
+  type EntityId,
+  entityExists,
+  nextSelection,
+  reconcileSelection,
+  type SelectionMode,
+  type ToolId,
+} from './selection';
+export {
   createEditorSession,
   type EditorSession,
   type EditorSessionOptions,

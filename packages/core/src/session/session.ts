@@ -5,13 +5,29 @@ import { createHistory, type HistoryStatus } from '../history';
 import { type CatalogProvider, type Clock, systemClock } from '../ports';
 import { createEmitter, type Emitter, type SessionEvents } from './events';
 import { checkInvariants, touchedByPatches } from './invariants';
+import {
+  type EntityId,
+  entityExists,
+  nextSelection,
+  reconcileSelection,
+  type SelectionMode,
+  sameIds,
+  type ToolId,
+} from './selection';
 import type { Command, CommandContext, CommandError, CommandResult } from './types';
 
 enablePatches();
 
+/**
+ * Everything the editor shows. `document` is undoable; `history` mirrors the undo stack; selection,
+ * hover and tool are session-only state (never in the history, never persisted).
+ */
 export interface SessionState {
   readonly document: DeepReadonly<SceneDocument>;
   readonly history: HistoryStatus;
+  readonly selection: readonly EntityId[];
+  readonly hover: EntityId | null;
+  readonly activeTool: ToolId;
 }
 
 /** The store without `setState`: only the session writes (ADR-0003). Works with zustand's `useStore`. */
@@ -57,6 +73,10 @@ export interface EditorSession {
   redo(): boolean;
   /** Throws if a gesture is already open (one at a time). */
   beginGesture(label: string): Gesture;
+  /** Ids that do not exist are ignored. Emits `selection:changed` when the selection changes. */
+  select(ids: readonly EntityId[], mode?: SelectionMode): void;
+  setHover(id: EntityId | null): void;
+  setActiveTool(tool: ToolId): void;
   on: Emitter<SessionEvents>['on'];
 }
 
@@ -87,6 +107,9 @@ export function createEditorSession(options: EditorSessionOptions): EditorSessio
   const store = createStore<SessionState>()(() => ({
     document: freeze(options.initialDocument, true),
     history: history.status(),
+    selection: [],
+    hover: null,
+    activeTool: 'select',
   }));
   let gesture: OpenGesture | undefined;
 
@@ -128,11 +151,24 @@ export function createEditorSession(options: EditorSessionOptions): EditorSessio
     patches: readonly Patch[],
     source: SessionEvents['document:changed']['source'],
   ) {
-    const previous = store.getState().history;
+    const previous = store.getState();
     const status = history.status();
-    store.setState({ document, history: status }, true);
+    const selection = reconcileSelection(document, previous.selection);
+    const hover =
+      previous.hover !== null && entityExists(document, previous.hover) ? previous.hover : null;
+    store.setState({ ...previous, document, history: status, selection, hover }, true);
+    // Documented order: document, then history, then selection (ARCHITECTURE §5).
     emitter.emit('document:changed', { patches, source });
-    if (!sameStatus(previous, status)) emitter.emit('history:changed', status);
+    if (!sameStatus(previous.history, status)) emitter.emit('history:changed', status);
+    if (selection !== previous.selection) emitter.emit('selection:changed', { ids: selection });
+  }
+
+  function select(ids: readonly EntityId[], mode: SelectionMode = 'replace') {
+    const state = store.getState();
+    const selection = nextSelection(state.document, state.selection, ids, mode);
+    if (sameIds(selection, state.selection)) return;
+    store.setState({ selection });
+    emitter.emit('selection:changed', { ids: selection });
   }
 
   function execute(command: Command): CommandResult {
@@ -212,6 +248,15 @@ export function createEditorSession(options: EditorSessionOptions): EditorSessio
     undo: () => travel('undo'),
     redo: () => travel('redo'),
     beginGesture,
+    select,
+    setHover(id) {
+      const state = store.getState();
+      const hover = id !== null && entityExists(state.document, id) ? id : null;
+      if (hover !== state.hover) store.setState({ hover });
+    },
+    setActiveTool(tool) {
+      if (tool !== store.getState().activeTool) store.setState({ activeTool: tool });
+    },
     on: emitter.on,
   };
 }
