@@ -3,3 +3,4 @@ packages:
   - "packages/*"
 minimumReleaseAgeExclude:
   - react-resizable-panels@4.14.3
+shellEmulator: true

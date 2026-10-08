@@ -13,7 +13,7 @@ Lee primero: [docs/PRD.md](docs/PRD.md) · [docs/ARCHITECTURE.md](docs/ARCHITECT
 
 pnpm monorepo · `packages/core` (TypeScript puro) · `apps/web` (Next.js 16 export estático, React 19, R3F 9, drei, three, Tailwind v4, shadcn/ui, Zustand, Immer, zod, idb) · Biome · Vitest + RTL + fast-check · Playwright · Cloudflare. Versiones definitivas en P1-01.
 
-## Comandos (los marcados ✔ ya existen; el resto llega con P1-07)
+## Comandos
 
 ```bash
 pnpm install --frozen-lockfile   # ✔
@@ -29,7 +29,8 @@ pnpm check                       # ✔ typecheck + lint + deps + core-purity + t
 pnpm test                        # ✔ vitest (core en node, web en happy-dom)
 pnpm test:watch                  # ✔ vitest en modo watch
 pnpm test:coverage               # ✔ informe v8 (html + lcov en ./coverage; umbrales informativos hasta P7-03)
-pnpm e2e                         # playwright (requiere build) — P1-07
+pnpm e2e                         # ✔ build E2E (NEXT_PUBLIC_E2E=1) + playwright (Chromium, WebGL por SwiftShader)
+pnpm start:static                # ✔ sirve apps/web/out en 127.0.0.1:4173
 node tools/planning/github-import.mjs validate   # valida docs/issues (disponible ya)
 ```
 
