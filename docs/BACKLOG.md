@@ -31,7 +31,7 @@ La columna «Sprint» agrupa secuencialmente en bloques de 5 días ideales (≈ 
 |---:|---:|---|---|---|---|---|---|
 | 1 | S1 | P0-01 | Revisar y aprobar la documentación de planificación | task | P0 | XS | — |
 | 2 | S1 | P0-02 | Resolver las preguntas abiertas del PRD | task | P0 | S | P0-01 |
-| 3 | S1 | P0-03 | Crear el repositorio en GitHub, ramas, protecciones e importar el backlog | task | P0 | S | P0-01 |
+| 3 | S1 | P0-03 | Crear el repositorio en GitHub, ramas, ajustes e importar el backlog | task | P0 | S | P0-01 |
 | 4 | S1 | P1-01 | Scaffold del monorepo (pnpm, Next.js 16 export estático, packages/core) | task | P0 | M | P0-03 |
 | 5 | S1 | P1-02 | Calidad de código: Biome, TypeScript estricto, dependency-cruiser y hooks de commit | task | P0 | S | P1-01 |
 | 6 | S1 | P1-03 | Vitest y React Testing Library: configuración y tests de humo | task | P0 | S | P1-01 |
@@ -159,7 +159,7 @@ La columna «Sprint» agrupa secuencialmente en bloques de 5 días ideales (≈ 
 
 - **P0-01** Revisar y aprobar la documentación de planificación — _M0, XS_
 - **P0-02** Resolver las preguntas abiertas del PRD — _M0, S_
-- **P0-03** Crear el repositorio en GitHub, ramas, protecciones e importar el backlog — _M0, S_
+- **P0-03** Crear el repositorio en GitHub, ramas, ajustes e importar el backlog — _M0, S_
 - **P1-01** Scaffold del monorepo (pnpm, Next.js 16 export estático, packages/core) — _M1, M_
 - **P1-02** Calidad de código: Biome, TypeScript estricto, dependency-cruiser y hooks de commit — _M1, S_
 - **P1-03** Vitest y React Testing Library: configuración y tests de humo — _M1, S_
@@ -274,7 +274,7 @@ La columna «Sprint» agrupa secuencialmente en bloques de 5 días ideales (≈ 
 
 - **P0-01** Revisar y aprobar la documentación de planificación (M0)
 - **P0-02** Resolver las preguntas abiertas del PRD (M0)
-- **P0-03** Crear el repositorio en GitHub, ramas, protecciones e importar el backlog (M0)
+- **P0-03** Crear el repositorio en GitHub, ramas, ajustes e importar el backlog (M0)
 - **P1-08** Despliegue de previews en Cloudflare (PR y develop) (M1)
 - **P1-09** Activar la revisión con Codex y validar el flujo con un PR de prueba (M1)
 - **P8-03** Producción: dominio, despliegue en Cloudflare, cabeceras y aprobación manual (M8)

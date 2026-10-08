@@ -97,10 +97,10 @@ Objetivo de activación: ≥60 % coloca un objeto en <60 s ([PRODUCT §10](../PR
 - **Depende de:** P1-08, P7-09
 
 ### Descripción
-Configurar el dominio, HTTPS, despliegue de producción desde `main` con **GitHub Environment `production` con revisores requeridos**, cabeceras de seguridad y caché, y **verificar los términos de uso comercial de Cloudflare** antes de abrir al público.
+Configurar el dominio, HTTPS, despliegue de producción **solo por `workflow_dispatch` manual** lanzado por el propietario (sin Environments con revisores: ver DEPLOYMENT §6), cabeceras de seguridad y caché, y **verificar los términos de uso comercial de Cloudflare** antes de abrir al público.
 
 ### Contexto
-[ADR-0005](../ADR/0005-hosting-cloudflare.md), [DEPLOYMENT](../DEPLOYMENT.md). Comprar el dominio y crear/aprobar el entorno son acciones humanas.
+[ADR-0005](../ADR/0005-hosting-cloudflare.md), [DEPLOYMENT](../DEPLOYMENT.md). Comprar el dominio, crear los tokens de Cloudflare y lanzar el despliegue son acciones humanas.
 
 ### Requisitos
 - Caché inmutable para assets con hash; `no-cache` para HTML.
@@ -108,7 +108,7 @@ Configurar el dominio, HTTPS, despliegue de producción desde `main` con **GitHu
 - Plan de rollback (redeploy del commit anterior) probado.
 
 ### Criterios de aceptación
-- [ ] Un merge `develop → main` **no despliega por sí solo**: hace falta aprobación humana (revisores del Environment `production` si hay Pro/repo público; si no, despliegue solo por `workflow_dispatch` manual del propietario).
+- [ ] Un merge `develop → main` **no despliega por sí solo**: `deploy-production` solo se ejecuta por `workflow_dispatch` lanzado por el propietario sobre `main` (verificado: no hay disparador por `push`).
 - [ ] `curl -I` muestra las cabeceras definidas; A+/A en un analizador de cabeceras razonable.
 - [ ] Rollback ejecutado en simulacro en < 10 min.
 - [ ] Términos de Cloudflare revisados y documentados en DEPLOYMENT.
@@ -190,7 +190,7 @@ Checklist de lanzamiento (calidad, rendimiento, seguridad, legal, soporte), gene
 
 ### Requisitos
 - Checklist archivada en `docs/releases/v0.1.0-beta.md`.
-- PR `develop → main` aprobado por humano; despliegue aprobado en el entorno `production`.
+- PR `develop → main` fusionado por el propietario; despliegue lanzado manualmente por el propietario (`deploy-production`).
 
 ### Criterios de aceptación
 - [ ] Todos los puntos de la checklist marcados o con excepción justificada.

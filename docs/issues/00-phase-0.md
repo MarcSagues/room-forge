@@ -23,8 +23,8 @@ Toda la implementación se apoya en estas decisiones. Cambiarlas después cuesta
 - Marcar cada ADR como `Aceptada` o abrir comentarios.
 
 ### Criterios de aceptación
-- [ ] Las 10 ADR están en estado `Aceptada` o con cambios solicitados registrados como comentarios.
-- [ ] El PRD y el ROADMAP están aprobados explícitamente (comentario «Aprobado» en esta issue).
+- [x] Las 10 ADR están en estado `Aceptada` o con cambios solicitados registrados como comentarios.
+- [x] El PRD y el ROADMAP están aprobados explícitamente (comentario «Aprobado» en esta issue).
 
 ### Tests esperados
 No aplica (revisión humana).
@@ -50,13 +50,13 @@ Algunas respuestas condicionan issues concretas (p. ej. i18n en P1-05, estilo vi
 - Registrar el resultado en el PRD (sección «Decisiones tomadas») y, si procede, en una ADR nueva.
 
 ### Criterios de aceptación
-- [ ] PRD §10 convertido en «Decisiones tomadas» con fecha.
-- [ ] Ninguna pregunta P0-bloqueante queda abierta (Q1, Q2, Q3).
+- [x] PRD §10 convertido en «Decisiones tomadas» con fecha.
+- [x] Ninguna pregunta P0-bloqueante queda abierta (Q1, Q2, Q3).
 
 ### Tests esperados
 No aplica.
 
-## ISSUE P0-03 — Crear el repositorio en GitHub, ramas, protecciones e importar el backlog
+## ISSUE P0-03 — Crear el repositorio en GitHub, ramas, ajustes e importar el backlog
 
 - **Tipo:** task
 - **Prioridad:** P0
@@ -67,24 +67,25 @@ No aplica.
 - **Depende de:** P0-01
 
 ### Descripción
-Crear el repositorio (privado al principio), subir la documentación, crear `develop` como rama por defecto, configurar protecciones, labels y milestones, e importar las issues con el script.
+Crear el repositorio (privado), subir la documentación, crear `develop` como rama por defecto, configurar los ajustes de repositorio disponibles, labels y milestones, e importar las issues con el script.
 
 ### Contexto
-**Estado (2026-10-08):** con la autorización del propietario («dale con esto») se creó el repositorio privado `MarcSagues/room-forge` (`main` y `develop`, `develop` por defecto) y se importaron las issues de las fases 0–8. Queda pendiente la decisión sobre protecciones (limitación del plan gratuito de GitHub). `gh` está autenticado como `MarcSagues` con scopes `repo`, `workflow`, `project`. **Cambiar ajustes del repositorio o crear más recursos remotos requiere autorización explícita.**
+**Estado (2026-10-08):** con la autorización del propietario («dale con esto») se creó el repositorio privado `MarcSagues/room-forge` (`main` y `develop`, `develop` por defecto) y se importaron las issues de las fases 0–8. El propietario decidió **no usar protecciones de GitHub** (ni Pro ni repo público). `gh` está autenticado como `MarcSagues` con scopes `repo`, `workflow`, `project`. **Cambiar ajustes del repositorio o crear más recursos remotos requiere autorización explícita.**
 
 ### Requisitos
 - Confirmar propietario/nombre/visibilidad del repo.
 - `git init`, primer commit con `docs/` y `.github/`, push de `main` y `develop`; `develop` por defecto ([ADR-0009](../ADR/0009-git-workflow.md)).
-- Protección de ramas `main` y `develop`: PR obligatorio, checks obligatorios (cuando existan), sin force-push ni borrado. **Limitación (2026-10-08):** no disponible en repos privados del plan gratuito (HTTP 403); requiere GitHub Pro o repositorio público. Ver [DEPLOYMENT §6](../DEPLOYMENT.md#6-protección-de-ramas-y-entornos-a-aplicar-en-p0-03--p1-04--p8-03-con-autorización). Mientras tanto rige el modo interino por convención.
+- ~~Protección de ramas~~ **No disponible y descartada** (2026-10-08): los repos privados del plan gratuito no la admiten (HTTP 403) y el propietario decidió **no pagar GitHub Pro ni hacer público el repositorio**. Rige la política por convención de [DEPLOYMENT §6](../DEPLOYMENT.md#6-política-de-ramas-y-despliegue-sin-protecciones-de-github).
+- Ajustes de repositorio (sí disponibles): squash y merge commit permitidos, rebase y *auto-merge* deshabilitados, borrar la rama al fusionar.
 - Ejecutar `github-import.mjs import --apply --phases 0-8` (la Fase 9 puede importarse después).
 - Opcional: crear un GitHub Project (tablero) con columnas Backlog/Ready/In progress/In review/Done.
 
 ### Criterios de aceptación
-- [ ] Repositorio creado con `main` y `develop`; `develop` es la rama por defecto.
-- [ ] **Decisión tomada** entre GitHub Pro, repositorio público o modo interino (registrada en ADR-0009/DEPLOYMENT §6).
-- [ ] Si se elige A o B: protecciones activas en ambas ramas (verificadas con `gh api repos/{o}/{r}/branches/{b}/protection`).
-- [ ] Labels y milestones creados; N issues importadas; el mapa `.import-state.json` guardado.
-- [ ] Una issue de ejemplo muestra «Depende de» con enlaces `#N` resueltos.
+- [x] Repositorio creado con `main` y `develop`; `develop` es la rama por defecto.
+- [x] Decisión sobre protecciones tomada y documentada: **política por convención** (sin Pro, repo privado) en ADR-0009 y DEPLOYMENT §6.
+- [x] Ajustes de repositorio aplicados (squash + merge commit, sin rebase, sin auto-merge, borrar rama al fusionar).
+- [x] Labels y milestones creados; N issues importadas; el mapa `.import-state.json` guardado.
+- [x] Una issue de ejemplo muestra «Depende de» con enlaces `#N` resueltos.
 
 ### Tests esperados
 - `node tools/planning/github-import.mjs validate` → 0 errores antes de importar.

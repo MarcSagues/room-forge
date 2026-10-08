@@ -61,14 +61,13 @@ jobs:
 # .github/workflows/deploy-production.yml  (ESPECIFICACIÓN — se crea en P8-03)
 name: deploy-production
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:               # SOLO manual: es la puerta humana (no hay Environments con revisores, ver §6)
 permissions:
   contents: read
 jobs:
   deploy:
+    if: github.ref == 'refs/heads/main'   # solo se despliega desde main
     runs-on: ubuntu-latest
-    environment: production        # ← revisores requeridos: PUERTA HUMANA
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -153,44 +152,44 @@ Las actualizaciones de `three`/`@react-three/*`/`react` se tratan como **riesgo*
 
 | Secreto / variable | Dónde | Quién | Cuándo |
 |---|---|---|---|
-| `CLOUDFLARE_API_TOKEN` (permisos mínimos: editar Workers/Pages del proyecto) | GitHub → Secrets (Environments `preview`/`production`) | Propietario | P1-08 |
+| `CLOUDFLARE_API_TOKEN_PREVIEW` y `CLOUDFLARE_API_TOKEN_PROD` (permisos mínimos; el de preview **no** puede tocar el proyecto de producción) | GitHub → Secrets **del repositorio** (no hay Environments con revisores, ver §6) | Propietario | P1-08 / P8-03 |
 | `CLOUDFLARE_ACCOUNT_ID` | idem | Propietario | P1-08 |
 | `NEXT_PUBLIC_E2E` | Solo en jobs E2E | CI | P1-07 |
 | `NEXT_PUBLIC_APP_VERSION` | Build (commit SHA/tag) | CI | P1-04 |
 
 Reglas: **nunca** secretos en el repositorio; rotación si se exponen; los agentes de IA no leen ni escriben secretos.
 
-## 6. Protección de ramas y entornos (a aplicar en P0-03 / P1-04 / P8-03, con autorización)
+## 6. Política de ramas y despliegue sin protecciones de GitHub
 
-| Regla | `develop` | `main` |
-|---|:---:|:---:|
-| PR obligatorio | ✅ | ✅ |
-| Checks obligatorios (`check`, `e2e`) | ✅ | ✅ |
-| Rama actualizada antes de fusionar | ✅ | ✅ |
-| Historial lineal / squash | Squash | Merge commit (release) |
-| Force-push y borrado bloqueados | ✅ | ✅ |
-| Aprobaciones requeridas | 0 (revisión por Codex + persona al fusionar) | 0 en la rama; **la puerta es el Environment `production` con revisores requeridos** |
-| Conversaciones resueltas | ✅ | ✅ |
-| Aplicar a administradores | ✅ | ✅ |
+**Decisión del propietario (2026-10-08): no se pagará GitHub Pro ni se hará público el repositorio.**
 
-### Limitación detectada (2026-10-08): plan gratuito de GitHub con repositorio privado
+En un repositorio privado del plan gratuito, `gh api repos/MarcSagues/room-forge/branches/main/protection` y `.../rulesets` devuelven **HTTP 403 «Upgrade to GitHub Pro or make this repository public to enable this feature»**, y (según la documentación de GitHub; **verificar en P8-03**) tampoco hay reglas de protección de *Environments* (revisores requeridos). Por tanto **no habrá** protección de ramas, rulesets ni aprobaciones de entorno, y esta política es **permanente** mientras no cambie esa decisión. Se compensa con convenciones, controles locales y un despliegue manual.
 
-Al crear el repositorio, `gh api repos/MarcSagues/room-forge/branches/main/protection` y `.../rulesets` devolvieron **HTTP 403 «Upgrade to GitHub Pro or make this repository public to enable this feature»**. En un repositorio **privado del plan gratuito no hay protección de ramas ni rulesets**, y (según la documentación de GitHub; **verificar al llegar a P8-03**) tampoco reglas de protección de *Environments* (revisores requeridos). La tabla anterior es, por tanto, el estado **objetivo**, no el actual.
+### Reglas y cómo se cumplen
 
-| Opción | Coste | Efecto | Cuándo encaja |
-|---|---|---|---|
-| **A. GitHub Pro** | De pago (precio por verificar) | Protecciones, rulesets y Environments con revisores también en privado | El repo debe seguir privado tras el lanzamiento |
-| **B. Repositorio público** | 0 | Protecciones y Environments gratuitos; código y docs visibles | Beta pública / open core; **exige decidir la licencia (Q3)** |
-| **C. Interino sin protecciones** | 0 | Las reglas se cumplen por convención ([AGENTS.md](../AGENTS.md)); sin bloqueo técnico | Fases 1–7 (aún no hay producción) |
+| Regla | Cómo se cumple (sin protección en GitHub) |
+|---|---|
+| Todo cambio entra por PR a `develop` | Convención + [AGENTS.md](../AGENTS.md) (prohíbe `push` directo) + hook `pre-push` local que rechaza empujar a `develop`/`main` (se añade en P1-02; el propietario puede saltarlo con `ROOMFORGE_ALLOW_PROTECTED_PUSH=1`) |
+| CI verde antes de fusionar | Se mira siempre el resultado; no hay bloqueo técnico |
+| Sin `force-push` ni borrado de `develop`/`main` | Convención + hook `pre-push` + AGENTS.md |
+| Squash en `develop`, *merge commit* en `main`, sin *auto-merge* | **Ajustes del repositorio** (sí disponibles en el plan gratuito): rebase deshabilitado, *auto-merge* deshabilitado, borrar rama al fusionar |
+| `main` solo recibe `develop` (y `hotfix/*` + *back-merge*) | Convención; fusiona el propietario (o un agente por orden explícita suya, nunca en `main`) |
+| Cambios en `.github/**` (workflows) revisados | El propietario revisa el diff de `.github/` antes de fusionar; CODEOWNERS es solo informativo sin protección |
 
-**Decisión provisional: C hasta P8-03**, y decidir A o B antes de la beta (P0-03 queda abierta con la etiqueta `needs-decision`). Reglas del modo interino:
-- Todo cambio va por PR a `develop` (convención; los commits de *setup* inicial se hicieron directamente y quedan registrados).
-- El resultado de CI se mira **siempre** antes de fusionar, aunque no bloquee técnicamente.
-- Nadie hace `push` directo a `develop`/`main`; `main` solo cambia mediante PR `develop → main` fusionado por el propietario.
-- El despliegue de producción (P8-03) **no tendrá disparador por `push`**: solo `workflow_dispatch` manual lanzado por el propietario, que actúa como puerta humana mientras no existan Environments con revisores.
+### Quién fusiona
+- **`develop`:** el propietario, o un agente **solo si el propietario lo ordena explícitamente en el chat** para ese PR.
+- **`main`:** solo el propietario.
 
-Nota: GitHub no permite aprobar el propio PR y los agentes actúan con las credenciales del propietario; por eso la aprobación humana efectiva de producción se implementa con el **Environment `production`** ([ADR-0009](ADR/0009-git-workflow.md)).
+### Producción: la puerta humana es el disparo manual
+- `deploy-production.yml` **no tiene disparador por `push`**: solo `workflow_dispatch`, con guarda `github.ref == refs/heads/main`.
+- El propietario fusiona el PR `develop → main` y **él** lanza el workflow (pestaña Actions → *Run workflow*). Los agentes **nunca** lanzan ese workflow.
+- Los secretos de preview y de producción son distintos (§5): un token de preview filtrado no puede desplegar producción.
 
+### Riesgo residual (R23)
+Los secretos son del repositorio y cualquier workflow de una rama del propio repo podría leerlos; los agentes actúan con las credenciales del propietario. Mitigaciones: tokens de mínimo privilegio y separados, AGENTS.md (no tocar workflows ni secretos salvo que la issue lo pida), revisión humana del diff de `.github/`, y rotación inmediata ante cualquier sospecha. Ver [RISKS R23](RISKS.md).
+
+### Si algún día cambia la decisión
+Con GitHub Pro o repositorio público bastaría activar protección de ramas (PR + checks obligatorios, sin force-push) y un Environment `production` con revisores, y volver a un disparador por `push` a `main` con aprobación del entorno. Nada del diseño lo impide.
 ## 7. Cabeceras y caché (`_headers`, P1-08 → P7-09 → P8-03)
 
 ```text
@@ -232,7 +231,7 @@ Alertas: avisos de uso en la cuenta de Cloudflare y revisión mensual de minutos
 
 1. `develop` verde y estable. Demo/hito cerrado.
 2. PR `develop → main` (merge commit). Checklist de release en el cuerpo del PR (`docs/releases/vX.Y.Z.md`).
-3. Aprobación humana del Environment `production` → despliegue.
+3. El propietario lanza manualmente el workflow `deploy-production` (*Run workflow* sobre `main`) → despliegue. Ver §6.
 4. Tag `vX.Y.Z` y release de GitHub con *changelog* generado de Conventional Commits.
 5. Smoke E2E contra producción; monitorización 24 h.
 6. Hotfix: rama `hotfix/<slug>` desde `main` → PR a `main` → *back-merge* a `develop`.

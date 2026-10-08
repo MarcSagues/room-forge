@@ -167,8 +167,8 @@ function validate(issues) {
     }
     const ac = i.sections.find((x) => x.name === 'Criterios de aceptación');
     if (ac) {
-      const n = (ac.text.match(/^- \[ \] /gm) ?? []).length;
-      if (n < 2) err(i, `«Criterios de aceptación» debe tener ≥2 casillas «- [ ]» (tiene ${n})`);
+      const n = (ac.text.match(/^- \[[ xX]\] /gm) ?? []).length;
+      if (n < 2) err(i, `«Criterios de aceptación» debe tener ≥2 casillas «- [ ]» / «- [x]» (tiene ${n})`);
     }
     if (names.length !== new Set(names).size) err(i, 'secciones duplicadas');
   }

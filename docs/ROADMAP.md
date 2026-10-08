@@ -65,7 +65,7 @@ El factor esperado cubre integración, bugs, revisiones y desconocidos (assets y
 - **Funcionalidades:** ninguna (documentación). Las acciones humanas pendientes: P0-01, P0-02, P0-03.
 - **Dependencias:** ninguna.
 - **Riesgos:** decisiones sin validar con datos (R3, R17); alcance difuso (R3).
-- **Criterios de aceptación:** ADR aceptadas; PRD con Q1–Q3 resueltas; repositorio con `develop`/`main`, protecciones, labels, milestones e issues importadas.
+- **Criterios de aceptación:** ADR aceptadas; PRD con Q1–Q3 resueltas; repositorio con `develop`/`main`, ajustes de repo, labels, milestones e issues importadas (sin protecciones de GitHub por decisión del propietario).
 - **Estimación:** 1,25 d (humano) + planificación ya realizada.
 - **Entregables:** `docs/` completa, `.github/`, `docs/issues/`, `tools/planning/`, repositorio remoto.
 
