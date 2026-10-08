@@ -15,12 +15,13 @@ import {
   type ToolId,
 } from './selection';
 import type { Command, CommandContext, CommandError, CommandResult } from './types';
+import type { ViewMode } from './view';
 
 enablePatches();
 
 /**
  * Everything the editor shows. `document` is undoable; `history` mirrors the undo stack; selection,
- * hover and tool are session-only state (never in the history, never persisted).
+ * hover, tool and view are session-only state (never in the history, never persisted).
  */
 export interface SessionState {
   readonly document: DeepReadonly<SceneDocument>;
@@ -28,6 +29,7 @@ export interface SessionState {
   readonly selection: readonly EntityId[];
   readonly hover: EntityId | null;
   readonly activeTool: ToolId;
+  readonly view: ViewMode;
 }
 
 /** The store without `setState`: only the session writes (ADR-0003). Works with zustand's `useStore`. */
@@ -77,6 +79,8 @@ export interface EditorSession {
   select(ids: readonly EntityId[], mode?: SelectionMode): void;
   setHover(id: EntityId | null): void;
   setActiveTool(tool: ToolId): void;
+  /** Emits `view:changed` when the view changes. Not undoable. */
+  setView(view: ViewMode): void;
   on: Emitter<SessionEvents>['on'];
 }
 
@@ -110,6 +114,7 @@ export function createEditorSession(options: EditorSessionOptions): EditorSessio
     selection: [],
     hover: null,
     activeTool: 'select',
+    view: 'perspective',
   }));
   let gesture: OpenGesture | undefined;
 
@@ -256,6 +261,11 @@ export function createEditorSession(options: EditorSessionOptions): EditorSessio
     },
     setActiveTool(tool) {
       if (tool !== store.getState().activeTool) store.setState({ activeTool: tool });
+    },
+    setView(view) {
+      if (view === store.getState().view) return;
+      store.setState({ view });
+      emitter.emit('view:changed', { view });
     },
     on: emitter.on,
   };

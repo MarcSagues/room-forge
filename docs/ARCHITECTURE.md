@@ -248,6 +248,7 @@ Emisor tipado mínimo en `core/session` (≈30 líneas, sin dependencias). Sirve
 | `document:changed` | `{ patches, source: 'command'|'undo'|'redo'|'load' }` | autosave, scene-engine (`invalidate`), analítica |
 | `history:changed` | `{ canUndo, canRedo, undoLabel, redoLabel }` | UI (botones, tooltips) |
 | `selection:changed` | `{ ids }` | scene-engine (contorno), panel propiedades |
+| `view:changed` | `{ view: 'perspective'\|'top' }` | scene-engine (cámara), barra de estado |
 | `gesture:started/ended` | `{ label }` | autosave (pausa durante gesto) |
 | `session:error` | `{ error }` | toasts, telemetría local |
 
@@ -265,7 +266,7 @@ Tras un comando, `undo`, `redo` o carga, el store ya contiene el documento nuevo
 
 ### 5.2 Estado de sesión (no deshacible, no persistente)
 
-`selection`, `hover` y `activeTool` viven en el store de la sesión junto al documento, pero **no** pasan por comandos ni por el historial: seleccionar no crea entradas de historial y `undo` no los restaura.
+`selection`, `hover`, `activeTool` y `view` (`perspective` | `top`) viven en el store de la sesión junto al documento, pero **no** pasan por comandos ni por el historial: seleccionar o cambiar de vista no crea entradas de historial y `undo` no los restaura. `setView(view)` emite `view:changed` solo si la vista cambia.
 
 - `select(ids, mode)` con `mode` = `replace` (por defecto) | `add` | `toggle`. Acepta listas aunque el MVP seleccione una entidad (multi-selección futura). Los ids que no existen se ignoran; `replace` sin ids válidos limpia la selección.
 - Tras cada cambio del documento se **reconcilian** selección y *hover*: se descartan los ids que ya no existen (también tras `undo`/`redo`, que **no** los recuperan).
@@ -354,6 +355,17 @@ flowchart LR
 - **Memoización:** el constructor cachea suelo/techo por `(ancho, fondo[, alto])` y cada pared por `(largo, alto, grosor, huecos)` en cachés acotadas (48 entradas). Cambiar solo el alto no reconstruye el suelo; cambiar un hueco solo reconstruye su pared. Los contadores `stats.builds` lo hacen comprobable.
 - **Recursos GPU:** `useDisposable` libera la geometría al cambiar la entrada o desmontar (R3F solo libera lo que crea él). Prueba E2E: 12 redimensionados seguidos no aumentan `renderer.info.memory.geometries`.
 - **Presupuesto de referencia:** sala por defecto sin aperturas = 8 *draw calls*, 52 triángulos, 8 geometrías (4 paredes + suelo + techo + 2 mallas de rejilla).
+
+### 6.8 Cámara (`scene-engine/camera`, P2-08)
+
+- **Dos cámaras, dos `CameraControls` de drei:** perspectiva orbital y ortográfica cenital (pan/zoom). Ambas se crean y dimensionan en el *rig* (R3F solo redimensiona la cámara con la que renderiza); solo una está activa y habilitada.
+- **`CameraDirector` (TypeScript sin React):** concentra toda la lógica imperativa —cambios de vista, `fit()`, límites— y se prueba sin WebGL. El componente `CameraRig` solo monta los controles, llama a `director.step()` en cada frame (prioridad −2, antes de que los controles se actualicen) y adapta el viewport.
+- **Cambio de vista (`1`/`2`, ≤ 600 ms; la animación dura 450 ms):** perspectiva → planta anima la cámara de perspectiva hasta una pose cenital *equivalente* a la planta encuadrada y, al llegar, cambia a la ortográfica (mismo encuadre en el plano del suelo, sin salto). Planta → perspectiva hace el corte primero y luego inclina hasta la última pose del usuario. Durante la animación la entrada del usuario está desactivada; `F` se ignora para no dejar la cámara a medias.
+- **Matemática pura** (`framing.ts`, `transition.ts`): `sceneBounds`, `fitPerspective`, `fitTop`, `constrainPose`, `overheadPose`, `blendView` (órbita esférica, zoom geométrico, sin asignaciones). Es lo que verifican los tests de propiedades.
+- **Límites que dependen de la sala:** distancia ≤ 4× la diagonal, elevación máxima 85° (con el objetivo en `y ≥ 0` la cámara nunca atraviesa el suelo) y el objetivo confinado a la sala más un margen. Se reajustan al cambiar las salas; si la cámara en reposo queda fuera, se la devuelve dentro.
+- **Controles:** el botón izquierdo queda libre para seleccionar; derecho orbita (o desplaza con Shift pulsado; camera-controls no tiene modificadores, así que `shift-pan.ts` cambia la acción del botón), central desplaza, rueda zoom. `prefers-reduced-motion`: corte directo y sin amortiguación.
+- **Invalidación:** una transición pide un frame por frame (`invalidate()` dentro de `useFrame` suma uno más) y al terminar para sola. `setBoundary` marca los controles como «cambiados» y drei pediría un frame extra por cada cambio de sala; el director consume esa marca en el momento para que un cambio de documento siga costando **exactamente un frame**.
+- **Atajos:** `editor/hotkeys.ts` (`1`, `2`, `F`; no se activan al escribir en un campo ni con modificadores; los dígitos se reconocen por tecla física).
 
 ## 7. Biblioteca de assets (`asset-library`)
 

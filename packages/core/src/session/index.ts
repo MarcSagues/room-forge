@@ -30,3 +30,4 @@ export type {
   CommandErrorCode,
   CommandResult,
 } from './types';
+export { VIEW_MODES, type ViewMode } from './view';

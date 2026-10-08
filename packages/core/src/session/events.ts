@@ -2,11 +2,13 @@ import type { Patch } from 'immer';
 import type { HistoryStatus } from '../history';
 import type { EntityId } from './selection';
 import type { CommandError } from './types';
+import type { ViewMode } from './view';
 
 export interface SessionEvents {
   'document:changed': { patches: readonly Patch[]; source: 'command' | 'undo' | 'redo' | 'load' };
   'history:changed': HistoryStatus;
   'selection:changed': { ids: readonly EntityId[] };
+  'view:changed': { view: ViewMode };
   'gesture:started': { label: string };
   'gesture:ended': { label: string; committed: boolean };
   'session:error': { error: CommandError };

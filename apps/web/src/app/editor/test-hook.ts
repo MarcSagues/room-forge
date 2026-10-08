@@ -1,5 +1,5 @@
 import { createRoom, type EditorSession, resizeRoom } from '@roomforge/core';
-import type { RenderInfo, SceneHandle } from '@/scene-engine';
+import type { RenderInfo, SceneCamera, SceneHandle } from '@/scene-engine';
 
 /**
  * Test hook for Playwright (TESTING_STRATEGY §5). Only builds with `NEXT_PUBLIC_E2E=1` expose
@@ -12,6 +12,8 @@ export interface RoomForgeTestHook {
   commands: { createRoom: typeof createRoom; resizeRoom: typeof resizeRoom };
   /** Renderer counters; `null` until the canvas is mounted. */
   info(): RenderInfo | null;
+  /** Camera state and the same moves a user can make; inert until the canvas is mounted. */
+  camera: SceneCamera;
 }
 
 declare global {
@@ -32,6 +34,12 @@ export function installTestHook(
     session: deps.session,
     commands: { createRoom, resizeRoom },
     info: () => deps.getScene()?.renderInfo() ?? null,
+    camera: {
+      fit: () => deps.getScene()?.camera.fit(),
+      snapshot: () => deps.getScene()?.camera.snapshot() ?? null,
+      orbit: (azimuth, polar) => deps.getScene()?.camera.orbit(azimuth, polar),
+      dolly: (distance) => deps.getScene()?.camera.dolly(distance),
+    },
   };
   target.__RF__ = hook;
   return () => {
