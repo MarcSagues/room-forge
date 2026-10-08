@@ -70,18 +70,19 @@ No aplica.
 Crear el repositorio (privado al principio), subir la documentación, crear `develop` como rama por defecto, configurar protecciones, labels y milestones, e importar las issues con el script.
 
 ### Contexto
-Hoy el directorio no es un repositorio git y no existe remoto. `gh` está autenticado como `MarcSagues` con scopes `repo`, `workflow`, `project`. **Crear recursos remotos y cambiar ajustes del repositorio requiere autorización explícita.**
+**Estado (2026-10-08):** con la autorización del propietario («dale con esto») se creó el repositorio privado `MarcSagues/room-forge` (`main` y `develop`, `develop` por defecto) y se importaron las issues de las fases 0–8. Queda pendiente la decisión sobre protecciones (limitación del plan gratuito de GitHub). `gh` está autenticado como `MarcSagues` con scopes `repo`, `workflow`, `project`. **Cambiar ajustes del repositorio o crear más recursos remotos requiere autorización explícita.**
 
 ### Requisitos
 - Confirmar propietario/nombre/visibilidad del repo.
 - `git init`, primer commit con `docs/` y `.github/`, push de `main` y `develop`; `develop` por defecto ([ADR-0009](../ADR/0009-git-workflow.md)).
-- Protección de ramas `main` y `develop`: PR obligatorio, checks obligatorios (cuando existan), sin force-push ni borrado.
+- Protección de ramas `main` y `develop`: PR obligatorio, checks obligatorios (cuando existan), sin force-push ni borrado. **Limitación (2026-10-08):** no disponible en repos privados del plan gratuito (HTTP 403); requiere GitHub Pro o repositorio público. Ver [DEPLOYMENT §6](../DEPLOYMENT.md#6-protección-de-ramas-y-entornos-a-aplicar-en-p0-03--p1-04--p8-03-con-autorización). Mientras tanto rige el modo interino por convención.
 - Ejecutar `github-import.mjs import --apply --phases 0-8` (la Fase 9 puede importarse después).
 - Opcional: crear un GitHub Project (tablero) con columnas Backlog/Ready/In progress/In review/Done.
 
 ### Criterios de aceptación
 - [ ] Repositorio creado con `main` y `develop`; `develop` es la rama por defecto.
-- [ ] Protecciones activas en ambas ramas (verificadas con `gh api repos/{o}/{r}/branches/{b}/protection`).
+- [ ] **Decisión tomada** entre GitHub Pro, repositorio público o modo interino (registrada en ADR-0009/DEPLOYMENT §6).
+- [ ] Si se elige A o B: protecciones activas en ambas ramas (verificadas con `gh api repos/{o}/{r}/branches/{b}/protection`).
 - [ ] Labels y milestones creados; N issues importadas; el mapa `.import-state.json` guardado.
 - [ ] Una issue de ejemplo muestra «Depende de» con enlaces `#N` resueltos.
 

@@ -6,6 +6,7 @@
 //   node tools/planning/github-import.mjs backlog
 //   node tools/planning/github-import.mjs import --repo OWNER/REPO [--phases 0-8] [--branch develop]            (dry-run)
 //   node tools/planning/github-import.mjs import --repo OWNER/REPO --apply [--phases 0-8] [--delay 1500]      (escribe)
+//   node tools/planning/github-import.mjs import --repo OWNER/REPO --apply --refresh                          (reescribe el cuerpo de las ya importadas; añade --only P0-03,P1-04 para limitarlo)
 //   node tools/planning/github-import.mjs show P1-01 [--repo OWNER/REPO]                                      (cuerpo renderizado)
 
 import { execFileSync } from 'node:child_process';
@@ -412,7 +413,7 @@ function gh(args, opts = {}) {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function importIssues(issues, opts) {
-  const { repo, apply, branch, phases, delay } = opts;
+  const { repo, apply, branch, phases, delay, refresh, only } = opts;
   if (!repo || !/^[\w.-]+\/[\w.-]+$/.test(repo)) fail('Falta --repo OWNER/REPO');
   const [lo, hi] = phases;
   const selected = issues.filter((i) => {
@@ -491,7 +492,7 @@ async function importIssues(issues, opts) {
   // pasada 2: resolver referencias #N y listas de hijas
   if (apply) {
     state.finalized ??= {};
-    const todo = order.filter((i) => map[i.id] && (!state.finalized[i.id] || (i.type === 'epic' && created > 0)));
+    const todo = order.filter((i) => map[i.id] && (!only || only.includes(i.id)) && (refresh || !state.finalized[i.id] || (i.type === 'epic' && created > 0)));
     console.log(`\n[pasada 2] actualizando referencias cruzadas en ${todo.length} issues…`);
     for (const i of todo) {
       const body = renderBody(i, { map, repo, branch, byId, children: childrenOf(i.id) });
@@ -519,6 +520,8 @@ function parseArgs(argv) {
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--apply') o.apply = true;
+    else if (a === '--refresh') o.refresh = true;
+    else if (a === '--only') o.only = argv[++i].split(',').map((x) => x.trim());
     else if (a === '--repo') o.repo = argv[++i];
     else if (a === '--branch') o.branch = argv[++i];
     else if (a === '--delay') o.delay = Number(argv[++i]);

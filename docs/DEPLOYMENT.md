@@ -173,6 +173,22 @@ Reglas: **nunca** secretos en el repositorio; rotación si se exponen; los agent
 | Conversaciones resueltas | ✅ | ✅ |
 | Aplicar a administradores | ✅ | ✅ |
 
+### Limitación detectada (2026-10-08): plan gratuito de GitHub con repositorio privado
+
+Al crear el repositorio, `gh api repos/MarcSagues/room-forge/branches/main/protection` y `.../rulesets` devolvieron **HTTP 403 «Upgrade to GitHub Pro or make this repository public to enable this feature»**. En un repositorio **privado del plan gratuito no hay protección de ramas ni rulesets**, y (según la documentación de GitHub; **verificar al llegar a P8-03**) tampoco reglas de protección de *Environments* (revisores requeridos). La tabla anterior es, por tanto, el estado **objetivo**, no el actual.
+
+| Opción | Coste | Efecto | Cuándo encaja |
+|---|---|---|---|
+| **A. GitHub Pro** | De pago (precio por verificar) | Protecciones, rulesets y Environments con revisores también en privado | El repo debe seguir privado tras el lanzamiento |
+| **B. Repositorio público** | 0 | Protecciones y Environments gratuitos; código y docs visibles | Beta pública / open core; **exige decidir la licencia (Q3)** |
+| **C. Interino sin protecciones** | 0 | Las reglas se cumplen por convención ([AGENTS.md](../AGENTS.md)); sin bloqueo técnico | Fases 1–7 (aún no hay producción) |
+
+**Decisión provisional: C hasta P8-03**, y decidir A o B antes de la beta (P0-03 queda abierta con la etiqueta `needs-decision`). Reglas del modo interino:
+- Todo cambio va por PR a `develop` (convención; los commits de *setup* inicial se hicieron directamente y quedan registrados).
+- El resultado de CI se mira **siempre** antes de fusionar, aunque no bloquee técnicamente.
+- Nadie hace `push` directo a `develop`/`main`; `main` solo cambia mediante PR `develop → main` fusionado por el propietario.
+- El despliegue de producción (P8-03) **no tendrá disparador por `push`**: solo `workflow_dispatch` manual lanzado por el propietario, que actúa como puerta humana mientras no existan Environments con revisores.
+
 Nota: GitHub no permite aprobar el propio PR y los agentes actúan con las credenciales del propietario; por eso la aprobación humana efectiva de producción se implementa con el **Environment `production`** ([ADR-0009](ADR/0009-git-workflow.md)).
 
 ## 7. Cabeceras y caché (`_headers`, P1-08 → P7-09 → P8-03)

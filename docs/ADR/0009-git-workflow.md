@@ -26,3 +26,6 @@ Flujo pedido: issue → rama feature → Claude implementa y prueba → PR → C
 - (+) Trazabilidad issue↔PR↔commit; historia lineal en `develop`.
 - (−) El README de la rama por defecto muestra `develop` (aceptable).
 - (−) Requiere configurar protecciones y entornos (P0-03, P1-09, P8-03; acciones humanas).
+
+## Actualización 2026-10-08 — limitación del plan de GitHub
+Al aplicar esta ADR se comprobó que un **repositorio privado del plan gratuito no admite protección de ramas ni rulesets** (HTTP 403) y que los Environments con revisores requeridos probablemente tampoco. La decisión de fondo (aprobación humana de `main`) se mantiene, pero su **implementación técnica queda pendiente** de elegir entre GitHub Pro, repositorio público o el modo interino por convención + `workflow_dispatch` manual. Detalle y reglas del modo interino en [DEPLOYMENT §6](../DEPLOYMENT.md#6-protección-de-ramas-y-entornos-a-aplicar-en-p0-03--p1-04--p8-03-con-autorización).
