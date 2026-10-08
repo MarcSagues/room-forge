@@ -13,7 +13,7 @@ Lee primero: [docs/PRD.md](docs/PRD.md) · [docs/ARCHITECTURE.md](docs/ARCHITECT
 
 pnpm monorepo · `packages/core` (TypeScript puro) · `apps/web` (Next.js 16 export estático, React 19, R3F 9, drei, three, Tailwind v4, shadcn/ui, Zustand, Immer, zod, idb) · Biome · Vitest + RTL + fast-check · Playwright · Cloudflare. Versiones definitivas en P1-01.
 
-## Comandos (los marcados ✔ ya existen; el resto llega con P1-04 y P1-07)
+## Comandos (los marcados ✔ ya existen; el resto llega con P1-07)
 
 ```bash
 pnpm install --frozen-lockfile   # ✔
@@ -68,7 +68,7 @@ node tools/planning/github-import.mjs validate   # valida docs/issues (disponibl
 
 ## Definition of Done (resumen)
 
-Criterios de la issue verificados · tests escritos y verdes · `pnpm check` verde · sin deuda sin issue · revisión sin P0/P1 abiertos · docs/ADR actualizadas · si toca el render, `renderer.info` antes/después · fusión por una persona.
+Criterios de la issue verificados · tests escritos y verdes · `pnpm check` verde · checks de CI `check` (y `e2e` desde P1-07) verdes en el PR, consultados con `gh pr checks <n>` antes de fusionar (no hay bloqueo técnico) · sin deuda sin issue · revisión sin P0/P1 abiertos · docs/ADR actualizadas · si toca el render, `renderer.info` antes/después · fusión por una persona.
 
 ## Review guidelines
 
