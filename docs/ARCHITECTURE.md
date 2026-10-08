@@ -222,8 +222,9 @@ Las invariantes se prueban con **tests basados en propiedades** (fast-check): pa
 ### 4.4 Historial
 
 - Entrada: `{ label, patches, inverse, mergeKey?, at }`. Límite: 200 entradas (configurable).
-- **Coalescing:** comandos consecutivos con el mismo `mergeKey` dentro de 600 ms se fusionan (p. ej. teclear en un campo numérico, mover con flechas).
-- **Gestos:** `session.beginGesture(label)` agrupa varios comandos en **una** entrada (p. ej. «Colocar kit de escritorio»).
+- **Coalescing:** comandos consecutivos con el mismo `mergeKey` dentro de 600 ms se fusionan (p. ej. teclear en un campo numérico, mover con flechas). La ventana se desliza con cada comando fusionado, y una entrada recuperada con `redo` no absorbe comandos nuevos.
+- **Gestos:** `session.beginGesture(label)` devuelve `{ commit(), cancel() }` y agrupa varios comandos en **una** entrada (p. ej. «Colocar kit de escritorio»). Mientras el gesto está abierto, los comandos trabajan sobre una copia: el store y los oyentes solo ven el resultado al confirmar (un `document:changed`); `cancel()` lo descarta sin entrada ni evento. Un gesto a la vez; `undo`/`redo` no actúan con un gesto abierto.
+- **Implementación (P2-03):** `packages/core/src/history` (pilas puras de patches) + `EditorSession.undo()/redo()`; el estado `{ canUndo, canRedo, undoLabel, redoLabel }` está en el store (`state.history`) y se emite `history:changed` solo cuando cambia.
 - El historial **no se persiste** entre sesiones en el MVP (se documenta como mejora futura; el autoguardado cubre la pérdida de datos).
 - La selección y el estado de herramienta **no** se deshacen (convención de editores profesionales).
 

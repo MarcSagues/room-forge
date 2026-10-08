@@ -1,8 +1,12 @@
 import type { Patch } from 'immer';
+import type { HistoryStatus } from '../history';
 import type { CommandError } from './types';
 
 export interface SessionEvents {
   'document:changed': { patches: readonly Patch[]; source: 'command' | 'undo' | 'redo' | 'load' };
+  'history:changed': HistoryStatus;
+  'gesture:started': { label: string };
+  'gesture:ended': { label: string; committed: boolean };
   'session:error': { error: CommandError };
 }
 

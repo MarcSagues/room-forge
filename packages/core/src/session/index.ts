@@ -11,6 +11,7 @@ export {
   createEditorSession,
   type EditorSession,
   type EditorSessionOptions,
+  type Gesture,
   type ReadonlyStore,
   type SessionState,
 } from './session';
