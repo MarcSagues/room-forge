@@ -26,7 +26,12 @@ test('editor loads the shell and exposes the E2E hook', async ({ page }) => {
   await expect(page.getByRole('main', { name: 'Viewport' })).toBeVisible();
   await expect(page.getByRole('complementary', { name: 'Catalog panel' })).toBeVisible();
   await expect(page.getByRole('complementary', { name: 'Properties panel' })).toBeVisible();
-  expect(await page.evaluate(() => window.__RF__)).toEqual({});
+  // The hook is not serializable (it holds the session): check its shape from inside the page.
+  expect(await page.evaluate(() => Object.keys(window.__RF__ ?? {}).sort())).toEqual([
+    'commands',
+    'info',
+    'session',
+  ]);
   expect(errors).toEqual([]);
 });
 

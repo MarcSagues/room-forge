@@ -207,10 +207,10 @@ Integrar React Three Fiber en `apps/web/src/scene-engine/canvas`: `Canvas` clien
 - Contexto de pérdida de WebGL: escuchar `webglcontextlost` y dejar gancho para P7-08.
 
 ### Criterios de aceptación
-- [ ] Sin interacción, `renderer.info.render.frame` no aumenta durante 5 s.
-- [ ] Un cambio en el documento produce exactamente 1 frame.
-- [ ] El bundle de la landing no incluye three (verificado con análisis de bundle).
-- [ ] Strict Mode en desarrollo no produce errores ni fugas visibles.
+- [x] Sin interacción, `renderer.info.render.frame` no aumenta durante 5 s.
+- [x] Un cambio en el documento produce exactamente 1 frame.
+- [x] El bundle de la landing no incluye three (verificado con análisis de bundle).
+- [x] Strict Mode en desarrollo no produce errores ni fugas visibles.
 
 ### Tests esperados
 - E2E: leer `__RF__.info.render.frame` antes/después de esperar y de ejecutar un comando.

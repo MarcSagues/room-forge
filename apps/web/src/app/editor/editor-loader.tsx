@@ -2,21 +2,14 @@
 
 import dynamic from 'next/dynamic';
 import { translate } from '@/ui';
-import { installTestHook } from './test-hook';
 
-// The editor is client-only (ADR-0002): it reads viewport size and storage, and will host WebGL.
-export const EditorLoader = dynamic(
-  () =>
-    import('@/ui').then((m) => {
-      installTestHook(window);
-      return m.EditorShell;
-    }),
-  {
-    ssr: false,
-    loading: () => (
-      <p role="status" className="grid h-dvh place-items-center text-fg-muted">
-        {translate('en', 'shell.loading')}
-      </p>
-    ),
-  },
-);
+// The editor is client-only (ADR-0002): it reads viewport size and storage and hosts WebGL.
+// Loading it lazily also keeps three.js out of every other route (the landing stays light).
+export const EditorLoader = dynamic(() => import('./editor-app'), {
+  ssr: false,
+  loading: () => (
+    <p role="status" className="grid h-dvh place-items-center text-fg-muted">
+      {translate('en', 'shell.loading')}
+    </p>
+  ),
+});
