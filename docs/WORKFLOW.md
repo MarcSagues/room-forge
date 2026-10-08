@@ -102,6 +102,8 @@ Nota: `@codex fix it` existe pero **no se usa**; en este flujo corrige Claude (u
 | `develop` | **Persona** (Marc), o un agente **solo por orden explícita del propietario en el chat** para ese PR | *Squash and merge* | `check` y `e2e` verdes (se vigilan por convención, no hay bloqueo técnico), conversaciones resueltas, sin P0/P1 abiertos de Codex |
 | `main` | **Persona** | *Merge commit* (PR `develop → main`) | Checklist de release; después, **el propietario lanza `deploy-production` a mano** (ver [DEPLOYMENT §6](DEPLOYMENT.md#6-política-de-ramas-y-despliegue-sin-protecciones-de-github)) |
 
+Los checks de CI tienen nombres estables: `check` (workflow `ci`, [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)) y `e2e` (desde P1-07). Antes de fusionar, quien fusiona consulta su resultado (`gh pr checks <n>` o la pestaña *Checks*); un check rojo o pendiente bloquea la fusión por convención.
+
 Prohibido para agentes: fusionar en `main`, fusionar en `develop` sin orden explícita del propietario, activar *auto-merge*, lanzar el workflow de producción, `git push` directo a `develop`/`main`, `git push --force`, borrar `develop`/`main`, tocar secretos.
 
 No hay protección de ramas en GitHub (repo privado, plan gratuito): estas reglas se cumplen por convención, con un hook `pre-push` local (`.husky/pre-push`) y el despliegue manual. Ver [DEPLOYMENT §6](DEPLOYMENT.md#6-política-de-ramas-y-despliegue-sin-protecciones-de-github).
