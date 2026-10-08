@@ -1,6 +1,7 @@
-import { enablePatches, freeze, type Patch, produceWithPatches } from 'immer';
+import { applyPatches, enablePatches, freeze, type Patch, produceWithPatches } from 'immer';
 import { createStore, type StoreApi } from 'zustand/vanilla';
 import { createNanoIdGen, type DeepReadonly, type IdGen, type SceneDocument } from '../domain';
+import { createHistory, type HistoryStatus } from '../history';
 import { type CatalogProvider, type Clock, systemClock } from '../ports';
 import { createEmitter, type Emitter, type SessionEvents } from './events';
 import { checkInvariants, touchedByPatches } from './invariants';
@@ -10,9 +11,10 @@ enablePatches();
 
 export interface SessionState {
   readonly document: DeepReadonly<SceneDocument>;
+  readonly history: HistoryStatus;
 }
 
-/** The store without `setState`: only `execute` writes (ADR-0003). Works with zustand's `useStore`. */
+/** The store without `setState`: only the session writes (ADR-0003). Works with zustand's `useStore`. */
 export type ReadonlyStore<T> = Pick<StoreApi<T>, 'getState' | 'getInitialState' | 'subscribe'>;
 
 export interface EditorSessionOptions {
@@ -21,6 +23,22 @@ export interface EditorSessionOptions {
   catalog: CatalogProvider;
   idGen?: IdGen;
   clock?: Clock;
+  /** Maximum undo entries (default 200). */
+  historyLimit?: number;
+  /** Coalescing window for commands with the same `mergeKey` (default 600 ms). */
+  mergeWindowMs?: number;
+}
+
+/**
+ * Groups several commands into one history entry (e.g. "Place desk kit"). While a gesture is open,
+ * commands build on a working copy; the store and listeners only see the result on `commit`.
+ */
+export interface Gesture {
+  readonly label: string;
+  /** Publishes the accumulated changes as one entry and one `document:changed`. */
+  commit(): CommandResult;
+  /** Discards the accumulated changes; nothing is published or recorded. */
+  cancel(): void;
 }
 
 export interface EditorSession {
@@ -34,7 +52,23 @@ export interface EditorSession {
   ): () => void;
   /** Applies a command atomically: either every change lands and invariants hold, or nothing does. */
   execute(command: Command): CommandResult;
+  /** Returns false when there is nothing to undo or a gesture is open. */
+  undo(): boolean;
+  redo(): boolean;
+  /** Throws if a gesture is already open (one at a time). */
+  beginGesture(label: string): Gesture;
   on: Emitter<SessionEvents>['on'];
+}
+
+type Applied =
+  | { ok: true; next: SceneDocument; patches: Patch[]; inverse: Patch[] }
+  | { ok: false; error: CommandError };
+
+interface OpenGesture {
+  label: string;
+  document: SceneDocument;
+  patches: Patch[];
+  inverse: Patch[];
 }
 
 export function createEditorSession(options: EditorSessionOptions): EditorSession {
@@ -43,18 +77,23 @@ export function createEditorSession(options: EditorSessionOptions): EditorSessio
     idGen: options.idGen ?? createNanoIdGen(),
     clock: options.clock ?? systemClock,
   };
+  const history = createHistory({
+    clock: ctx.clock,
+    ...(options.historyLimit === undefined ? {} : { limit: options.historyLimit }),
+    ...(options.mergeWindowMs === undefined ? {} : { mergeWindowMs: options.mergeWindowMs }),
+  });
   const emitter = createEmitter<SessionEvents>();
   // Immer freezes every new version; freezing the first one too keeps all versions immutable.
   const store = createStore<SessionState>()(() => ({
     document: freeze(options.initialDocument, true),
+    history: history.status(),
   }));
+  let gesture: OpenGesture | undefined;
 
-  function fail(error: CommandError): CommandResult {
-    return { ok: false, error };
-  }
+  const current = () => store.getState().document as SceneDocument;
 
-  function execute(command: Command): CommandResult {
-    const base = store.getState().document as SceneDocument;
+  /** Runs a command against `base` and checks invariants, without publishing anything. */
+  function apply(command: Command, base: SceneDocument): Applied {
     let rejection: CommandError | undefined;
     let produced: readonly [SceneDocument, Patch[], Patch[]];
     try {
@@ -68,41 +107,120 @@ export function createEditorSession(options: EditorSessionOptions): EditorSessio
         message: thrown instanceof Error ? thrown.message : String(thrown),
       };
       emitter.emit('session:error', { error });
-      return fail(error);
+      return { ok: false, error };
     }
-    if (rejection) return fail(rejection);
+    if (rejection) return { ok: false, error: rejection };
 
     const [next, patches, inverse] = produced;
+    if (patches.length > 0) {
+      const violations = checkInvariants(next, ctx.catalog, touchedByPatches(patches));
+      if (violations.length > 0) {
+        const message = violations.map((v) => `${v.invariant}: ${v.message}`).join('; ');
+        return { ok: false, error: { code: 'invariant', message, violations } };
+      }
+    }
+    return { ok: true, next, patches, inverse };
+  }
+
+  /** One store update, then the events, so listeners see a consistent state. */
+  function publish(
+    document: SceneDocument,
+    patches: readonly Patch[],
+    source: SessionEvents['document:changed']['source'],
+  ) {
+    const previous = store.getState().history;
+    const status = history.status();
+    store.setState({ document, history: status }, true);
+    emitter.emit('document:changed', { patches, source });
+    if (!sameStatus(previous, status)) emitter.emit('history:changed', status);
+  }
+
+  function execute(command: Command): CommandResult {
+    const result = apply(command, gesture ? gesture.document : current());
+    if (!result.ok) return result;
+    const { next, patches, inverse } = result;
     if (patches.length === 0) return { ok: true, patches, inverse };
 
-    const violations = checkInvariants(next, ctx.catalog, touchedByPatches(patches));
-    if (violations.length > 0) {
-      return fail({
-        code: 'invariant',
-        message: violations.map((v) => `${v.invariant}: ${v.message}`).join('; '),
-        violations,
+    if (gesture) {
+      gesture.document = next;
+      gesture.patches.push(...patches);
+      gesture.inverse = [...inverse, ...gesture.inverse];
+    } else {
+      history.push({
+        label: command.label,
+        patches,
+        inverse,
+        ...(command.mergeKey === undefined ? {} : { mergeKey: command.mergeKey }),
       });
+      publish(next, patches, 'command');
     }
-
-    store.setState({ document: next }, true);
-    emitter.emit('document:changed', { patches, source: 'command' });
     return { ok: true, patches, inverse };
+  }
+
+  function travel(direction: 'undo' | 'redo'): boolean {
+    if (gesture) return false;
+    const entry = direction === 'undo' ? history.undo() : history.redo();
+    if (!entry) return false;
+    const patches = direction === 'undo' ? entry.inverse : entry.patches;
+    publish(applyPatches(current(), patches as Patch[]), patches, direction);
+    return true;
+  }
+
+  function beginGesture(label: string): Gesture {
+    if (gesture) throw new Error(`A gesture is already open ("${gesture.label}")`);
+    const open: OpenGesture = { label, document: current(), patches: [], inverse: [] };
+    gesture = open;
+    emitter.emit('gesture:started', { label });
+
+    const close = (committed: boolean) => {
+      if (gesture !== open) throw new Error(`Gesture "${label}" is no longer open`);
+      gesture = undefined;
+      emitter.emit('gesture:ended', { label, committed });
+    };
+
+    return {
+      label,
+      commit() {
+        close(true);
+        const { document, patches, inverse } = open;
+        if (patches.length > 0) {
+          history.push({ label, patches, inverse });
+          publish(document, patches, 'command');
+        }
+        return { ok: true, patches, inverse };
+      },
+      cancel() {
+        close(false);
+      },
+    };
   }
 
   return {
     store,
     getState: store.getState,
     subscribe(selector, listener, equals = Object.is) {
-      let current = selector(store.getState());
+      let selected = selector(store.getState());
       return store.subscribe((state) => {
         const next = selector(state);
-        if (equals(current, next)) return;
-        const previous = current;
-        current = next;
+        if (equals(selected, next)) return;
+        const previous = selected;
+        selected = next;
         listener(next, previous);
       });
     },
     execute,
+    undo: () => travel('undo'),
+    redo: () => travel('redo'),
+    beginGesture,
     on: emitter.on,
   };
+}
+
+function sameStatus(a: HistoryStatus, b: HistoryStatus): boolean {
+  return (
+    a.canUndo === b.canUndo &&
+    a.canRedo === b.canRedo &&
+    a.undoLabel === b.undoLabel &&
+    a.redoLabel === b.redoLabel
+  );
 }
