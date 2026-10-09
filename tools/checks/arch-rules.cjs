@@ -33,8 +33,9 @@ function buildRules({ web = 'apps/web/src', core = 'packages/core/src' } = {}) {
   ].join('|');
   // Matches both an unresolved bare specifier ("react", "three/examples/...") and a resolved path.
   const pkg = (names) => `(^|node_modules/)(${names.join('|')})(/|$)`;
-  // Test files and core's test support (builders, fast-check arbitraries).
-  const testSupport = `\\.(test|spec)\\.[jt]sx?$|^${c}/testing/`;
+  // Test files, core's test support (builders, fast-check arbitraries) and the `testing/` folder a
+  // web module may keep for helpers that only its tests import (a repository contract, say).
+  const testSupport = `\\.(test|spec)\\.[jt]sx?$|^${c}/testing/|^${w}/[^/]+/testing/`;
 
   return [
     {
