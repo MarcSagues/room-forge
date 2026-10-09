@@ -1,7 +1,11 @@
 import type { ObjectId, WallId } from '@roomforge/core';
 
+/** What the gesture does: move the object over the floor, or turn it with the rotation handle. */
+export type DragKind = 'move' | 'rotate';
+
 /** The pose of the object being dragged, in room-local metres. */
 export interface DragState {
+  kind: DragKind;
   id: ObjectId;
   x: number;
   z: number;
@@ -28,6 +32,7 @@ export interface TransientStore {
 
 export function createTransientStore(): TransientStore {
   const shared: DragState = {
+    kind: 'move',
     id: '' as ObjectId,
     x: 0,
     z: 0,
@@ -45,6 +50,7 @@ export function createTransientStore(): TransientStore {
   return {
     drag: () => (active ? shared : null),
     publishDrag(state) {
+      shared.kind = state.kind;
       shared.id = state.id;
       shared.x = state.x;
       shared.z = state.z;

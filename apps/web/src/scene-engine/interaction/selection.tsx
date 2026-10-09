@@ -12,6 +12,7 @@ import {
   Matrix4,
   Raycaster,
   Vector2,
+  Vector3,
 } from 'three';
 import { useSceneCatalog, useSceneSession, useTransientStore } from '../canvas/scene-context';
 import { useEntityRegistry } from '../objects/entity-registry';
@@ -20,17 +21,28 @@ import { MoveController } from './move-controller';
 import { attachNudge } from './nudge-controller';
 import { type PickProxy, pickEntity } from './pick';
 import { attachPicking } from './picking-controller';
+import { RotateController } from './rotate-controller';
+import { handleRadius, handleTarget, hitsHandle } from './rotate-handle';
+import { attachRotateKeys } from './rotate-keys';
+import { FINE_STEP_DEG, ROTATE_STEP_DEG } from './rotation';
 import { tokenColor } from './token-color';
 
 const raycaster = new Raycaster();
 const ndc = new Vector2();
 
-/** Arrow keys move the selection one snap step (Shift ×10). */
-export function KeyboardNudge() {
+/** Arrow keys move the selection one snap step (Shift ×10); `R` / `Shift+R` turn it. */
+export function ObjectKeys() {
   const session = useSceneSession();
   const catalog = useSceneCatalog();
   const transient = useTransientStore();
-  useEffect(() => attachNudge({ session, catalog, transient }), [session, catalog, transient]);
+  useEffect(() => {
+    const stopNudge = attachNudge({ session, catalog, transient });
+    const stopRotate = attachRotateKeys({ session, catalog, transient });
+    return () => {
+      stopNudge();
+      stopRotate();
+    };
+  }, [session, catalog, transient]);
   return null;
 }
 
@@ -79,6 +91,8 @@ export function Picking() {
       return raycaster.ray;
     };
     const mover = new MoveController({ session, catalog, registry, transient, invalidate });
+    const rotator = new RotateController({ session, catalog, registry, transient, invalidate });
+    const handleCentre = new Vector3();
     return attachPicking({
       element,
       pick,
@@ -99,6 +113,37 @@ export function Picking() {
           mover.end();
         },
         cancel: () => mover.cancel(),
+        turn: (steps, fine) => mover.turnBy(steps, fine ? FINE_STEP_DEG : ROTATE_STEP_DEG),
+      },
+      rotate: {
+        hit: (x, y) => {
+          const state = session.getState();
+          const id = handleTarget(state);
+          const object = id ? state.document.objects[id] : undefined;
+          const node = id ? registry.get(id) : undefined;
+          if (!id || !object || !node) return null;
+          const radius = handleRadius(
+            objectSize(catalog, object.catalogId),
+            object.transform.scale,
+          );
+          node.getWorldPosition(handleCentre);
+          const under = pick(x, y);
+          const grabbed = hitsHandle(
+            rayAt(x, y),
+            handleCentre.x,
+            handleCentre.z,
+            node.rotation.y,
+            radius,
+            under !== null && under !== id,
+          );
+          return grabbed ? id : null;
+        },
+        start: (id, x, y) => rotator.begin(id, rayAt(x, y)),
+        move: (x, y, free) => rotator.update(rayAt(x, y), free),
+        end: () => {
+          rotator.end();
+        },
+        cancel: () => rotator.cancel(),
       },
     });
   }, [session, catalog, registry, transient, element, get, invalidate]);

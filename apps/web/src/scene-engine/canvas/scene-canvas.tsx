@@ -42,8 +42,10 @@ export interface SceneHandle {
   /**
    * Where an object's centre appears on screen, in page pixels (`clientX/Y`); `null` if it is not
    * drawn or is behind the camera. Lets tests and tools click objects like a user would.
+   * `local` picks another point, in the object's own frame (its front is +z), e.g. the knob of
+   * the rotation handle.
    */
-  project(id: ObjectId): { x: number; y: number } | null;
+  project(id: ObjectId, local?: readonly [number, number, number]): { x: number; y: number } | null;
   /** Renderer counters (frame, draw calls, triangles, programs...). */
   renderInfo(): RenderInfo;
   /** Run a direct three.js mutation and request a frame. */
@@ -163,7 +165,7 @@ function ReadyReporter(props: {
     () => ({
       renderInfo: () => readRenderInfo(gl.info),
       roomDisplay: (roomId) => readRoomDisplay(scene, roomId),
-      project: (id) => projectEntity(registry.get(id), get().camera, gl.domElement),
+      project: (id, local) => projectEntity(registry.get(id), get().camera, gl.domElement, local),
       mutate: createMutate(invalidate),
       invalidate: () => invalidate(),
       // The rig mounts after this handle may be built, so every call looks it up when it happens.
@@ -189,11 +191,12 @@ function projectEntity(
   object: Object3D | undefined,
   camera: Parameters<Vector3['project']>[0],
   canvas: HTMLCanvasElement,
+  local: readonly [number, number, number] = [0, 0.1, 0],
 ): { x: number; y: number } | null {
   if (!object) return null;
   object.updateWorldMatrix(true, false);
-  // A little above the floor, where the placeholder box is.
-  projected.set(0, 0.1, 0).applyMatrix4(object.matrixWorld).project(camera);
+  // By default a little above the floor, where the placeholder box is.
+  projected.set(local[0], local[1], local[2]).applyMatrix4(object.matrixWorld).project(camera);
   if (projected.z > 1) return null;
   const rect = canvas.getBoundingClientRect();
   return {
