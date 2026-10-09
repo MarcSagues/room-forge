@@ -3,6 +3,19 @@ import type { ObjectId } from '@roomforge/core';
 /** A press that moved less than this (px) between down and up is a click, not a drag. */
 export const CLICK_SLOP_PX = 4;
 
+export interface DragHandlers {
+  /**
+   * The pointer was pressed on `id` and moved past the click slop. `ndcX/Y` is where it was
+   * pressed. Return false to refuse (e.g. a stacked or locked object): the press is then ignored.
+   */
+  start(id: ObjectId, ndcX: number, ndcY: number): boolean;
+  /** At most once per animation frame. `free` = Alt held (no snapping). */
+  move(ndcX: number, ndcY: number, free: boolean): void;
+  end(): void;
+  /** Esc during the drag. */
+  cancel(): void;
+}
+
 export interface PickingDeps {
   /** The canvas element: pointer events are listened to here. */
   element: HTMLElement;
@@ -12,34 +25,46 @@ export interface PickingDeps {
   onHover(id: ObjectId | null): void;
   /** A left click without drag: the picked object (null on empty space) and whether Shift was held. */
   onClick(id: ObjectId | null, additive: boolean): void;
+  /** Dragging an object with the left button (optional). */
+  drag?: DragHandlers;
+  /** Where Esc is listened to while dragging (the window). */
+  keyTarget?: Pick<Window, 'addEventListener' | 'removeEventListener'>;
   requestFrame?: (callback: () => void) => number;
   cancelFrame?: (handle: number) => void;
 }
 
 /**
- * Pointer → hover/selection without React (AGENTS rule 3): `pointermove` only records the pointer;
- * at most one pick runs per animation frame, and `onHover` fires only when the result changes.
- * Returns the cleanup that removes every listener.
+ * Pointer → hover, selection and drag without React (AGENTS rule 3): `pointermove` only records
+ * the pointer; at most one pick or drag step runs per animation frame, and `onHover` fires only
+ * when the result changes. Returns the cleanup that removes every listener.
  */
 export function attachPicking(deps: PickingDeps): () => void {
   const { element } = deps;
   const requestFrame = deps.requestFrame ?? ((callback) => requestAnimationFrame(callback));
   const cancelFrame = deps.cancelFrame ?? ((handle) => cancelAnimationFrame(handle));
+  const keyTarget = deps.keyTarget ?? (typeof window === 'undefined' ? undefined : window);
   let pointerX = 0;
   let pointerY = 0;
+  let alt = false;
   let scheduled: number | null = null;
   let hovered: ObjectId | null = null;
   let downX = 0;
   let downY = 0;
   let pressing = false;
+  let pressedOn: ObjectId | null = null;
+  let dragging = false;
+  let pointerId = -1;
 
-  const pickAt = (clientX: number, clientY: number) => {
+  const toNdc = (clientX: number, clientY: number, out: { x: number; y: number }) => {
     const rect = element.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0) return null;
-    const ndcX = ((clientX - rect.left) / rect.width) * 2 - 1;
-    const ndcY = -((clientY - rect.top) / rect.height) * 2 + 1;
-    return deps.pick(ndcX, ndcY);
+    if (rect.width === 0 || rect.height === 0) return false;
+    out.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    out.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    return true;
   };
+  const ndc = { x: 0, y: 0 };
+  const pickAt = (clientX: number, clientY: number) =>
+    toNdc(clientX, clientY, ndc) ? deps.pick(ndc.x, ndc.y) : null;
 
   const setHovered = (id: ObjectId | null) => {
     if (id === hovered) return;
@@ -47,18 +72,46 @@ export function attachPicking(deps: PickingDeps): () => void {
     deps.onHover(id);
   };
 
-  const runHover = () => {
+  const runFrame = () => {
     scheduled = null;
-    setHovered(pickAt(pointerX, pointerY));
+    if (dragging) {
+      if (toNdc(pointerX, pointerY, ndc)) deps.drag?.move(ndc.x, ndc.y, alt);
+    } else {
+      setHovered(pickAt(pointerX, pointerY));
+    }
+  };
+
+  const stopDrag = () => {
+    dragging = false;
+    pressing = false;
+    pressedOn = null;
+    if (pointerId >= 0 && element.hasPointerCapture?.(pointerId)) {
+      element.releasePointerCapture(pointerId);
+    }
+    pointerId = -1;
   };
 
   const onMove = (event: PointerEvent) => {
     pointerX = event.clientX;
     pointerY = event.clientY;
-    scheduled ??= requestFrame(runHover);
+    alt = event.altKey;
+    if (pressing && !dragging && pressedOn && deps.drag) {
+      if (Math.hypot(event.clientX - downX, event.clientY - downY) > CLICK_SLOP_PX) {
+        dragging = toNdc(downX, downY, ndc) && deps.drag.start(pressedOn, ndc.x, ndc.y);
+        if (dragging) {
+          pointerId = event.pointerId;
+          element.setPointerCapture?.(event.pointerId);
+          setHovered(null);
+        } else {
+          pressing = false; // refused: this press is neither a click nor a drag
+        }
+      }
+    }
+    scheduled ??= requestFrame(runFrame);
   };
 
   const onLeave = () => {
+    if (dragging) return; // pointer capture keeps the drag alive outside the canvas
     if (scheduled !== null) cancelFrame(scheduled);
     scheduled = null;
     setHovered(null);
@@ -69,24 +122,51 @@ export function attachPicking(deps: PickingDeps): () => void {
     pressing = true;
     downX = event.clientX;
     downY = event.clientY;
+    pressedOn = deps.drag ? pickAt(event.clientX, event.clientY) : null;
   };
 
   const onUp = (event: PointerEvent) => {
-    if (event.button !== 0 || !pressing) return;
+    if (event.button !== 0) return;
+    if (dragging) {
+      // Drop where the pointer was released, even if that position has not had its frame yet.
+      if (scheduled !== null) cancelFrame(scheduled);
+      scheduled = null;
+      if (toNdc(event.clientX, event.clientY, ndc)) deps.drag?.move(ndc.x, ndc.y, event.altKey);
+      deps.drag?.end();
+      stopDrag();
+      return;
+    }
+    if (!pressing) return;
     pressing = false;
+    pressedOn = null;
     if (Math.hypot(event.clientX - downX, event.clientY - downY) > CLICK_SLOP_PX) return;
     deps.onClick(pickAt(event.clientX, event.clientY), event.shiftKey);
+  };
+
+  const onKey = (event: KeyboardEvent) => {
+    if (event.key !== 'Escape' || !dragging) return;
+    // The drag owns this Escape: it must not also clear the selection.
+    event.stopImmediatePropagation();
+    event.preventDefault();
+    if (scheduled !== null) cancelFrame(scheduled);
+    scheduled = null;
+    deps.drag?.cancel();
+    stopDrag();
   };
 
   element.addEventListener('pointermove', onMove);
   element.addEventListener('pointerleave', onLeave);
   element.addEventListener('pointerdown', onDown);
   element.addEventListener('pointerup', onUp);
+  // Capture phase, so it runs before the editor's Escape hotkey.
+  keyTarget?.addEventListener('keydown', onKey as EventListener, true);
   return () => {
     if (scheduled !== null) cancelFrame(scheduled);
+    if (dragging) deps.drag?.cancel();
     element.removeEventListener('pointermove', onMove);
     element.removeEventListener('pointerleave', onLeave);
     element.removeEventListener('pointerdown', onDown);
     element.removeEventListener('pointerup', onUp);
+    keyTarget?.removeEventListener('keydown', onKey as EventListener, true);
   };
 }

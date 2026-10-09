@@ -47,6 +47,8 @@ export interface CameraHandle {
   orbit(azimuth: number, polar: number): void;
   /** Moves the perspective camera along its line of sight, within its limits (tests and dev tools). */
   dolly(distance: number): void;
+  /** Ignores user camera input while true (an object is being dragged). */
+  setInputBlocked(blocked: boolean): void;
 }
 
 export interface DirectorDeps {
@@ -161,9 +163,17 @@ export function createCameraDirector(deps: DirectorDeps): CameraDirector {
   const perspectiveView = () =>
     viewFromPose(fitPerspective(bounds(), { fov: CAMERA_FOV, aspect: aspect() }));
 
+  // Two independent reasons to ignore input: a running view transition and an object drag.
+  let transitionLocked = false;
+  let inputBlocked = false;
+  function applyEnabled() {
+    const free = !transitionLocked && !inputBlocked;
+    controls.perspective.enabled = free && active === 'perspective';
+    controls.orthographic.enabled = free && active === 'top';
+  }
   function lock(locked: boolean) {
-    controls.perspective.enabled = !locked && active === 'perspective';
-    controls.orthographic.enabled = !locked && active === 'top';
+    transitionLocked = locked;
+    applyEnabled();
   }
 
   /** Makes `view` the rendering camera at `state` (a cut, not an animation). */
@@ -298,6 +308,10 @@ export function createCameraDirector(deps: DirectorDeps): CameraDirector {
     },
     resize,
     fit,
+    setInputBlocked(blocked) {
+      inputBlocked = blocked;
+      applyEnabled();
+    },
     snapshot() {
       readView(active, reading);
       const [px, py, pz] = reading.position;

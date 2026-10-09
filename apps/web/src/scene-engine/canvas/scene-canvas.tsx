@@ -13,6 +13,7 @@ import { type RefObject, useEffect, useMemo, useRef } from 'react';
 import { type Material, type Mesh, NeutralToneMapping, type Object3D, Vector3 } from 'three';
 import type { CameraHandle, CameraSnapshot } from '../camera/camera-director';
 import { CameraRig } from '../camera/camera-rig';
+import { createTransientStore } from '../interaction/transient-store';
 import { createEntityRegistry, type EntityRegistry } from '../objects/entity-registry';
 import { roomObjectName } from '../room/room-mesh';
 import { watchContext } from './context-events';
@@ -81,6 +82,7 @@ export function SceneCanvas(props: SceneCanvasProps) {
   const statsRef = useRef<HTMLPreElement>(null);
   const cameraRef = useRef<CameraHandle | null>(null);
   const registry = useMemo(() => createEntityRegistry(), []);
+  const transient = useMemo(() => createTransientStore(), []);
   return (
     <div className="relative size-full">
       {/* The camera rig owns the cameras (R3F's default one is replaced as soon as it mounts). */}
@@ -92,7 +94,11 @@ export function SceneCanvas(props: SceneCanvasProps) {
           gl.toneMapping = NeutralToneMapping;
         }}
       >
-        <SceneSessionProvider session={session} {...(catalog ? { catalog } : {})}>
+        <SceneSessionProvider
+          session={session}
+          transient={transient}
+          {...(catalog ? { catalog } : {})}
+        >
           <SessionBridge />
           <ContextWatcher onLost={onContextLost} onRestored={onContextRestored} />
           <CameraRig handleRef={cameraRef} />
@@ -166,6 +172,7 @@ function ReadyReporter(props: {
         snapshot: () => camera.current?.snapshot() ?? null,
         orbit: (azimuth, polar) => camera.current?.orbit(azimuth, polar),
         dolly: (distance) => camera.current?.dolly(distance),
+        setInputBlocked: (blocked) => camera.current?.setInputBlocked(blocked),
       },
     }),
     [gl, scene, get, invalidate, camera, registry],
