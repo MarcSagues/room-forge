@@ -1,7 +1,7 @@
 'use client';
 
 import { nextWallMode, type SceneDocument } from '@roomforge/core';
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { emptyCatalog } from '@/asset-library';
 import { installHotkeys } from '@/editor';
 import {
@@ -11,35 +11,15 @@ import {
   downloadFile,
   exportFileOf,
   installAutosaveLifecycle,
-  type SaveState,
 } from '@/persistence';
 import { SceneCanvas, type SceneHandle } from '@/scene-engine';
-import {
-  EditorShell,
-  ProjectStatusProvider,
-  ProjectUnavailable,
-  SaveNotice,
-  type SaveProblem,
-  SelectionSummary,
-  translate,
-} from '@/ui';
+import { EditorShell, ProjectUnavailable, SelectionSummary, translate } from '@/ui';
 import type { BootedEditor } from './boot-editor';
+import { SaveNoticeBridge, SaveStatusBridge } from './save-bridge';
 import { installTestHook } from './test-hook';
 import { useEditorBoot } from './use-editor-boot';
 
 const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? 'dev';
-
-const NO_AUTOSAVE: SaveState = { status: 'saved', lastSavedAt: null, error: null, failures: 0 };
-
-/** Where the work stands, re-rendering only when autosave says it changed. */
-function useSaveState(autosave: Autosave | null): SaveState {
-  const subscribe = useCallback(
-    (notify: () => void) => (autosave ? autosave.subscribe(() => notify()) : () => {}),
-    [autosave],
-  );
-  const snapshot = useCallback(() => autosave?.state() ?? NO_AUTOSAVE, [autosave]);
-  return useSyncExternalStore(subscribe, snapshot, snapshot);
-}
 
 /**
  * Composition root of the editor route (client-only, loaded by the loader): opens the project to
@@ -63,8 +43,8 @@ function Workspace({ editor }: { editor: BootedEditor }) {
   const { session, project, repository, storage, journal } = editor;
   const scene = useRef<SceneHandle | null>(null);
   const autosaveRef = useRef<Autosave | null>(null);
+  // Set once autosave is running. The save state is NOT read here: see SaveStatusBridge.
   const [autosave, setAutosave] = useState<Autosave | null>(null);
-  const save = useSaveState(autosave);
 
   useEffect(
     () =>
@@ -115,15 +95,8 @@ function Workspace({ editor }: { editor: BootedEditor }) {
     downloadFile(exportFileOf({ name: project.name, document }, { appVersion: APP_VERSION }));
   }, [session, project.name]);
 
-  const problem: SaveProblem | null =
-    storage === 'memory'
-      ? { kind: 'memory' }
-      : save.status === 'error' && save.error
-        ? { kind: 'failed', code: save.error.code }
-        : null;
-
   return (
-    <ProjectStatusProvider name={project.name} save={save.status}>
+    <SaveStatusBridge autosave={autosave} name={project.name}>
       <EditorShell
         properties={<SelectionSummary session={session} />}
         viewport={
@@ -135,14 +108,10 @@ function Workspace({ editor }: { editor: BootedEditor }) {
                 scene.current = handle;
               }}
             />
-            <SaveNotice
-              problem={problem}
-              onRetry={() => void autosave?.retry()}
-              onExport={exportCopy}
-            />
+            <SaveNoticeBridge autosave={autosave} storage={storage} onExport={exportCopy} />
           </>
         }
       />
-    </ProjectStatusProvider>
+    </SaveStatusBridge>
   );
 }
