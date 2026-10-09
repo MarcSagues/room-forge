@@ -10,3 +10,4 @@ export {
   type SceneCanvasProps,
   type SceneHandle,
 } from './canvas/scene-canvas';
+export type { LiveTransform } from './interaction/live-transform';

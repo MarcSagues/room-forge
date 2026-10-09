@@ -1,10 +1,10 @@
 'use client';
 
 import { nextWallMode } from '@roomforge/core';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { emptyCatalog } from '@/asset-library';
 import { createDemoSession, installHotkeys } from '@/editor';
-import { SceneCanvas, type SceneHandle } from '@/scene-engine';
+import { type LiveTransform, SceneCanvas, type SceneHandle } from '@/scene-engine';
 import { EditorShell, SelectionSummary } from '@/ui';
 import { installTestHook } from './test-hook';
 
@@ -27,9 +27,19 @@ export default function EditorApp() {
     [session],
   );
 
+  // The panel follows a drag in the scene through this; the scene may not be mounted yet, so each
+  // call looks it up when it happens.
+  const live = useMemo<LiveTransform>(
+    () => ({
+      read: () => scene.current?.live.read() ?? null,
+      subscribe: (listener) => scene.current?.live.subscribe(listener) ?? (() => {}),
+    }),
+    [],
+  );
+
   return (
     <EditorShell
-      properties={<SelectionSummary session={session} />}
+      properties={<SelectionSummary session={session} catalog={emptyCatalog} live={live} />}
       viewport={
         <SceneCanvas
           session={session}

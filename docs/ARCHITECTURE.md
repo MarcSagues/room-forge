@@ -149,7 +149,7 @@ flowchart LR
 | UI | `web/ui` | No | `localStorage` (por usuario/navegador) | Zustand + `persist` |
 | Interacción transitoria | `scene-engine` | No | No | Refs, objetos reutilizables, `useFrame` |
 
-**Regla de oro:** si un valor cambia en cada `pointermove` o en cada frame, **no** va a React state, ni al store del documento, ni al historial. Se escribe en refs/objetos three y, si algún panel necesita verlo (p. ej. X/Z mientras se arrastra), se publica en un *transient store* leído por ese único componente y limitado a 1 actualización por frame.
+**Regla de oro:** si un valor cambia en cada `pointermove` o en cada frame, **no** va a React state, ni al store del documento, ni al historial. Se escribe en refs/objetos three y, si algún panel necesita verlo (p. ej. X/Z mientras se arrastra), se publica en un *transient store* leído por ese único componente y limitado a 1 actualización por frame. Así lo hace el panel de propiedades (P3-07): `SceneHandle.live` expone el pose del objeto arrastrado y cada campo numérico (`ScrubInput`) escribe el valor en vivo directamente en el DOM, sin renderizar React; al soltar, el comando actualiza el documento y el campo muestra el valor definitivo.
 
 ## 4. Sistema de comandos e historial
 
