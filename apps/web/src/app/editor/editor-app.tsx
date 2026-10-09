@@ -2,9 +2,21 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { catalogEntries, stubCatalog } from '@/asset-library';
-import { createDemoSession, createShortcutRegistry, editorShortcuts } from '@/editor';
+import {
+  createDemoSession,
+  createShortcutRegistry,
+  type ErrorLog,
+  editorShortcuts,
+} from '@/editor';
 import { type LiveTransform, SceneCanvas, type SceneHandle } from '@/scene-engine';
-import { CatalogPanel, type CatalogPanelItem, EditorShell, SelectionSummary } from '@/ui';
+import {
+  CatalogPanel,
+  type CatalogPanelItem,
+  ContextNotice,
+  type ContextState,
+  EditorShell,
+  SelectionSummary,
+} from '@/ui';
 import { installTestHook } from './test-hook';
 
 /** What the catalog panel lists: the stub manifest until the real catalog arrives (P4-06). */
@@ -16,8 +28,9 @@ const CATALOG_ITEMS: readonly CatalogPanelItem[] = catalogEntries().map((entry) 
 }));
 
 /** Composition root of the editor route: session + shell + canvas (client-only, loaded by the loader). */
-export default function EditorApp() {
+export default function EditorApp({ errorLog }: { errorLog?: ErrorLog }) {
   const [session] = useState(() => createDemoSession(stubCatalog));
+  const [context, setContext] = useState<ContextState>('ok');
   const scene = useRef<SceneHandle | null>(null);
 
   useEffect(() => installTestHook(window, { session, getScene: () => scene.current }), [session]);
@@ -49,6 +62,14 @@ export default function EditorApp() {
     [],
   );
 
+  // After a lost context the scene is redrawn from the session (which lives outside the canvas),
+  // so the notice only has to say so, and then goes away on its own.
+  useEffect(() => {
+    if (context !== 'restored') return;
+    const timer = setTimeout(() => setContext('ok'), 2500);
+    return () => clearTimeout(timer);
+  }, [context]);
+
   return (
     <EditorShell
       session={session}
@@ -60,15 +81,27 @@ export default function EditorApp() {
           onPlace={(id) => scene.current?.placement.placeAtCenter(id) ?? false}
         />
       }
+      onPanelError={(error, panel) => errorLog?.record(error, { source: 'react', where: panel })}
       properties={<SelectionSummary session={session} catalog={stubCatalog} live={live} />}
       viewport={
-        <SceneCanvas
-          session={session}
-          catalog={stubCatalog}
-          onReady={(handle) => {
-            scene.current = handle;
-          }}
-        />
+        <>
+          <SceneCanvas
+            session={session}
+            catalog={stubCatalog}
+            onReady={(handle) => {
+              scene.current = handle;
+            }}
+            onContextLost={() => {
+              setContext('lost');
+              errorLog?.record('The WebGL context was lost', {
+                source: 'webgl',
+                where: 'Viewport',
+              });
+            }}
+            onContextRestored={() => setContext('restored')}
+          />
+          <ContextNotice state={context} />
+        </>
       }
     />
   );
