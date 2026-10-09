@@ -65,6 +65,10 @@ function Workspace({ editor, errorLog }: { editor: BootedEditor; errorLog?: Erro
   const autosaveRef = useRef<Autosave | null>(null);
   // Set once autosave is running. The save state is NOT read here: see SaveStatusBridge.
   const [autosave, setAutosave] = useState<Autosave | null>(null);
+  // The name can change while the editor is open (renamed from the top bar). Autosave and the
+  // export read the ref, so renaming does not restart autosave.
+  const [name, setName] = useState(project.name);
+  const nameRef = useRef(project.name);
 
   useEffect(
     () =>
@@ -82,7 +86,7 @@ function Workspace({ editor, errorLog }: { editor: BootedEditor; errorLog?: Erro
     const instance = createAutosave({
       repository,
       projectId: project.id,
-      name: () => project.name,
+      name: () => nameRef.current,
       source: autosaveSourceOf(session),
       ...(journal ? { journal } : {}),
     });
@@ -95,7 +99,7 @@ function Workspace({ editor, errorLog }: { editor: BootedEditor; errorLog?: Erro
       setAutosave(null);
       void instance.dispose({ flush: true });
     };
-  }, [repository, project.id, project.name, session, journal]);
+  }, [repository, project.id, session, journal]);
 
   // The shortcuts are data: the editor's own go in here, the shell adds the panels and the help.
   const shortcuts = useMemo(() => {
@@ -135,11 +139,28 @@ function Workspace({ editor, errorLog }: { editor: BootedEditor; errorLog?: Erro
   // A copy of what is on screen, not of what was last written: when saving fails, the work is here.
   const exportCopy = useCallback(() => {
     const document = session.getState().document as SceneDocument;
-    downloadFile(exportFileOf({ name: project.name, document }, { appVersion: APP_VERSION }));
-  }, [session, project.name]);
+    downloadFile(exportFileOf({ name: nameRef.current, document }, { appVersion: APP_VERSION }));
+  }, [session]);
+
+  // The next autosave already writes the new name; if renaming fails it goes back to the old one.
+  const rename = useCallback(
+    async (next: string) => {
+      const previous = nameRef.current;
+      nameRef.current = next;
+      try {
+        const renamed = await repository.rename(project.id, next);
+        nameRef.current = renamed.name;
+        setName(renamed.name);
+      } catch (error) {
+        nameRef.current = previous;
+        throw error;
+      }
+    },
+    [repository, project.id],
+  );
 
   return (
-    <SaveStatusBridge autosave={autosave} name={project.name} onExport={exportCopy}>
+    <SaveStatusBridge autosave={autosave} name={name} onExport={exportCopy} onRename={rename}>
       <EditorShell
         session={session}
         shortcuts={shortcuts}

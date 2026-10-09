@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Button } from '@/ui/components/button';
 import { Separator } from '@/ui/components/separator';
 import { ExportMenu } from '@/ui/editor/export-menu';
+import { ProjectName } from '@/ui/editor/project-name';
 import { useProjectStatus } from '@/ui/editor/project-status';
 import { SaveStatusPill } from '@/ui/editor/save-status';
 import { translate } from '@/ui/i18n';
@@ -51,13 +52,7 @@ export function TopBar(props: TopBarProps) {
         {t('app.name')}
       </Link>
       <Separator orientation="vertical" className="mx-1 h-5" />
-      <Link
-        href="/projects/"
-        title={t('shell.projectsLink')}
-        className="truncate rounded-sm text-fg-muted hover:text-foreground"
-      >
-        {project.name ?? t('shell.project')}
-      </Link>
+      <ProjectName />
       <SaveStatusPill status={project.save} />
       {session ? (
         <HistoryButtons session={session} />
