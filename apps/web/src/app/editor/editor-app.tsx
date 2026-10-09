@@ -31,6 +31,7 @@ import {
   ReadOnlyNotice,
   RoomMaterialsPanel,
   RoomSizePanel,
+  SceneOutliner,
   SelectionSummary,
   translate,
 } from '@/ui';
@@ -49,6 +50,8 @@ const CATALOG_ITEMS: readonly CatalogPanelItem[] = catalogEntries().map((entry) 
   color: entry.color,
   size: entry.size,
 }));
+const ITEM_NAMES = new Map(CATALOG_ITEMS.map((item) => [item.id, item.name]));
+const itemName = (catalogId: string) => ITEM_NAMES.get(catalogId);
 
 /**
  * Composition root of the editor route (client-only, loaded by the loader): opens the project to
@@ -242,6 +245,7 @@ function Workspace(props: {
             <RoomMaterialsPanel session={session} />
           </>
         }
+        scene={<SceneOutliner session={session} itemName={itemName} />}
         viewport={
           <>
             <SceneCanvas

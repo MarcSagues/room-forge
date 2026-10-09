@@ -17,7 +17,8 @@
     "@fontsource-variable/inter": "SIL OFL 1.1 font. The license allows bundling the font in a web app and in commercial products; it only forbids selling the font on its own.",
     "caniuse-lite": "CC-BY-4.0 data used by build tools (browserslist). It is not part of the bundle sent to browsers; attribution is kept in docs/LICENSES.md.",
     "@img/sharp-*": "Apache-2.0 AND LGPL-3.0-or-later (libvips binaries). An optional dependency of Next's image optimizer, which the static export does not use (images.unoptimized); it is never shipped.",
-    "lightningcss*": "MPL-2.0, file-level copyleft. A build tool used unmodified by Tailwind; nothing of it is distributed."
+    "lightningcss*": "MPL-2.0, file-level copyleft. A build tool used unmodified by Tailwind; nothing of it is distributed.",
+    "axe-core": "MPL-2.0, file-level copyleft. A dev dependency used unmodified by the accessibility tests (unit and e2e); it is never bundled or distributed."
   },
   "allowedInstallScripts": {}
 }
