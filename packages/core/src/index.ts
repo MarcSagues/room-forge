@@ -14,3 +14,4 @@ export * from './history';
 export * from './ports';
 export * from './serialization';
 export * from './session';
+export { createStarterDocument } from './session/starter-document';
