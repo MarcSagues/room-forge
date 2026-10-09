@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { emptyCatalog } from '@/asset-library';
+import { stubCatalog } from '@/asset-library';
 import {
   createLocalStorageJournal,
   type KeyValueStorage,
@@ -39,7 +39,7 @@ export function useEditorBoot(): { boot: Boot; retry: () => void } {
           search: window.location.search,
           storage: browserStorage(),
           journal: createLocalStorageJournal(browserStorage()),
-          catalog: emptyCatalog,
+          catalog: stubCatalog,
           untitledName: translate('en', 'projects.untitled'),
         }),
       };

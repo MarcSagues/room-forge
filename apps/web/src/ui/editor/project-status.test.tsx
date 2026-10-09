@@ -1,33 +1,40 @@
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
-import { TopBar } from '../shell/top-bar';
+import { render, screen, within } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { EditorShell } from '../shell/editor-shell';
 import { ProjectStatusProvider } from './project-status';
 
-const bar = (
-  <TopBar
-    leftExpanded
-    rightExpanded
-    onToggleLeft={() => {}}
-    onToggleRight={() => {}}
-    leftPanelId="l"
-    rightPanelId="r"
-  />
-);
+/** Pretends the window is wide enough for the docked layout, which is the one with the full bar. */
+beforeEach(() => {
+  vi.spyOn(window, 'matchMedia').mockImplementation((query: string) => ({
+    matches: 1280 >= Number(/min-width:\s*(\d+)px/.exec(query)?.[1] ?? 0),
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  }));
+  localStorage.clear();
+});
+afterEach(() => vi.restoreAllMocks());
+
+const topBar = () => screen.getByRole('banner');
 
 describe('the top bar and the open project', () => {
   it('shows the placeholders it always had when nobody says anything', () => {
-    render(bar);
-    expect(screen.getByText('Untitled project')).toBeInTheDocument();
-    expect(screen.getByRole('status')).toHaveTextContent('Saved');
+    render(<EditorShell />);
+    expect(within(topBar()).getByText('Untitled project')).toBeInTheDocument();
+    expect(within(topBar()).getByRole('status')).toHaveTextContent('Saved');
   });
 
   it('shows the name of the project, as a way back to all the projects', () => {
     render(
       <ProjectStatusProvider name="Gaming room" save="saved">
-        {bar}
+        <EditorShell />
       </ProjectStatusProvider>,
     );
-    const link = screen.getByRole('link', { name: 'Gaming room' });
+    const link = within(topBar()).getByRole('link', { name: 'Gaming room' });
     expect(link.getAttribute('href')).toMatch(/^\/projects\/?$/);
     expect(link).toHaveAttribute('title', 'All projects');
   });
@@ -39,23 +46,23 @@ describe('the top bar and the open project', () => {
   ] as const)('shows the save state %s', (save, text) => {
     render(
       <ProjectStatusProvider name="Office" save={save}>
-        {bar}
+        <EditorShell />
       </ProjectStatusProvider>,
     );
-    expect(screen.getByRole('status')).toHaveTextContent(text);
+    expect(within(topBar()).getByRole('status')).toHaveTextContent(text);
   });
 
   it('follows the state as it changes', () => {
     const { rerender } = render(
       <ProjectStatusProvider name="Office" save="dirty">
-        {bar}
+        <EditorShell />
       </ProjectStatusProvider>,
     );
     rerender(
       <ProjectStatusProvider name="Office" save="saved">
-        {bar}
+        <EditorShell />
       </ProjectStatusProvider>,
     );
-    expect(screen.getByRole('status')).toHaveTextContent('Saved');
+    expect(within(topBar()).getByRole('status')).toHaveTextContent('Saved');
   });
 });
