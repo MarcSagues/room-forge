@@ -110,11 +110,18 @@ test('the report shows budget, target and status per route, and the scene counte
     { routes: { '/': landing, '/editor/': editor }, scene: { ...budgets.scene.limits, calls: 1 } },
     budgets,
   );
-  assert.match(report, /\| `\/` \| 100\.0 kB \| 240 kB \| - \| ok \|/);
-  assert.match(report, /\| `\/editor\/` \| 700\.0 kB \| 580 kB \| 450 kB \| over \|/);
+  // The numbers come from the file, so changing a budget does not break this test.
+  const landingBudget = budgets.bundle.initialJsGzipKb['/'];
+  const editorBudget = budgets.bundle.initialJsGzipKb['/editor/'];
+  const editorTarget = budgets.bundle.targetGzipKb['/editor/'];
+  assert.ok(landingBudget > 100 && editorBudget < 700, 'the example sizes sit where they should');
+  assert.ok(report.includes(`| \`/\` | 100.0 kB | ${landingBudget} kB | - | ok |`));
+  assert.ok(
+    report.includes(`| \`/editor/\` | 700.0 kB | ${editorBudget} kB | ${editorTarget} kB | over |`),
+  );
   assert.match(report, /Chunks of <code>\/editor\/<\/code>/);
   assert.match(report, /Pattern scene \(30 objects, 0 lights\)/);
-  assert.match(report, /\| calls \| 1 \| 48 \| ok \|/);
+  assert.ok(report.includes(`| calls | 1 | ${budgets.scene.limits.calls} | ok |`));
 });
 
 // ── quality-budgets.json ────────────────────────────────────────
