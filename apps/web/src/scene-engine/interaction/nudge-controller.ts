@@ -7,6 +7,7 @@ import {
   type Vec3,
 } from '@roomforge/core';
 import { objectSize } from '../objects/placeholder-resources';
+import { widgetOwnsKeys } from './key-owner';
 import { DEFAULT_DRAG_GRID } from './move-controller';
 import type { TransientStore } from './transient-store';
 
@@ -21,15 +22,6 @@ const DIRECTIONS: Readonly<Record<string, readonly [number, number]>> = {
   ArrowUp: [0, -1],
   ArrowDown: [0, 1],
 };
-
-/** Widgets that use the arrows themselves; a focused one keeps them. */
-const ARROW_WIDGETS =
-  'input, textarea, select, [contenteditable=""], [contenteditable="true"], [role="slider"], [role="spinbutton"], [role="tablist"], [role="menu"], [role="menubar"], [role="listbox"], [role="radiogroup"], [role="tree"], [role="grid"], [role="dialog"]';
-
-function ownsArrows(target: EventTarget | null): boolean {
-  const element = target as Partial<Element> | null;
-  return element?.closest?.(ARROW_WIDGETS) != null;
-}
 
 export interface NudgeDeps {
   session: EditorSession;
@@ -52,7 +44,7 @@ export function attachNudge(deps: NudgeDeps): () => void {
     const direction = DIRECTIONS[event.key];
     // Ctrl/Meta/Alt + arrow belong to the browser (history, word jumps, text selection).
     if (!direction || event.ctrlKey || event.metaKey || event.altKey) return;
-    if (ownsArrows(event.target) || deps.transient.drag()) return;
+    if (widgetOwnsKeys(event.target) || deps.transient.drag()) return;
     const { selection, document } = deps.session.getState();
     if (selection.length === 0) return;
     event.preventDefault();

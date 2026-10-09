@@ -18,11 +18,13 @@
     "check:deps": "depcruise --config .dependency-cruiser.cjs apps/web/src packages/core/src",
     "check:core-purity": "pnpm --filter @roomforge/core check:no-dom",
     "test:arch": "node --test \"tools/checks/**/*.test.mjs\"",
-    "check": "pnpm typecheck && pnpm lint && pnpm check:deps && pnpm check:core-purity && pnpm test:arch && pnpm test",
+    "check": "pnpm typecheck && pnpm lint && pnpm check:deps && pnpm check:core-purity && pnpm check:supply-chain && pnpm test:arch && pnpm test",
     "prepare": "husky",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "PERF_BUDGETS=off vitest run --coverage"
+    "test:coverage": "PERF_BUDGETS=off vitest run --coverage",
+    "check:supply-chain": "node tools/checks/supply-chain.mjs",
+    "licenses:report": "node tools/checks/supply-chain.mjs --write-report"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",

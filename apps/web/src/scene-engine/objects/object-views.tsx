@@ -6,7 +6,7 @@ import { useSceneCatalog } from '../canvas/scene-context';
 import { useSessionState } from '../canvas/use-session-state';
 import { useChildIds, useEntity, useEntityIds } from './entity-hooks';
 import { useRegisterEntity } from './entity-registry';
-import { objectSize, placeholderResources } from './placeholder-resources';
+import { objectSize, placeholderMaterial, placeholderResources } from './placeholder-resources';
 import { countRender } from './render-count';
 
 export const LIST_RENDER_KEY = 'ObjectList';
@@ -53,7 +53,8 @@ export const ObjectView = memo(function ObjectView({ id }: { id: ObjectId }) {
   const catalog = useSceneCatalog();
   const register = useRegisterEntity(id);
   if (!transform || catalogId === undefined) return null;
-  const { geometry, material } = placeholderResources();
+  const { geometry } = placeholderResources();
+  const material = placeholderMaterial(catalog.colorOf?.(catalogId));
   const size = objectSize(catalog, catalogId);
   return (
     <group
