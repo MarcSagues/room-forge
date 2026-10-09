@@ -16,4 +16,5 @@ export {
   type RoomSurface,
   resizeRoom,
   setSurfaceMaterial,
+  setSurfacesMaterial,
 } from './room';

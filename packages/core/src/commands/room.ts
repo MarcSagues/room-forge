@@ -127,6 +127,46 @@ export function resizeRoom(
   };
 }
 
+const SURFACES = ['floor', 'ceiling', 'north', 'east', 'south', 'west'] as const;
+
+/** Sets `material` on one surface of `room` (a draft); `surface` was validated by the caller. */
+function paintSurface(room: Room, surface: RoomSurface, material: MaterialRef): void {
+  const wall = WallIdSchema.safeParse(surface);
+  if (wall.success) room.walls[wall.data].material = material;
+  else if (surface === 'floor') room.floor.material = material;
+  else room.ceiling.material = material;
+}
+
+/**
+ * `room/setSurfacesMaterial`: the same material on several surfaces at once (all four walls, say),
+ * as one history entry. A burst of edits of the same surfaces coalesces into one entry: dragging a
+ * colour on all the walls is a single undo.
+ */
+export function setSurfacesMaterial(
+  roomId: RoomId,
+  surfaces: readonly RoomSurface[],
+  material: MaterialRef,
+): Command {
+  const unique = [...new Set(surfaces)].sort();
+  return {
+    type: 'room/setSurfacesMaterial',
+    label: 'Change room material',
+    mergeKey: `room/setSurfacesMaterial:${roomId}:${unique.join(',')}`,
+    apply(draft) {
+      if (unique.length === 0) return { code: 'invalid', message: 'No surface to change' };
+      const unknown = unique.filter((surface) => !SURFACES.includes(surface));
+      if (unknown.length > 0) {
+        return { code: 'invalid', message: `Unknown surface: ${unknown.join(', ')}` };
+      }
+      const parsed = MaterialRefSchema.safeParse(material);
+      if (!parsed.success) return invalid(parsed.error);
+      const room = draft.rooms[roomId];
+      if (!room) return notFound(roomId);
+      for (const surface of unique) paintSurface(room, surface, parsed.data);
+    },
+  };
+}
+
 /** `room/setSurfaceMaterial`: floor, ceiling or a single wall. Repeated edits coalesce (colour picker). */
 export function setSurfaceMaterial(
   roomId: RoomId,
