@@ -1,7 +1,15 @@
 'use client';
 
 import type { SceneDocument } from '@roomforge/core';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type RefObject,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { catalogEntries, stubCatalog } from '@/asset-library';
 import { createShortcutRegistry, type ErrorLog, editorShortcuts } from '@/editor';
 import {
@@ -20,6 +28,7 @@ import {
   type ContextState,
   EditorShell,
   ProjectUnavailable,
+  ReadOnlyNotice,
   RoomMaterialsPanel,
   RoomSizePanel,
   SceneOutliner,
@@ -30,6 +39,7 @@ import type { BootedEditor } from './boot-editor';
 import { SaveNoticeBridge, SaveStatusBridge } from './save-bridge';
 import { installTestHook } from './test-hook';
 import { useEditorBoot } from './use-editor-boot';
+import { useProjectLock } from './use-project-lock';
 
 const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? 'dev';
 
@@ -50,22 +60,69 @@ const itemName = (catalogId: string) => ITEM_NAMES.get(catalogId);
  */
 export default function EditorApp({ errorLog }: { errorLog?: ErrorLog }) {
   const { boot, retry } = useEditorBoot();
-  if (boot.phase === 'loading') {
-    return (
-      <p role="status" className="grid h-dvh place-items-center text-fg-muted">
-        {translate('en', 'project.opening')}
-      </p>
-    );
-  }
+  if (boot.phase === 'loading') return <Opening />;
   if (boot.phase === 'failed') return <ProjectUnavailable reason={boot.failure} onRetry={retry} />;
-  return <Workspace editor={boot.editor} {...(errorLog ? { errorLog } : {})} />;
+  return <LockedWorkspace editor={boot.editor} {...(errorLog ? { errorLog } : {})} />;
 }
 
-function Workspace({ editor, errorLog }: { editor: BootedEditor; errorLog?: ErrorLog }) {
+function Opening() {
+  return (
+    <p role="status" className="grid h-dvh place-items-center text-fg-muted">
+      {translate('en', 'project.opening')}
+    </p>
+  );
+}
+
+/** Opens the project again from storage, by its id: another tab may have changed it. */
+function reopen(projectId: string): void {
+  const url = new URL(window.location.href);
+  url.searchParams.set('project', projectId);
+  window.location.replace(url.toString());
+}
+
+/**
+ * One editing tab per project (P6-09): this tab edits only while it owns the project. Otherwise
+ * the session is read-only, autosave does not run, and a notice offers to take over; taking over
+ * makes the owner write what it has and turn read-only, then this tab reopens the project.
+ */
+function LockedWorkspace({ editor, errorLog }: { editor: BootedEditor; errorLog?: ErrorLog }) {
+  const { session, project, storage } = editor;
+  const autosaveRef = useRef<Autosave | null>(null);
+  const handover = useCallback(async () => {
+    session.setReadOnly(true);
+    await autosaveRef.current?.flush();
+  }, [session]);
+  const { role, takeOver } = useProjectLock(storage === 'indexeddb' ? project.id : null, handover);
+  useLayoutEffect(() => session.setReadOnly(role !== 'owner'), [session, role]);
+  const takeOverAndReopen = useCallback(async () => {
+    await takeOver();
+    reopen(project.id);
+  }, [takeOver, project.id]);
+
+  if (role === 'pending') return <Opening />;
+  return (
+    <Workspace
+      editor={editor}
+      autosaveRef={autosaveRef}
+      owner={role === 'owner'}
+      onTakeOver={takeOverAndReopen}
+      {...(errorLog ? { errorLog } : {})}
+    />
+  );
+}
+
+function Workspace(props: {
+  editor: BootedEditor;
+  autosaveRef: RefObject<Autosave | null>;
+  /** Another tab owns the project: nothing is saved here, and a notice offers to take over. */
+  owner: boolean;
+  onTakeOver: () => Promise<void>;
+  errorLog?: ErrorLog;
+}) {
+  const { editor, autosaveRef, owner, onTakeOver, errorLog } = props;
   const { session, project, repository, storage, journal } = editor;
   const [context, setContext] = useState<ContextState>('ok');
   const scene = useRef<SceneHandle | null>(null);
-  const autosaveRef = useRef<Autosave | null>(null);
   // Set once autosave is running. The save state is NOT read here: see SaveStatusBridge.
   const [autosave, setAutosave] = useState<Autosave | null>(null);
   // The name can change while the editor is open (renamed from the top bar). Autosave and the
@@ -80,12 +137,13 @@ function Workspace({ editor, errorLog }: { editor: BootedEditor; errorLog?: Erro
         getScene: () => scene.current,
         getAutosave: () => autosaveRef.current,
       }),
-    [session],
+    [session, autosaveRef],
   );
 
   // Autosave lives as long as the editor does: it listens to the session, and when the editor goes
-  // away (or the page does) whatever is pending is written first.
+  // away (or the page does) whatever is pending is written first. A read-only tab saves nothing.
   useEffect(() => {
+    if (!owner) return;
     const instance = createAutosave({
       repository,
       projectId: project.id,
@@ -102,7 +160,7 @@ function Workspace({ editor, errorLog }: { editor: BootedEditor; errorLog?: Erro
       setAutosave(null);
       void instance.dispose({ flush: true });
     };
-  }, [repository, project.id, session, journal]);
+  }, [repository, project.id, session, journal, owner, autosaveRef]);
 
   // The shortcuts are data: the editor's own go in here, the shell adds the panels and the help.
   const shortcuts = useMemo(() => {
@@ -163,7 +221,12 @@ function Workspace({ editor, errorLog }: { editor: BootedEditor; errorLog?: Erro
   );
 
   return (
-    <SaveStatusBridge autosave={autosave} name={name} onExport={exportCopy} onRename={rename}>
+    <SaveStatusBridge
+      autosave={autosave}
+      name={name}
+      onExport={exportCopy}
+      onRename={owner ? rename : undefined}
+    >
       <EditorShell
         session={session}
         shortcuts={shortcuts}
@@ -202,6 +265,7 @@ function Workspace({ editor, errorLog }: { editor: BootedEditor; errorLog?: Erro
             />
             <ContextNotice state={context} />
             <SaveNoticeBridge autosave={autosave} storage={storage} onExport={exportCopy} />
+            {owner ? null : <ReadOnlyNotice onTakeOver={onTakeOver} />}
           </>
         }
       />

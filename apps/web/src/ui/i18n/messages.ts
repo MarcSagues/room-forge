@@ -144,6 +144,11 @@ export const en = {
   'project.rename': 'Rename project: {name}',
   'project.nameEmpty': 'Enter a name.',
   'project.opening': 'Opening your project…',
+  'lock.title': 'This project is open in another tab.',
+  'lock.body':
+    'You can look at it here, but changes are not allowed. Take over to edit it here; the other tab becomes read-only.',
+  'lock.takeOver': 'Take over',
+  'lock.takingOver': 'Taking over…',
   'shell.undo': 'Undo',
   'shell.redo': 'Redo',
   'history.undoLabel': 'Undo: {label}',
@@ -464,6 +469,11 @@ export const es: Record<MessageKey, string> = {
   'project.rename': 'Cambiar el nombre del proyecto: {name}',
   'project.nameEmpty': 'Escribe un nombre.',
   'project.opening': 'Abriendo tu proyecto…',
+  'lock.title': 'Este proyecto está abierto en otra pestaña.',
+  'lock.body':
+    'Puedes verlo aquí, pero no editarlo. Toma el control para editarlo aquí; la otra pestaña quedará en solo lectura.',
+  'lock.takeOver': 'Tomar el control',
+  'lock.takingOver': 'Tomando el control…',
   'shell.undo': 'Deshacer',
   'shell.redo': 'Rehacer',
   'history.undoLabel': 'Deshacer: {label}',

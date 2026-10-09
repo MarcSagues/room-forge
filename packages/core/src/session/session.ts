@@ -35,6 +35,11 @@ export interface SessionState {
   /** Ceiling preview; the ceiling is hidden while editing and always in the plan view. */
   readonly showCeiling: boolean;
   readonly snap: SnapSettings;
+  /**
+   * The document may not change: commands are rejected (`read-only`) and undo/redo do nothing.
+   * Set by the app while another tab owns the project (P6-09); everything else keeps working.
+   */
+  readonly readOnly: boolean;
 }
 
 /** The store without `setState`: only the session writes (ADR-0003). Works with zustand's `useStore`. */
@@ -91,6 +96,8 @@ export interface EditorSession {
   setShowCeiling(show: boolean): void;
   /** Applies the valid parts of `change`; emits `snap:changed` when it changes. Not undoable. */
   setSnap(change: Partial<SnapSettings>): void;
+  /** Turns the read-only mode on or off. Not undoable. */
+  setReadOnly(readOnly: boolean): void;
   on: Emitter<SessionEvents>['on'];
 }
 
@@ -128,6 +135,7 @@ export function createEditorSession(options: EditorSessionOptions): EditorSessio
     wallMode: 'cutaway',
     showCeiling: false,
     snap: DEFAULT_SNAP,
+    readOnly: false,
   }));
   let gesture: OpenGesture | undefined;
 
@@ -189,7 +197,13 @@ export function createEditorSession(options: EditorSessionOptions): EditorSessio
     emitter.emit('selection:changed', { ids: selection });
   }
 
+  const READ_ONLY: CommandResult = {
+    ok: false,
+    error: { code: 'read-only', message: 'The document is read-only' },
+  };
+
   function execute(command: Command): CommandResult {
+    if (store.getState().readOnly) return READ_ONLY;
     const result = apply(command, gesture ? gesture.document : current());
     if (!result.ok) return result;
     const { next, patches, inverse } = result;
@@ -212,7 +226,7 @@ export function createEditorSession(options: EditorSessionOptions): EditorSessio
   }
 
   function travel(direction: 'undo' | 'redo'): boolean {
-    if (gesture) return false;
+    if (gesture || store.getState().readOnly) return false;
     const entry = direction === 'undo' ? history.undo() : history.redo();
     if (!entry) return false;
     const patches = direction === 'undo' ? entry.inverse : entry.patches;
@@ -235,6 +249,11 @@ export function createEditorSession(options: EditorSessionOptions): EditorSessio
     return {
       label,
       commit() {
+        // Read-only since the gesture began (another tab took over): its changes are dropped.
+        if (store.getState().readOnly) {
+          close(false);
+          return READ_ONLY;
+        }
         close(true);
         const { document, patches, inverse } = open;
         if (patches.length > 0) {
@@ -298,6 +317,9 @@ export function createEditorSession(options: EditorSessionOptions): EditorSessio
       if (sameSnap(snap, current)) return;
       store.setState({ snap });
       emitter.emit('snap:changed', snap);
+    },
+    setReadOnly(readOnly) {
+      if (readOnly !== store.getState().readOnly) store.setState({ readOnly });
     },
     on: emitter.on,
   };

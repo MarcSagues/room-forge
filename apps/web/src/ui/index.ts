@@ -4,6 +4,7 @@ export { Button, buttonVariants } from './components/button';
 export { UiKit } from './dev/ui-kit';
 export { ProjectStatusProvider, useProjectStatus } from './editor/project-status';
 export { ProjectUnavailable, type ProjectUnavailableReason } from './editor/project-unavailable';
+export { ReadOnlyNotice } from './editor/read-only-notice';
 export { SaveNotice, type SaveProblem } from './editor/save-notice';
 export type { SaveIndicator } from './editor/save-status';
 export { DEFAULT_LOCALE, type Locale, type MessageKey, translate } from './i18n';

@@ -29,7 +29,7 @@ export function SaveStatusBridge(props: {
   /** Exports the project; turns on the Export menu of the top bar. */
   onExport?: () => void;
   /** Renames the project; turns the name in the top bar into a field. */
-  onRename?: (name: string) => Promise<void>;
+  onRename?: ((name: string) => Promise<void>) | undefined;
   children: ReactNode;
 }) {
   const save = useSaveState(props.autosave);
