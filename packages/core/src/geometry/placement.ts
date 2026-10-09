@@ -18,8 +18,8 @@ export interface PlacementInput {
   /** Candidate centre in room-local coordinates (e.g. where the pointer ray meets the floor). */
   position: readonly [number, number];
   rotationY: number;
-  /** Grid snap step in metres; omit to place freely. */
-  gridStep?: number;
+  /** Grid snap step in metres; omit (or undefined) to place freely. */
+  gridStep?: number | undefined;
   /** Rotation snap step in degrees; omit for free rotation. */
   angleStepDeg?: number;
   /** Turn the object's back to a wall closer than 15 cm (default true). */
@@ -61,7 +61,8 @@ const extents: Vec2 = [0, 0];
 
 /** Gap between the footprint (centred at `x, z`, half extents `ex, ez`) and a wall; < 0 = crossing. */
 function gapTo(wall: WallId, x: number, z: number, room: PlacementInput['room']): number {
-  const [ex, ez] = extents;
+  const ex = extents[0];
+  const ez = extents[1];
   if (wall === 'north') return z - ez;
   if (wall === 'south') return room.depth - (z + ez);
   if (wall === 'west') return x - ex;
@@ -88,12 +89,11 @@ export function solvePlacement(input: PlacementInput, out: PlacementResult = emp
   // out of the 15 cm band and make the result unstable.
   let x = input.position[0];
   let z = input.position[1];
-  out.guides.length = 0;
-  const snapped = input.wallSnap === false ? null : pickWall(input, x, z, rotation);
-  out.wall = snapped?.wall ?? null;
+  const snapped = input.wallSnap === false ? false : pickWall(input, x, z, rotation);
+  out.wall = snapped ? picked.wall : null;
 
   if (snapped) {
-    rotation = snapped.rotation;
+    rotation = picked.rotation;
     footprintExtents(size.w, size.d, rotation, extents);
     // Back face on the wall plane, centre half a depth into the room; the grid applies along it.
     if (out.wall === 'north' || out.wall === 'south') {
@@ -109,7 +109,8 @@ export function solvePlacement(input: PlacementInput, out: PlacementResult = emp
   }
 
   footprintExtents(size.w, size.d, rotation, extents);
-  const [ex, ez] = extents;
+  const ex = extents[0];
+  const ez = extents[1];
   const fits =
     2 * ex <= room.width + GEOMETRY_TOLERANCE && 2 * ez <= room.depth + GEOMETRY_TOLERANCE;
   out.valid = fits;
@@ -120,34 +121,46 @@ export function solvePlacement(input: PlacementInput, out: PlacementResult = emp
   out.position[0] = fits ? clampOnGrid(x, ex, room.width - ex, wallSetsX ? undefined : step) : x;
   out.position[1] = fits ? clampOnGrid(z, ez, room.depth - ez, wallSetsZ ? undefined : step) : z;
   out.rotationY = rotation;
-  if (out.wall) out.guides.push(wallGuide(out.wall, room));
+  if (out.wall) writeWallGuide(out.guides, out.wall, room);
+  else out.guides.length = 0;
   return out;
 }
 
+/** What `pickWall` found; module scratch so that the per-frame call allocates nothing. */
+const picked = { wall: 'north' as WallId, rotation: 0, gap: 0, facing: false };
+const awayFromWall: [number, number] = [0, 0];
+
 /**
- * The wall to snap to: within 15 cm, smallest gap first; on a tie, the wall the object already
- * faces (so solving a snapped pose again is stable). Walls the object could not face without
- * leaving the room (too long once turned) are skipped.
+ * The wall to snap to, left in `picked`: within 15 cm, smallest gap first; on a tie, the wall the
+ * object already faces (so solving a snapped pose again is stable). Walls the object could not face
+ * without leaving the room (too long once turned) are skipped. False when there is none.
  */
-function pickWall(input: PlacementInput, x: number, z: number, rotation: number) {
+function pickWall(input: PlacementInput, x: number, z: number, rotation: number): boolean {
   const { room, size } = input;
   const backFace = input.backFace ?? 'z-';
   footprintExtents(size.w, size.d, rotation, extents);
-  let best: { wall: WallId; rotation: number; gap: number; facing: boolean } | null = null;
-  for (const { wall, inward } of WALLS) {
+  let found = false;
+  for (let i = 0; i < WALLS.length; i += 1) {
+    const { wall, inward } = WALLS[i] as (typeof WALLS)[number];
     const gap = gapTo(wall, x, z, room);
     if (gap > WALL_SNAP_DISTANCE) continue;
-    const target = backFaceRotation(backFace, [-inward[0], -inward[1]]);
+    awayFromWall[0] = -inward[0];
+    awayFromWall[1] = -inward[1];
+    const target = backFaceRotation(backFace, awayFromWall);
     if (!fitsTurned(size, target, room)) continue;
     const facing = Math.cos(target - rotation) > 1 - 1e-9;
-    if (best) {
-      const closer = gap < best.gap - GEOMETRY_TOLERANCE;
-      const tie = Math.abs(gap - best.gap) <= GEOMETRY_TOLERANCE;
-      if (!closer && !(tie && facing && !best.facing)) continue;
+    if (found) {
+      const closer = gap < picked.gap - GEOMETRY_TOLERANCE;
+      const tie = Math.abs(gap - picked.gap) <= GEOMETRY_TOLERANCE;
+      if (!closer && !(tie && facing && !picked.facing)) continue;
     }
-    best = { wall, rotation: target, gap, facing };
+    found = true;
+    picked.wall = wall;
+    picked.rotation = target;
+    picked.gap = gap;
+    picked.facing = facing;
   }
-  return best;
+  return found;
 }
 
 const turned: Vec2 = [0, 0];
@@ -175,10 +188,22 @@ function clampOnGrid(value: number, min: number, max: number, step: number | und
   return clamped === min ? low : high;
 }
 
-function wallGuide(wall: WallId, room: PlacementInput['room']): WallGuide {
+/** One guide per result array, kept while that result has no wall so that snapping again is free. */
+const guidePool = new WeakMap<PlacementGuide[], WallGuide>();
+
+/** Writes the guide of `wall` into `guides[0]`; it is created once per result (hot path). */
+function writeWallGuide(guides: PlacementGuide[], wall: WallId, room: PlacementInput['room']) {
+  let guide = guidePool.get(guides);
+  if (!guide) {
+    guide = { kind: 'wall', wall, from: [0, 0], to: [0, 0] };
+    guidePool.set(guides, guide);
+  }
+  guides[0] = guide;
+  guides.length = 1;
   const { width, depth } = room;
-  if (wall === 'north') return { kind: 'wall', wall, from: [0, 0], to: [width, 0] };
-  if (wall === 'south') return { kind: 'wall', wall, from: [0, depth], to: [width, depth] };
-  if (wall === 'west') return { kind: 'wall', wall, from: [0, 0], to: [0, depth] };
-  return { kind: 'wall', wall, from: [width, 0], to: [width, depth] };
+  guide.wall = wall;
+  guide.from[0] = wall === 'east' ? width : 0;
+  guide.from[1] = wall === 'south' ? depth : 0;
+  guide.to[0] = wall === 'north' || wall === 'south' ? width : guide.from[0];
+  guide.to[1] = wall === 'north' || wall === 'south' ? guide.from[1] : depth;
 }

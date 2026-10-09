@@ -81,7 +81,9 @@ const BACK_FACE_DIRECTION: Readonly<Record<BackFace, readonly [number, number]>>
  * A three.js rotation by θ adds θ to a direction's angle measured as `atan2(x, z)`.
  */
 export function backFaceRotation(backFace: BackFace, world: readonly [number, number]): number {
-  const [bx, bz] = BACK_FACE_DIRECTION[backFace];
+  const direction = BACK_FACE_DIRECTION[backFace];
+  const bx = direction[0];
+  const bz = direction[1];
   return normalizeAngle(Math.atan2(world[0], world[1]) - Math.atan2(bx, bz));
 }
 
