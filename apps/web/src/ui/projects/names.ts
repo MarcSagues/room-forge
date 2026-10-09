@@ -1,3 +1,5 @@
+import { uniqueProjectName } from '@roomforge/core';
+
 /** Lowercase and without accents, so that “cocina” finds “Cócina”. */
 function fold(text: string): string {
   return text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().trim();
@@ -10,11 +12,4 @@ export function matchesQuery(name: string, query: string): boolean {
 }
 
 /** `base`, or `base 2`, `base 3`… the first one that no name in `taken` already has. */
-export function uniqueName(base: string, taken: Iterable<string>): string {
-  const used = new Set([...taken].map((name) => name.trim().toLowerCase()));
-  if (!used.has(base.toLowerCase())) return base;
-  for (let n = 2; ; n += 1) {
-    const candidate = `${base} ${n}`;
-    if (!used.has(candidate.toLowerCase())) return candidate;
-  }
-}
+export const uniqueName = uniqueProjectName;

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { LIMITS } from '../domain';
-import { copyProjectName, normalizeProjectName, RepositoryError } from './project-repository';
+import {
+  copyProjectName,
+  normalizeProjectName,
+  RepositoryError,
+  uniqueProjectName,
+} from './project-repository';
 
 describe('copyProjectName', () => {
   it('appends the suffix', () => {
@@ -68,5 +73,31 @@ describe('normalizeProjectName', () => {
     expect(() => normalizeProjectName('a\u0000b')).toThrowError(
       expect.objectContaining({ code: 'INVALID_NAME' }),
     );
+  });
+});
+
+describe('uniqueProjectName', () => {
+  it('keeps the base name when it is free', () => {
+    expect(uniqueProjectName('Untitled project', ['Office'])).toBe('Untitled project');
+  });
+
+  it('numbers it from 2 when taken, ignoring case and spaces around', () => {
+    expect(uniqueProjectName('Untitled project', ['  untitled PROJECT '])).toBe(
+      'Untitled project 2',
+    );
+  });
+
+  it('skips the numbers that are taken too', () => {
+    expect(
+      uniqueProjectName('Untitled project', [
+        'Untitled project',
+        'Untitled project 2',
+        'Untitled project 4',
+      ]),
+    ).toBe('Untitled project 3');
+  });
+
+  it('accepts any iterable', () => {
+    expect(uniqueProjectName('A', new Set(['A']))).toBe('A 2');
   });
 });

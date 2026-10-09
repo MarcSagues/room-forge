@@ -148,6 +148,77 @@ describe('IndexedDB repository: atomic writes', () => {
   });
 });
 
+describe('IndexedDB repository: saving while the page is going away', () => {
+  /** Lets microtasks run, and nothing that needs the event loop (a request finishing). */
+  async function microtasks() {
+    for (let i = 0; i < 20; i += 1) await Promise.resolve();
+  }
+
+  it('queues the writes of a project it knows without waiting for any request to finish', async () => {
+    const clock = createFakeClock(1_000);
+    const repository = repositoryWith({ clock });
+    await repository.save({ id: id('p1'), name: 'A', document: documentWith(1) });
+    const put = vi.spyOn(IDBObjectStore.prototype, 'put');
+    const get = vi.spyOn(IDBObjectStore.prototype, 'get');
+
+    clock.advance(500);
+    const saving = repository.save({ id: id('p1'), name: 'A', document: documentWith(2) });
+    await microtasks();
+    // Both writes are already queued: a page that unloads right now has still handed them over.
+    expect(put).toHaveBeenCalledTimes(2);
+    expect(get).not.toHaveBeenCalled();
+    await saving;
+  });
+
+  it('still keeps the creation date of a project when that date is known', async () => {
+    const clock = createFakeClock(1_000);
+    const repository = repositoryWith({ clock });
+    await repository.save({ id: id('p1'), name: 'A', document: documentWith(0) });
+    clock.advance(500);
+    const saved = await repository.save({ id: id('p1'), name: 'A', document: documentWith(1) });
+    expect(saved).toMatchObject({ createdAt: 1_000, updatedAt: 1_500 });
+  });
+
+  it('learns the creation date from what it lists, reads, renames and duplicates', async () => {
+    const clock = createFakeClock(1_000);
+    const first = repositoryWith({ clock, idGen: createSeqIdGen('copy') });
+    await first.save({ id: id('p1'), name: 'A', document: documentWith(0) });
+    await first.close();
+
+    // A new repository over the same database knows nothing until it has looked.
+    clock.advance(2_000);
+    const second = repositoryWith({ clock, idGen: createSeqIdGen('copy') });
+    const get = vi.spyOn(IDBObjectStore.prototype, 'get');
+    await second.list();
+    get.mockClear();
+    const saved = await second.save({ id: id('p1'), name: 'A', document: documentWith(1) });
+    expect(get).not.toHaveBeenCalled();
+    expect(saved.createdAt).toBe(1_000);
+
+    const copy = await second.duplicate(id('p1'));
+    get.mockClear();
+    await second.save({ id: copy.id, name: copy.name, document: documentWith(2) });
+    expect(get).not.toHaveBeenCalled();
+  });
+
+  it('reads when it does not know the project (the first save of an id)', async () => {
+    const repository = repositoryWith();
+    const get = vi.spyOn(IDBObjectStore.prototype, 'get');
+    await repository.save({ id: id('new'), name: 'A', document: documentWith(0) });
+    expect(get).toHaveBeenCalled();
+  });
+
+  it('forgets a deleted project, so saving it again is a new project', async () => {
+    const clock = createFakeClock(1_000);
+    const repository = repositoryWith({ clock });
+    await repository.save({ id: id('p1'), name: 'A', document: documentWith(0) });
+    await repository.delete(id('p1'));
+    clock.advance(9_000);
+    const again = await repository.save({ id: id('p1'), name: 'A', document: documentWith(0) });
+    expect(again.createdAt).toBe(10_000);
+  });
+});
+
 describe('IndexedDB repository: database versions', () => {
   const addIndex: UpgradeStep = (_db, transaction) => {
     transaction.objectStore('projects').createIndex('by-name', 'name');

@@ -15,4 +15,5 @@ export {
   RepositoryError,
   type RepositoryErrorCode,
   type StoredProject,
+  uniqueProjectName,
 } from './project-repository';

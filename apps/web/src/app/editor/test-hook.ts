@@ -7,6 +7,7 @@ import {
   removeObjects,
   resizeRoom,
 } from '@roomforge/core';
+import type { Autosave, SaveState } from '@/persistence';
 import type { RenderInfo, RoomDisplay, SceneCamera, SceneHandle } from '@/scene-engine';
 
 /**
@@ -34,6 +35,8 @@ export interface RoomForgeTestHook {
    * `local` picks another point in the object's frame (front = +z), such as the rotation knob.
    */
   project(id: ObjectId, local?: readonly [number, number, number]): { x: number; y: number } | null;
+  /** Autosave: where the work stands, and writing it now. Both inert until it is running. */
+  autosave: { state(): SaveState | null; flush(): Promise<void> };
 }
 
 declare global {
@@ -46,7 +49,11 @@ export const E2E_ENABLED = process.env.NEXT_PUBLIC_E2E === '1';
 
 export function installTestHook(
   target: Window,
-  deps: { session: EditorSession; getScene: () => SceneHandle | null },
+  deps: {
+    session: EditorSession;
+    getScene: () => SceneHandle | null;
+    getAutosave?: () => Autosave | null;
+  },
   enabled: boolean = E2E_ENABLED,
 ): () => void {
   if (!enabled) return () => {};
@@ -63,6 +70,10 @@ export function installTestHook(
     },
     roomDisplay: (roomId) => deps.getScene()?.roomDisplay(roomId) ?? null,
     project: (id, local) => deps.getScene()?.project(id, local) ?? null,
+    autosave: {
+      state: () => deps.getAutosave?.()?.state() ?? null,
+      flush: async () => void (await deps.getAutosave?.()?.flush()),
+    },
   };
   target.__RF__ = hook;
   return () => {

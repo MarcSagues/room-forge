@@ -87,3 +87,13 @@ export function normalizeProjectName(name: string): string {
   }
   return trimmed;
 }
+
+/** `base`, or `base 2`, `base 3`…: the first name that none of `taken` already has (ignoring case). */
+export function uniqueProjectName(base: string, taken: Iterable<string>): string {
+  const used = new Set([...taken].map((name) => name.trim().toLowerCase()));
+  if (!used.has(base.toLowerCase())) return base;
+  for (let n = 2; ; n += 1) {
+    const candidate = `${base} ${n}`;
+    if (!used.has(candidate.toLowerCase())) return candidate;
+  }
+}

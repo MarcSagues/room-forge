@@ -77,6 +77,10 @@ export function createIndexedDbProjectRepository(
   } = options;
   let connection: Promise<IDBPDatabase<RoomForgeDb>> | undefined;
   let persistenceAsked = false;
+  // When each project was created, learned from what this repository has listed, read or written.
+  // Saving a project whose date is known needs no read first, so its writes are queued at once:
+  // a page that is being closed can still hand them over before it goes (see `save`).
+  const createdAt = new Map<string, number>();
 
   function database(): Promise<IDBPDatabase<RoomForgeDb>> {
     if (!connection) {
@@ -154,6 +158,7 @@ export function createIndexedDbProjectRepository(
       const db = await database();
       try {
         const all = await db.getAll('projects');
+        for (const project of all) createdAt.set(project.id, project.createdAt);
         return all.map(summaryOf).sort(newestFirst);
       } catch (error) {
         throw toRepositoryError(error, 'operation');
@@ -167,6 +172,7 @@ export function createIndexedDbProjectRepository(
           tx.objectStore('documents').get(id),
         ]);
         if (!summary || !stored) return undefined;
+        createdAt.set(summary.id, summary.createdAt);
         return { ...summaryOf(summary), document: stored.document } satisfies StoredProject;
       });
     },
@@ -175,12 +181,14 @@ export function createIndexedDbProjectRepository(
       const name = normalizeProjectName(input.name);
       const saved = await transact('readwrite', async (tx) => {
         const projects = tx.objectStore('projects');
-        const existing = await projects.get(input.id);
+        // Known date: no read, so both writes below are queued before anything has to finish.
+        const known = createdAt.get(input.id);
+        const existing = known === undefined ? await projects.get(input.id) : undefined;
         const now = clock.now();
         const summary: ProjectSummary = {
           id: input.id,
           name,
-          createdAt: existing?.createdAt ?? now,
+          createdAt: known ?? existing?.createdAt ?? now,
           updatedAt: now,
         };
         // Both puts are queued before the transaction can commit; a failure in either aborts all.
@@ -190,6 +198,7 @@ export function createIndexedDbProjectRepository(
         );
         return summary;
       });
+      createdAt.set(saved.id, saved.createdAt);
       askForPersistence();
       return saved;
     },
@@ -202,6 +211,7 @@ export function createIndexedDbProjectRepository(
         if (!existing) throw new RepositoryError('NOT_FOUND', `There is no project ${id}`);
         const summary = { ...summaryOf(existing), name: normalized, updatedAt: clock.now() };
         await projects.put(summary);
+        createdAt.set(summary.id, summary.createdAt);
         return summary;
       });
     },
@@ -225,6 +235,7 @@ export function createIndexedDbProjectRepository(
           () => tx.objectStore('projects').put(summary),
           () => tx.objectStore('documents').put({ id: copyId, document: stored.document }),
         );
+        createdAt.set(summary.id, summary.createdAt);
         return summary;
       });
     },
@@ -236,6 +247,7 @@ export function createIndexedDbProjectRepository(
           () => tx.objectStore('documents').delete(id),
         );
       });
+      createdAt.delete(id);
     },
 
     async getMeta(key) {
