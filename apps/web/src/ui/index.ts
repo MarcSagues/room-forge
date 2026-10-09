@@ -5,5 +5,6 @@ export { DEFAULT_LOCALE, type Locale, type MessageKey, translate } from './i18n'
 export { RoomMaterialsPanel } from './materials';
 export { SelectionSummary } from './properties';
 export { Providers } from './providers';
+export { RoomSizePanel } from './room';
 export { EditorShell } from './shell';
 export { ThemeToggle } from './theme-toggle';

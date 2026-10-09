@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { emptyCatalog } from '@/asset-library';
 import { createDemoSession, installHotkeys } from '@/editor';
 import { SceneCanvas, type SceneHandle } from '@/scene-engine';
-import { EditorShell, RoomMaterialsPanel, SelectionSummary } from '@/ui';
+import { EditorShell, RoomMaterialsPanel, RoomSizePanel, SelectionSummary } from '@/ui';
 import { installTestHook } from './test-hook';
 
 /** Composition root of the editor route: session + shell + canvas (client-only, loaded by the loader). */
@@ -32,6 +32,7 @@ export default function EditorApp() {
       properties={
         <>
           <SelectionSummary session={session} />
+          <RoomSizePanel session={session} />
           <RoomMaterialsPanel session={session} />
         </>
       }

@@ -99,10 +99,17 @@ test('dragging the colour is one undo step and compiles nothing new', async ({ p
   const idle = await page.evaluate(info);
   const picker = panel.getByLabel('Pick a tint colour');
 
-  for (let step = 0; step < 30; step += 1) {
-    const channel = (80 + step * 4).toString(16).padStart(2, '0');
-    await picker.fill(`#ff${channel}${channel}`);
-  }
+  // A drag is thirty input events in a row, well inside the coalescing window: sent from the page
+  // in one go, so a slow machine cannot space them out.
+  await picker.evaluate((input: HTMLInputElement) => {
+    const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+    if (!setValue) throw new Error('no value setter');
+    for (let step = 0; step < 30; step += 1) {
+      const channel = (80 + step * 4).toString(16).padStart(2, '0');
+      setValue.call(input, `#ff${channel}${channel}`);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  });
   await settle(page);
 
   const after = await page.evaluate(info);
