@@ -165,3 +165,70 @@ test('arrow keys move the selected object one step, Shift ten, and undo returns 
   });
   expect((await position(page, 'a'))?.position).toEqual([1, 0, 1.5]);
 });
+
+test('a slow start does not orbit the camera before the drag begins', async ({ page }) => {
+  const from = await screenPoint(page, 'a');
+  const to = await floorPoint(page, 2.5, 3);
+  const cameraBefore = await page.evaluate(() => window.__RF__?.camera.snapshot());
+
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down();
+  // One pixel at a time: the press is still a possible click until it passes the click slop.
+  for (let i = 1; i <= 10; i += 1) await page.mouse.move(from.x + i, from.y + i / 2);
+  await page.mouse.move(to.x, to.y, { steps: 10 });
+  await page.mouse.up();
+  await settle(page);
+
+  expect(await page.evaluate(() => window.__RF__?.camera.snapshot())).toEqual(cameraBefore);
+  expect((await position(page, 'a'))?.position[0]).toBeCloseTo(2.5, 0);
+});
+
+test('dragging among 50 objects renders at most one frame per pointer step and creates no resources', async ({
+  page,
+}) => {
+  const crowd = Array.from({ length: 49 }, (_, i) => ({
+    id: `o${i}`,
+    x: 1.9 + (i % 5) * 0.4,
+    z: 0.3 + Math.floor(i / 5) * 0.4,
+  }));
+  await addObjects(page, crowd);
+
+  // Warm-up: a first drag selects 'a' and snaps it to a wall, which uploads the shared outline and
+  // guide geometry once. The measured drag after it must not create anything.
+  const start = await screenPoint(page, 'a');
+  const wall = await floorPoint(page, 0.05, 1.5);
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+  await page.mouse.move(wall.x, wall.y, { steps: 10 });
+  await page.mouse.up();
+  await settle(page);
+
+  const from = await screenPoint(page, 'a');
+  const to = await floorPoint(page, 1, 3.6);
+  const info = () => page.evaluate(() => window.__RF__?.info());
+  const idle = await info();
+
+  const STEPS = 40;
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down();
+  await page.mouse.move(to.x, to.y, { steps: STEPS });
+  const dragging = await info();
+  await page.mouse.up();
+  await settle(page);
+  const dropped = await info();
+
+  console.log(`RENDER 50 objects: ${JSON.stringify({ idle, dragging, dropped })}`);
+  if (!idle || !dragging || !dropped) throw new Error('no render info');
+  // The pointer is sampled once per animation frame, so a step can never cost more than a frame.
+  expect(dragging.frame - idle.frame).toBeLessThanOrEqual(STEPS + 2);
+  expect(dragging.frame - idle.frame).toBeGreaterThan(0);
+  // Only the outline (and maybe a wall guide) is added while dragging: no new geometry, texture
+  // or shader program.
+  for (const during of [dragging, dropped]) {
+    expect(during.geometries).toBe(idle.geometries);
+    expect(during.textures).toBe(idle.textures);
+    expect(during.programs).toBe(idle.programs);
+  }
+  expect(dragging.calls - idle.calls).toBeLessThanOrEqual(2);
+  expect((await position(page, 'a'))?.position[2]).toBeCloseTo(3.6, 0);
+});

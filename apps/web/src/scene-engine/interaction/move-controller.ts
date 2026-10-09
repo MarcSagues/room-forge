@@ -123,8 +123,8 @@ export class MoveController {
     // Always solve from the original orientation: leaving a wall turns the object back.
     input.rotationY = this.start.rotationY;
     input.wallSnap = !free;
-    if (free || this.deps.gridStep === 0) delete input.gridStep;
-    else input.gridStep = this.deps.gridStep ?? DEFAULT_DRAG_GRID;
+    input.gridStep =
+      free || this.deps.gridStep === 0 ? undefined : (this.deps.gridStep ?? DEFAULT_DRAG_GRID);
     const result = solvePlacement(input, this.result);
 
     node.position.x = result.position[0];

@@ -36,9 +36,11 @@ export function createTransientStore(): TransientStore {
     wall: null,
   };
   let active = false;
-  const listeners = new Set<() => void>();
+  // Replaced (not mutated) on subscribe and unsubscribe, so notifying is a plain indexed loop.
+  let listeners: readonly (() => void)[] = [];
   const notify = () => {
-    for (const listener of listeners) listener();
+    const current = listeners;
+    for (let i = 0; i < current.length; i += 1) (current[i] as () => void)();
   };
   return {
     drag: () => (active ? shared : null),
@@ -58,8 +60,10 @@ export function createTransientStore(): TransientStore {
       notify();
     },
     subscribe(listener) {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
+      listeners = [...listeners, listener];
+      return () => {
+        listeners = listeners.filter((other) => other !== listener);
+      };
     },
   };
 }
