@@ -2,7 +2,6 @@
 
 import { addAfterEffect, Canvas, useThree } from '@react-three/fiber';
 import {
-  type CatalogProvider,
   type EditorSession,
   type ObjectId,
   type RoomId,
@@ -13,6 +12,8 @@ import { type RefObject, useEffect, useMemo, useRef } from 'react';
 import { type Material, type Mesh, NeutralToneMapping, type Object3D, Vector3 } from 'three';
 import type { CameraHandle, CameraSnapshot } from '../camera/camera-director';
 import { CameraRig } from '../camera/camera-rig';
+import { PlaceController } from '../interaction/place-controller';
+import { createPlacementApi, type PlacementApi } from '../interaction/placement-api';
 import { createTransientStore } from '../interaction/transient-store';
 import { createEntityRegistry, type EntityRegistry } from '../objects/entity-registry';
 import { roomObjectName } from '../room/room-mesh';
@@ -21,7 +22,13 @@ import { connectInvalidate } from './invalidate-bridge';
 import { createMutate, type Mutate } from './mutate';
 import { formatRenderInfo, type RenderInfo, readRenderInfo } from './render-info';
 import { SceneContent } from './scene-content';
-import { SceneSessionProvider, useSceneSession } from './scene-context';
+import {
+  type SceneCatalog,
+  SceneSessionProvider,
+  useSceneCatalog,
+  useSceneSession,
+  useTransientStore,
+} from './scene-context';
 
 /** The camera as the host sees it; `snapshot` is null until the rig is mounted. */
 export interface SceneCamera extends Omit<CameraHandle, 'snapshot'> {
@@ -50,12 +57,14 @@ export interface SceneHandle {
   mutate: Mutate;
   invalidate(): void;
   camera: SceneCamera;
+  /** Dragging an item in from the catalog panel, or placing it in the middle of the view. */
+  placement: PlacementApi;
 }
 
 export interface SceneCanvasProps {
   session: EditorSession;
   /** Object sizes for placeholders and picking; unknown ids draw as placeholder boxes. */
-  catalog?: CatalogProvider;
+  catalog?: SceneCatalog;
   onReady?: (handle: SceneHandle) => void;
   onContextLost?: () => void;
   onContextRestored?: () => void;
@@ -153,12 +162,24 @@ function ReadyReporter(props: {
   registry: EntityRegistry;
 }) {
   const { camera, registry } = props;
+  const session = useSceneSession();
+  const catalog = useSceneCatalog();
+  const transient = useTransientStore();
   const gl = useThree((state) => state.gl);
   const scene = useThree((state) => state.scene);
   const get = useThree((state) => state.get);
   const invalidate = useThree((state) => state.invalidate);
   const callback = useRef(props.onReady);
   callback.current = props.onReady;
+  const placement = useMemo(
+    () =>
+      createPlacementApi({
+        controller: new PlaceController({ session, catalog, transient, invalidate }),
+        canvas: gl.domElement,
+        getCamera: () => get().camera,
+      }),
+    [session, catalog, transient, invalidate, gl, get],
+  );
   const handle = useMemo<SceneHandle>(
     () => ({
       renderInfo: () => readRenderInfo(gl.info),
@@ -166,6 +187,7 @@ function ReadyReporter(props: {
       project: (id) => projectEntity(registry.get(id), get().camera, gl.domElement),
       mutate: createMutate(invalidate),
       invalidate: () => invalidate(),
+      placement,
       // The rig mounts after this handle may be built, so every call looks it up when it happens.
       camera: {
         fit: () => camera.current?.fit(),
@@ -175,7 +197,7 @@ function ReadyReporter(props: {
         setInputBlocked: (blocked) => camera.current?.setInputBlocked(blocked),
       },
     }),
-    [gl, scene, get, invalidate, camera, registry],
+    [gl, scene, get, invalidate, camera, registry, placement],
   );
   useEffect(() => {
     callback.current?.(handle);

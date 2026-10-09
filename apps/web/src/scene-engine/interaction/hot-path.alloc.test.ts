@@ -11,6 +11,7 @@ import { Object3D, Ray, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { createEntityRegistry } from '../objects/entity-registry';
 import { MoveController } from './move-controller';
+import { PlaceController } from './place-controller';
 import { createTransientStore } from './transient-store';
 
 // Drag code runs on every frame and must not allocate (AGENTS rule 3). The V8 sampling heap
@@ -192,6 +193,39 @@ describe('hot path: no allocations per step', () => {
           SLOW,
         );
       }
+    }
+  });
+
+  describe('PlaceController.update (an item dragged in from the catalog)', () => {
+    const down = (x: number, z: number) => new Ray(new Vector3(x, 10, z), new Vector3(0, -1, 0));
+    // Across the room and out of it on both sides, so the ghost shows, snaps to walls and hides.
+    const path = sweep(600, -1.5, 5.5).map((x) => down(x, 1.5));
+
+    for (const free of [false, true]) {
+      it(
+        `${free ? 'with Alt' : 'with snapping'}`,
+        async () => {
+          const session = createEditorSession({
+            initialDocument: buildDocument(),
+            catalog: createFixtureCatalog(),
+          });
+          const transient = createTransientStore();
+          transient.subscribe(() => {});
+          const controller = new PlaceController({
+            session,
+            catalog: createFixtureCatalog(),
+            transient,
+            invalidate: () => {},
+            gridStep: 0.1,
+          });
+          controller.begin('desk.basic.120');
+          expectQuiet(
+            await largeBytesPerCall((i) => controller.update(path[i % path.length] as Ray, free)),
+          );
+          controller.cancel();
+        },
+        SLOW,
+      );
     }
   });
 });

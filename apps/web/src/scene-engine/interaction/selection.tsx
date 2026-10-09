@@ -3,21 +3,13 @@
 import { useFrame, useThree } from '@react-three/fiber';
 import type { ObjectId } from '@roomforge/core';
 import { useEffect, useMemo, useRef } from 'react';
-import {
-  BoxGeometry,
-  Color,
-  EdgesGeometry,
-  LineBasicMaterial,
-  LineSegments,
-  Matrix4,
-  Raycaster,
-  Vector2,
-} from 'three';
+import { Color, LineBasicMaterial, LineSegments, Matrix4, Raycaster, Vector2 } from 'three';
 import { useSceneCatalog, useSceneSession, useTransientStore } from '../canvas/scene-context';
 import { useEntityRegistry } from '../objects/entity-registry';
 import { objectSize } from '../objects/placeholder-resources';
 import { MoveController } from './move-controller';
 import { attachNudge } from './nudge-controller';
+import { outlineGeometry } from './outline-geometry';
 import { type PickProxy, pickEntity } from './pick';
 import { attachPicking } from './picking-controller';
 import { tokenColor } from './token-color';
@@ -105,13 +97,6 @@ export function Picking() {
 
   return null;
 }
-
-/** A unit box outline (bottom on the floor), scaled per object; one geometry for both outlines. */
-let edges: EdgesGeometry | undefined;
-const outlineGeometry = () => {
-  edges ??= new EdgesGeometry(new BoxGeometry(1, 1, 1).translate(0, 0.5, 0));
-  return edges;
-};
 
 /** Outlines slightly larger than the object so they do not z-fight with its faces. */
 const INFLATE = 1.02;

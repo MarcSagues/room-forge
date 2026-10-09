@@ -2,6 +2,7 @@
 
 import { useShallow } from 'zustand/react/shallow';
 import { DragGuides } from '../interaction/drag-guides';
+import { PlacementGhost } from '../interaction/placement-ghost';
 import { KeyboardNudge, Picking, SelectionOutline } from '../interaction/selection';
 import { type EntityRegistry, EntityRegistryProvider } from '../objects/entity-registry';
 import { ObjectList } from '../objects/object-views';
@@ -21,6 +22,7 @@ export function SceneContent({ registry }: { registry?: EntityRegistry }) {
         <ObjectList />
         <SelectionOutline />
         <DragGuides />
+        <PlacementGhost />
         <Picking />
         <KeyboardNudge />
       </EntityRegistryProvider>
