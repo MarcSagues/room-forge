@@ -235,7 +235,7 @@ Las invariantes se prueban con **tests basados en propiedades** (fast-check): pa
 | Sala | `room/create`, `room/resize`, `room/setSurfaceMaterial` |
 | Aperturas | `opening/add`, `opening/move`, `opening/resize`, `opening/remove` |
 | Objetos | `object/add`, `object/move`, `object/rotate`, `object/setProps`, `object/setMaterial`, `object/remove`, `object/duplicate`, `object/reparent` |
-| Luz | `light/set` (on, color, intensidad, efecto) |
+| Luz | `light/set` (on, color, intensidad, efecto), `light/setAll` (apagar/encender todas o aplicar un preset de ambiente) |
 | Escena | `scene/setLightingMode` (día/noche), `scene/setSettings` |
 | Compuestos | `batch` / gestos |
 
@@ -244,6 +244,7 @@ Las invariantes se prueban con **tests basados en propiedades** (fast-check): pa
 - `object/add`: un objeto de suelo (superficie predeterminada `floor`, sin padre) que quedaría fuera de la sala se lleva a la posición válida más cercana (`solvePlacement` sin *snap* a pared); si no cabe en la sala, `invalid`. El objeto n.º 301 devuelve `limit-reached`. Los `catalogId` desconocidos se guardan tal cual (I6).
 - `object/move` / `object/rotate`: valores absolutos, **sin clamp** (el controlador de arrastre ya resuelve una posición legal); si el resultado viola I3 se rechaza y el documento no cambia. Se fusionan por `mergeKey` (`object/move:<ids>`). `object/move` admite además un `rotationY` opcional por objeto: el giro que eligió el *snap* a pared durante el mismo arrastre, para que el gesto siga siendo una sola entrada de historial. Los controladores del camino caliente (`solvePlacement`, `MoveController`) no asignan objetos por llamada; `hot-path.alloc.test.ts` lo vigila con el perfilador de V8.
 - `object/setProps`: nombre (`null` lo borra), `locked`, `hidden`, escala (`null` la restablece) y `params` (se fusionan).
+- `light/set` / `light/setAll` / `scene/setLightingMode` (P5-04, `core/commands/light.ts`): solo los items con capacidad de luz (`CatalogItem.light`) admiten un `light`; un item conocido sin ella hace fallar todo el comando y uno desconocido se acepta (I6). Una luz sin configurar parte de los valores del item (encendida, estática, su color). `light/setAll` es **un gesto = una entrada** (encender/apagar todas, o repartir en orden los estados de un `AmbiencePreset`: Cyberpunk, Atardecer, Cálido, Frío). El **tiempo no está en el documento**: el motor evalúa `evaluateEffect(efecto, colorBase, t)` (función pura de `core/lighting`): `breathing` oscila el nivel entre 0,15 y 1 con periodo `4/speed` s empezando en el mínimo; `cycle` con paleta pasa de un color al siguiente en `2/speed` s y da la vuelta; sin paleta gira el matiz del color base una vuelta cada `10/speed` s.
 - `object/remove`: elimina también los objetos apoyados en los eliminados.
 - `object/duplicate`: copia también los objetos apoyados en los duplicados, cuyas copias se apoyan en la copia del padre (mismo transform local); duplicar solo un hijo lo deja sobre el mismo padre. Las copias raíz se desplazan `DUPLICATE_OFFSET` (25 cm en x y z) y, si son de suelo, se mantienen dentro de la sala. Supera el límite ⇒ `limit-reached`.
 

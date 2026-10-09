@@ -1,6 +1,14 @@
-import type { CatalogId } from '../domain';
+import type { CatalogId, HexColor } from '../domain';
 
 export type PlacementSurface = 'floor' | 'wall' | 'ceiling' | 'tabletop';
+
+/** What an item that gives light is: its kind, its weight in the light budget, its colour. */
+export interface LightCapability {
+  readonly kind: 'strip' | 'bar' | 'panel' | 'point' | 'spot' | 'neon';
+  /** Weight in the scene's light budget (0 = emissive only, no real light). */
+  readonly cost: 0 | 1 | 2;
+  readonly defaultColor: HexColor;
+}
 
 /**
  * The part of a catalog item (DOMAIN_MODEL §3.1) that core needs to check invariants. The full
@@ -12,6 +20,8 @@ export interface CatalogItem {
   readonly size: { readonly w: number; readonly h: number; readonly d: number };
   /** Allowed surfaces; the first one is the default. */
   readonly placement: { readonly surfaces: readonly [PlacementSurface, ...PlacementSurface[]] };
+  /** Present only on items that give light: only those take a `light` state. */
+  readonly light?: LightCapability;
 }
 
 /** Read-only catalog port; unknown ids return `undefined` and are kept in the document (I6). */

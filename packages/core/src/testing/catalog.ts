@@ -10,6 +10,7 @@ export const FIXTURE_CATALOG_ITEMS: readonly CatalogItem[] = [
     id: 'led.strip.1m',
     size: { w: 1, h: 0.01, d: 0.01 },
     placement: { surfaces: ['wall', 'tabletop', 'floor'] },
+    light: { kind: 'strip', cost: 1, defaultColor: '#ffffff' },
   },
 ];
 

@@ -1,3 +1,4 @@
+export { type LightsChange, setAllLights, setLight, setLightingMode } from './light';
 export {
   type AddObjectInput,
   addObject,

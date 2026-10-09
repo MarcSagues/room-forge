@@ -11,5 +11,6 @@ export * from './commands';
 export * from './domain';
 export * from './geometry';
 export * from './history';
+export * from './lighting';
 export * from './ports';
 export * from './session';
