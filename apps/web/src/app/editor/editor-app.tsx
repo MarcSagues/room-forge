@@ -21,6 +21,7 @@ import {
   EditorShell,
   ProjectUnavailable,
   RoomMaterialsPanel,
+  RoomSizePanel,
   SelectionSummary,
   translate,
 } from '@/ui';
@@ -153,6 +154,7 @@ function Workspace({ editor, errorLog }: { editor: BootedEditor; errorLog?: Erro
         properties={
           <>
             <SelectionSummary session={session} catalog={stubCatalog} live={live} />
+            <RoomSizePanel session={session} />
             <RoomMaterialsPanel session={session} />
           </>
         }

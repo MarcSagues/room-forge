@@ -19,5 +19,6 @@ export {
   FailureScreen,
   PanelFallback,
 } from './resilience';
+export { RoomSizePanel } from './room';
 export { EditorShell } from './shell';
 export { ThemeToggle } from './theme-toggle';

@@ -415,6 +415,12 @@ flowchart LR
 - **`RoomMaterialsPanel`** muestra el material de la superficie elegida («todas las paredes» muestra el de la pared norte). Se suscribe solo a **primitivas** de ese material (`useShallow` compara un nivel), así que no se renderiza por cambios del resto del documento ni por el hover. Elegir un preset parte de un material limpio; el tinte y el acabado se aplican sobre el actual y conservan el resto.
 - **Color:** selector nativo, campo hex (acepta `#rgb`, `#rrggbb`, con o sin `#`; vacío quita el tinte; un valor inválido muestra el error y **no cambia nada ni añade historial**) y una paleta rápida. La conversión vive en `parseHexColor`, con propiedades de fast-check.
 
+### 6.13 Tamaño de la sala (P3-10, `ui/room`)
+
+- **`RoomSizePanel`** edita ancho, fondo y alto en m o cm (la coma vale como decimal). Cada valor se comprueba al escribirlo contra `LIMITS` (`checkLength`: vacío, no numérico, mínimo, máximo) con el error enlazado por `aria-describedby`; **no se puede confirmar** mientras haya uno mal ni cuando nada ha cambiado. Las longitudes se redondean al milímetro, que esconde el ruido de coma flotante.
+- **Aplicar = un `room/resize`** (una entrada de historial, deshacer la devuelve). Si reducir dejaría objetos o aperturas fuera, el comando **rechaza con `conflict`** y no cambia nada; el panel lista los afectados por nombre y «Verlos» los selecciona (`session.select`). Editar cualquier valor descarta el aviso.
+- Con el catálogo vacío (sin huellas) no hay conflicto posible (I3 necesita el tamaño del artículo): el flujo se prueba con RTL y el catálogo de fixtures, y a mano con el catálogo stub.
+
 ## 7. Biblioteca de assets (`asset-library`)
 
 ```mermaid
