@@ -1,31 +1,232 @@
-import { MagnetIcon, MoonStarIcon, MousePointer2Icon, ScanEyeIcon } from 'lucide-react';
+'use client';
+
+import {
+  ANGLE_STEPS_DEG,
+  type AngleStepDeg,
+  type EditorSession,
+  GRID_STEPS,
+  type GridStep,
+  WALL_MODES,
+  type WallMode,
+} from '@roomforge/core';
+import {
+  BoxIcon,
+  ChevronDownIcon,
+  LightbulbIcon,
+  MagnetIcon,
+  MoonStarIcon,
+  MousePointer2Icon,
+  RotateCwIcon,
+  SquareIcon,
+} from 'lucide-react';
+import type { ReactNode } from 'react';
+import { useStore } from 'zustand';
+import { useShallow } from 'zustand/react/shallow';
 import { Button } from '@/ui/components/button';
-import { translate } from '@/ui/i18n';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from '@/ui/components/dropdown-menu';
+import { Separator } from '@/ui/components/separator';
+import { TooltipProvider } from '@/ui/components/tooltip';
+import { type MessageKey, translate } from '@/ui/i18n';
+import { ShortcutTooltip } from '@/ui/shortcuts/shortcut-tooltip';
 
-const t = (key: Parameters<typeof translate>[1]) => translate('en', key);
+const t = (key: MessageKey, vars?: Record<string, string | number>) => translate('en', key, vars);
 
-/** Bottom bar: tools, view and lighting controls (placeholders until P3-09 / P5-09). */
-export function BottomBar() {
+const cm = (metres: number) => `${Math.round(metres * 100)} cm`;
+const deg = (degrees: number) => `${degrees}°`;
+const wallName = (mode: WallMode) => t(`bar.wall.${mode}` as MessageKey);
+
+/**
+ * Bottom bar (DESIGN_SYSTEM §3): the tool, snap on/off with its grid size, the turn step, the view
+ * and the walls, all read from and written to the session. Day/night and the lights are
+ * placeholders until P5-09. Without a session every control is a disabled placeholder.
+ */
+export function BottomBar({ session }: { session?: EditorSession | undefined }) {
   return (
-    <footer className="flex h-11 shrink-0 items-center gap-1 border-t bg-card px-3">
-      <div role="toolbar" aria-label={t('shell.tools')} className="flex items-center gap-1">
-        <Button variant="secondary" size="sm" aria-pressed="true" disabled title={t('shell.soon')}>
-          <MousePointer2Icon />
-          {t('shell.tool.select')}
+    <TooltipProvider delayDuration={400}>
+      <footer className="flex h-11 shrink-0 items-center gap-1 overflow-x-auto border-t bg-card px-3">
+        <fieldset className="flex items-center gap-1">
+          <legend className="sr-only">{t('shell.tools')}</legend>
+          <Button variant="secondary" size="sm" aria-pressed="true">
+            <MousePointer2Icon />
+            {t('shell.tool.select')}
+          </Button>
+        </fieldset>
+        <Separator orientation="vertical" className="mx-1 h-5" />
+        {session ? <SessionControls session={session} /> : <Placeholders />}
+        <Separator orientation="vertical" className="mx-1 h-5" />
+        <fieldset className="flex items-center gap-1">
+          <legend className="sr-only">{t('bar.lighting')}</legend>
+          <Button variant="ghost" size="sm" disabled title={t('shell.soon')}>
+            <MoonStarIcon />
+            {t('shell.tool.daynight')}
+          </Button>
+          <Button variant="ghost" size="sm" disabled title={t('shell.soon')}>
+            <LightbulbIcon />
+            {t('bar.lights')}
+          </Button>
+        </fieldset>
+      </footer>
+    </TooltipProvider>
+  );
+}
+
+function SessionControls({ session }: { session: EditorSession }) {
+  const { snap, view, wallMode } = useStore(
+    session.store,
+    useShallow((state) => ({ snap: state.snap, view: state.view, wallMode: state.wallMode })),
+  );
+  return (
+    <>
+      <fieldset className="flex items-center gap-1">
+        <legend className="sr-only">{t('bar.snapGroup')}</legend>
+        <ShortcutTooltip label={t('bar.snap')} shortcutId="edit.snap">
+          <Button
+            variant={snap.enabled ? 'secondary' : 'ghost'}
+            size="sm"
+            aria-pressed={snap.enabled}
+            onClick={() => session.setSnap({ enabled: !snap.enabled })}
+          >
+            <MagnetIcon />
+            {t('bar.snap')}
+          </Button>
+        </ShortcutTooltip>
+        <StepMenu
+          label={t('bar.gridSize', { size: cm(snap.gridStep) })}
+          menuLabel={t('bar.gridSizeMenu')}
+          value={snap.gridStep}
+          options={GRID_STEPS}
+          format={cm}
+          onChange={(gridStep) => session.setSnap({ gridStep: gridStep as GridStep })}
+        />
+        <StepMenu
+          icon={<RotateCwIcon />}
+          label={t('bar.turnStep', { step: deg(snap.angleStepDeg) })}
+          menuLabel={t('bar.turnStepMenu')}
+          value={snap.angleStepDeg}
+          options={ANGLE_STEPS_DEG}
+          format={deg}
+          onChange={(angleStepDeg) =>
+            session.setSnap({ angleStepDeg: angleStepDeg as AngleStepDeg })
+          }
+        />
+      </fieldset>
+      <Separator orientation="vertical" className="mx-1 h-5" />
+      <fieldset className="flex items-center gap-1">
+        <legend className="sr-only">{t('bar.view')}</legend>
+        <ShortcutTooltip label={t('bar.perspective')} shortcutId="view.perspective">
+          <Button
+            variant={view === 'perspective' ? 'secondary' : 'ghost'}
+            size="sm"
+            aria-pressed={view === 'perspective'}
+            onClick={() => session.setView('perspective')}
+          >
+            <BoxIcon />
+            {t('bar.perspective')}
+          </Button>
+        </ShortcutTooltip>
+        <ShortcutTooltip label={t('bar.top')} shortcutId="view.top">
+          <Button
+            variant={view === 'top' ? 'secondary' : 'ghost'}
+            size="sm"
+            aria-pressed={view === 'top'}
+            onClick={() => session.setView('top')}
+          >
+            <SquareIcon />
+            {t('bar.top')}
+          </Button>
+        </ShortcutTooltip>
+        <DropdownMenu>
+          <ShortcutTooltip label={t('bar.wallsMenu')} shortcutId="view.walls">
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm">
+                {t('bar.walls', { mode: wallName(wallMode) })}
+                <ChevronDownIcon aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+          </ShortcutTooltip>
+          <DropdownMenuContent align="start" side="top">
+            <DropdownMenuLabel>{t('bar.wallsMenu')}</DropdownMenuLabel>
+            <DropdownMenuRadioGroup
+              value={wallMode}
+              onValueChange={(mode) => session.setWallMode(mode as WallMode)}
+            >
+              {WALL_MODES.map((mode) => (
+                <DropdownMenuRadioItem key={mode} value={mode}>
+                  {wallName(mode)}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </fieldset>
+    </>
+  );
+}
+
+/** A button showing the current step that opens a menu of the steps offered. */
+function StepMenu({
+  icon,
+  label,
+  menuLabel,
+  value,
+  options,
+  format,
+  onChange,
+}: {
+  icon?: ReactNode;
+  label: string;
+  menuLabel: string;
+  value: number;
+  options: readonly number[];
+  format(value: number): string;
+  onChange(value: number): void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="sm" aria-label={label} title={label}>
+          {icon}
+          {format(value)}
+          <ChevronDownIcon aria-hidden="true" />
         </Button>
-        <Button variant="ghost" size="sm" disabled title={t('shell.soon')}>
-          <MagnetIcon />
-          {t('shell.tool.snap')}
-        </Button>
-        <Button variant="ghost" size="sm" disabled title={t('shell.soon')}>
-          <ScanEyeIcon />
-          {t('shell.tool.view')}
-        </Button>
-        <Button variant="ghost" size="sm" disabled title={t('shell.soon')}>
-          <MoonStarIcon />
-          {t('shell.tool.daynight')}
-        </Button>
-      </div>
-    </footer>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" side="top">
+        <DropdownMenuLabel>{menuLabel}</DropdownMenuLabel>
+        <DropdownMenuRadioGroup
+          value={String(value)}
+          onValueChange={(next) => onChange(Number(next))}
+        >
+          {options.map((option) => (
+            <DropdownMenuRadioItem key={option} value={String(option)}>
+              {format(option)}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+/** What the bar shows where there is no editor session (the shell on its own). */
+function Placeholders() {
+  return (
+    <fieldset className="flex items-center gap-1">
+      <legend className="sr-only">{t('bar.snapGroup')}</legend>
+      <Button variant="ghost" size="sm" disabled title={t('shell.soon')}>
+        <MagnetIcon />
+        {t('bar.snap')}
+      </Button>
+      <Button variant="ghost" size="sm" disabled title={t('shell.soon')}>
+        <BoxIcon />
+        {t('bar.perspective')}
+      </Button>
+    </fieldset>
   );
 }

@@ -22,6 +22,11 @@ export function useShortcutRegistry(): ShortcutRegistry {
   return registry;
 }
 
+/** The registry when there is one (controls that only show shortcuts work without it). */
+export function useOptionalShortcutRegistry(): ShortcutRegistry | null {
+  return useContext(ShortcutsContext);
+}
+
 /**
  * Registers `defs` while the component is mounted. Pass a stable array (memoised or module-level):
  * a new one every render would re-register them, which moves them to the end of the help list.
