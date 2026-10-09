@@ -247,6 +247,8 @@ Las invariantes se prueban con **tests basados en propiedades** (fast-check): pa
 - `object/remove`: elimina también los objetos apoyados en los eliminados.
 - `object/duplicate`: copia también los objetos apoyados en los duplicados, cuyas copias se apoyan en la copia del padre (mismo transform local); duplicar solo un hijo lo deja sobre el mismo padre. Las copias raíz se desplazan `DUPLICATE_OFFSET` (25 cm en x y z) y, si son de suelo, se mantienen dentro de la sala. Supera el límite ⇒ `limit-reached`.
 
+**Aperturas (P3-11, `core/commands/opening.ts`).** Variantes con medidas por defecto exportadas (`OPENING_VARIANTS`): puerta simple 0,9 × 2,1 m, puerta doble 1,6 × 2,1 m, ventana estándar 1,0 × 1,2 m (alféizar 0,9) y ventana grande 1,8 × 1,4 m (alféizar 0,7). Política común de `opening/add`, `opening/move` (misma pared u otra de la sala) y `opening/resize`: la **posición** se ajusta al *offset* válido más cercano (10 cm libres en cada esquina, `LIMITS.openingCornerMargin`, también exigido por I4); un **tamaño** que no cabe (más ancho que la pared o más alto que la sala) se rechaza con `invalid`; solapar otra apertura de la misma pared se rechaza con `overlap` y la lista de `conflicts`; la 7.ª apertura de una pared devuelve `limit-reached`. Una apertura nunca queda inválida. `opening/remove` acepta listas.
+
 ## 5. Eventos
 
 Emisor tipado mínimo en `core/session` (≈30 líneas, sin dependencias). Sirve para efectos laterales desacoplados: autosave, invalidación de render, analítica.

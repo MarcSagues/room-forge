@@ -3,6 +3,7 @@ import type { z } from 'zod';
 import {
   type DeepReadonly,
   documentStructureIssues,
+  LIMITS,
   LightingSchema,
   OpeningSchema,
   PlacedObjectSchema,
@@ -168,11 +169,12 @@ function openingViolations(doc: Doc): InvariantViolation[] {
     const room = doc.rooms[opening.roomId];
     if (!room) continue; // reported by the structure check
     const end = opening.offset + opening.width;
-    if (end > wallLength(room, opening.wall) + t) {
+    const margin = LIMITS.openingCornerMargin;
+    if (opening.offset < margin - t || end > wallLength(room, opening.wall) - margin + t) {
       violations.push({
         invariant: 'I4',
         path: ['openings', id],
-        message: `"${id}" runs past the end of the ${opening.wall} wall`,
+        message: `"${id}" must stay ${margin * 100} cm away from the corners of the ${opening.wall} wall`,
       });
     }
     if (opening.sill + opening.height > room.height + t) {
