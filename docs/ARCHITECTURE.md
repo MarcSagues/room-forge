@@ -515,6 +515,7 @@ flowchart LR
 ## 12. Accesibilidad e internacionalización
 
 - UI (paneles, diálogos) cumple WCAG 2.2 AA objetivo; el canvas no es accesible por naturaleza ⇒ **panel de escena (outliner)** como alternativa textual y por teclado (P3-15), mover con flechas, foco visible, `prefers-reduced-motion`.
+  - **Outliner** (`ui/outliner`, pestaña «Escena»): patrón *tree* de WAI-ARIA en lista plana (`aria-level`/`aria-setsize`/`aria-posinset`, `aria-expanded`, `aria-selected`) con *roving tabindex*. Flechas recorren, Inicio/Fin, ←/→ pliegan o van al padre, Intro/Espacio seleccionan, F2 renombra (`object/setProps`), H oculta, L bloquea, Supr elimina (objetos y aperturas), Alt+↑/↓ reordenan hermanos (`object/reorder`). Ctrl/Cmd+tecla pasan a los atajos globales (deshacer). La selección se sincroniza en ambos sentidos con la sesión y se anuncia en una región `aria-live`; un cambio de selección causado por un comando (borrar lo seleccionado) no se anuncia para no pisar el aviso de la acción. Sin virtualización: como mucho ≈ 320 filas (300 objetos + aperturas + salas); por encima de 200 filas las que quedan fuera de vista usan `content-visibility: auto` y siguen en el DOM, así el árbol sigue completo para lectores de pantalla y teclado. Axe (`axe-core`, solo desarrollo) lo comprueba en RTL y en E2E.
 - Textos externalizados desde el día 1 (diccionarios `es`/`en`). Decisión de idiomas en el MVP: pregunta abierta Q1 del PRD (propuesta: EN + ES).
 - Unidades: métricas en el modelo (metros); conmutador a imperial es mejora P3.
 

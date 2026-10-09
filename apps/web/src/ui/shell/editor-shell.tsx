@@ -45,6 +45,7 @@ export const PANEL_SIZES = {
 export function EditorShell({
   viewport,
   properties,
+  scene,
   catalog,
   session,
   shortcuts,
@@ -53,6 +54,8 @@ export function EditorShell({
   viewport?: ReactNode;
   /** Content of the Properties tab (the app passes the selection details); a hint by default. */
   properties?: ReactNode;
+  /** Content of the Scene tab (the app passes the outliner); a hint by default. */
+  scene?: ReactNode;
   /** Content of the left panel (the app passes the catalog panel); a hint by default. */
   catalog?: ReactNode;
   /** The editor session, for the undo and redo buttons; they are placeholders without it. */
@@ -77,6 +80,7 @@ export function EditorShell({
   const guardedViewport = guard(t('shell.viewport'), viewport);
   const guardedProperties = guard(t('shell.properties'), properties);
   const guardedCatalog = guard(t('shell.catalog'), catalog);
+  const guardedScene = guard(t('shell.scene'), scene);
 
   let shell: ReactNode;
   if (mode === 'viewer') shell = <ViewerShell viewport={guardedViewport} />;
@@ -86,6 +90,7 @@ export function EditorShell({
         wide={wide}
         viewport={guardedViewport}
         properties={guardedProperties}
+        scene={guardedScene}
         catalog={guardedCatalog}
         session={session}
       />
@@ -95,6 +100,7 @@ export function EditorShell({
       <DrawerShell
         viewport={guardedViewport}
         properties={guardedProperties}
+        scene={guardedScene}
         catalog={guardedCatalog}
         session={session}
       />
@@ -123,12 +129,14 @@ function DockedShell({
   wide,
   viewport,
   properties,
+  scene,
   catalog,
   session,
 }: {
   wide: boolean;
   viewport: ReactNode;
   properties: ReactNode;
+  scene: ReactNode;
   catalog: ReactNode;
   session: EditorSession | undefined;
 }) {
@@ -184,7 +192,7 @@ function DockedShell({
           maxSize={PANEL_SIZES.right.max}
           onResize={right.onResize}
         >
-          <PropertiesPanel hidden={!right.expanded} className="border-l">
+          <PropertiesPanel hidden={!right.expanded} className="border-l" scene={scene}>
             {properties}
           </PropertiesPanel>
         </Panel>
@@ -197,11 +205,13 @@ function DockedShell({
 function DrawerShell({
   viewport,
   properties,
+  scene,
   catalog,
   session,
 }: {
   viewport: ReactNode;
   properties: ReactNode;
+  scene: ReactNode;
   catalog: ReactNode;
   session: EditorSession | undefined;
 }) {
@@ -231,7 +241,9 @@ function DrawerShell({
         </Drawer>
         <Viewport>{viewport}</Viewport>
         <Drawer side="right" open={open === 'right'} onClose={close}>
-          <PropertiesPanel hidden={open !== 'right'}>{properties}</PropertiesPanel>
+          <PropertiesPanel hidden={open !== 'right'} scene={scene}>
+            {properties}
+          </PropertiesPanel>
         </Drawer>
       </div>
     </ShellFrame>
@@ -321,10 +333,12 @@ function CatalogSidebar({
 function PropertiesPanel({
   hidden,
   className,
+  scene,
   children,
 }: {
   hidden: boolean;
   className?: string;
+  scene?: ReactNode;
   children?: ReactNode;
 }) {
   return (
@@ -340,7 +354,7 @@ function PropertiesPanel({
           {children ?? <PanelHint>{t('shell.propertiesHint')}</PanelHint>}
         </TabsContent>
         <TabsContent value="scene" className="min-h-0 overflow-y-auto">
-          <PanelHint>{t('shell.sceneHint')}</PanelHint>
+          {scene ?? <PanelHint>{t('shell.sceneHint')}</PanelHint>}
         </TabsContent>
       </Tabs>
     </SidePanel>
