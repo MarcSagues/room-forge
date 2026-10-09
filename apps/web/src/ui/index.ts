@@ -8,7 +8,7 @@ export { SaveNotice, type SaveProblem } from './editor/save-notice';
 export type { SaveIndicator } from './editor/save-status';
 export { DEFAULT_LOCALE, type Locale, type MessageKey, translate } from './i18n';
 export { RoomMaterialsPanel } from './materials';
-export { SceneOutliner } from './outliner';
+export { LazySceneOutliner, SceneOutliner } from './outliner';
 export { type ProjectFiles, ProjectsScreen, type ProjectsScreenProps } from './projects';
 export { SelectionSummary } from './properties';
 export { Providers } from './providers';
