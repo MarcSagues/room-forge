@@ -3,20 +3,24 @@
 import {
   createNanoIdGen,
   type IdGen,
+  type ImportError,
+  LIMITS,
   type ProjectId,
   ProjectIdSchema,
   type ProjectRepository,
   type ProjectSummary,
   type SceneDocument,
 } from '@roomforge/core';
-import { PlusIcon } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { PlusIcon, UploadIcon } from 'lucide-react';
+import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/ui/components/button';
 import { Input } from '@/ui/components/input';
 import { translate } from '@/ui/i18n';
 import { repositoryErrorMessage } from './error-message';
+import { ImportDialog, type ImportFlow } from './import-dialog';
 import { matchesQuery, uniqueName } from './names';
 import { ProjectCard } from './project-card';
+import type { ProjectFiles } from './project-files';
 
 const t = (key: Parameters<typeof translate>[1], vars?: Record<string, string | number>) =>
   translate('en', key, vars);
@@ -34,6 +38,8 @@ export interface ProjectsScreenProps {
   /** Where "Open" goes. */
   openHref?(id: ProjectId): string;
   undoMs?: number;
+  /** Import and export of project files; without it the screen offers neither. */
+  files?: ProjectFiles;
 }
 
 const defaultHref = (id: ProjectId) => `/editor/?project=${encodeURIComponent(id)}`;
@@ -59,6 +65,7 @@ export function ProjectsScreen({
   storage,
   openHref = defaultHref,
   undoMs = UNDO_MS,
+  files,
 }: ProjectsScreenProps) {
   const makeId = useMemo(() => generateId ?? createNanoIdGen(), [generateId]);
   const [loaded, setLoaded] = useState<Loaded>({ status: 'loading' });
@@ -69,7 +76,15 @@ export function ProjectsScreen({
   const [announcement, setAnnouncement] = useState('');
   const [problem, setProblem] = useState<string | undefined>();
   const [focusRequest, setFocusRequest] = useState(0);
+  const [flow, setFlow] = useState<ImportFlow | undefined>();
+  const [dragging, setDragging] = useState(false);
   const region = useRef<HTMLElement>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
+  // The newest flow and the way to start one, for listeners that are not re-registered per render.
+  const flowRef = useRef<ImportFlow | undefined>(undefined);
+  const startImportRef = useRef<(file: File) => void>(() => {});
+  // Bumped when a flow is closed or replaced, so the answer to an abandoned read is ignored.
+  const flowToken = useRef(0);
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
 
   const load = useCallback(() => {
@@ -112,6 +127,46 @@ export function ProjectsScreen({
   useEffect(() => {
     if (focusRequest > 0) region.current?.focus();
   }, [focusRequest]);
+
+  // A project file dropped anywhere on the window is imported; the browser must not open it.
+  const canImport = files !== undefined;
+  useEffect(() => {
+    if (!canImport) return;
+    let depth = 0;
+    const carriesFiles = (event: DragEvent) =>
+      Array.from(event.dataTransfer?.types ?? []).includes('Files');
+    const enter = (event: DragEvent) => {
+      if (!carriesFiles(event)) return;
+      depth += 1;
+      setDragging(true);
+    };
+    const over = (event: DragEvent) => {
+      if (carriesFiles(event)) event.preventDefault();
+    };
+    const leave = (event: DragEvent) => {
+      if (!carriesFiles(event)) return;
+      depth = Math.max(0, depth - 1);
+      if (depth === 0) setDragging(false);
+    };
+    const drop = (event: DragEvent) => {
+      if (!carriesFiles(event)) return;
+      event.preventDefault();
+      depth = 0;
+      setDragging(false);
+      const file = event.dataTransfer?.files[0];
+      if (file) startImportRef.current(file);
+    };
+    window.addEventListener('dragenter', enter);
+    window.addEventListener('dragover', over);
+    window.addEventListener('dragleave', leave);
+    window.addEventListener('drop', drop);
+    return () => {
+      window.removeEventListener('dragenter', enter);
+      window.removeEventListener('dragover', over);
+      window.removeEventListener('dragleave', leave);
+      window.removeEventListener('drop', drop);
+    };
+  }, [canImport]);
 
   const pendingIds = useMemo(() => new Set(pending.map((project) => project.id)), [pending]);
   const visible = useMemo(
@@ -199,14 +254,105 @@ export function ProjectsScreen({
     setFocusRequest((n) => n + 1);
   }
 
+  async function exportOne(project: ProjectSummary) {
+    if (!files) return;
+    setProblem(undefined);
+    try {
+      await files.exportProject(project.id);
+      setAnnouncement(t('projects.exported', { name: project.name }));
+    } catch (error) {
+      setProblem(repositoryErrorMessage(error));
+    }
+  }
+
+  async function startImport(file: File) {
+    if (!files || flowRef.current) return;
+    setProblem(undefined);
+    flowToken.current += 1;
+    const token = flowToken.current;
+    setFlow({ stage: 'reading', fileName: file.name });
+    let result: Awaited<ReturnType<ProjectFiles['readFile']>>;
+    try {
+      result = await files.readFile(file);
+    } catch {
+      const error: ImportError = { code: 'INVALID_JSON', message: 'unreadable', details: [] };
+      result = { ok: false, error };
+    }
+    if (token !== flowToken.current) return;
+    if (!result.ok) {
+      setFlow({ stage: 'error', fileName: file.name, error: result.error });
+      return;
+    }
+    const parsed = result.value;
+    const base = (parsed.name.trim() || t('projects.untitled')).slice(0, LIMITS.maxNameLength - 4);
+    const taken = [...projects, ...pending].map((project) => project.name);
+    setFlow({
+      stage: 'preview',
+      fileName: file.name,
+      parsed,
+      suggestedName: uniqueName(base, taken),
+    });
+  }
+
+  async function confirmImport(name: string): Promise<string | undefined> {
+    const current = flowRef.current;
+    if (current?.stage !== 'preview') return undefined;
+    try {
+      const saved = await repository.save({
+        id: ProjectIdSchema.parse(makeId()),
+        name,
+        document: current.parsed.document,
+      });
+      setProjects((list) => upsert(list, saved));
+      setQuery('');
+      closeImport();
+      setAnnouncement(t('projects.imported', { name: saved.name }));
+      return undefined;
+    } catch (error) {
+      return repositoryErrorMessage(error);
+    }
+  }
+
+  function closeImport() {
+    flowToken.current += 1;
+    setFlow(undefined);
+  }
+
+  function chosen(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    // Cleared so that choosing the same file again (after fixing it, say) is noticed.
+    event.target.value = '';
+    if (file) void startImport(file);
+  }
+
+  flowRef.current = flow;
+  startImportRef.current = (file) => void startImport(file);
+
   return (
     <main className="mx-auto flex min-h-dvh max-w-5xl flex-col gap-6 px-6 py-10">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-semibold text-3xl tracking-tight">{t('projects.title')}</h1>
-        <Button onClick={() => void create()}>
-          <PlusIcon />
-          {t('projects.new')}
-        </Button>
+        <div className="flex items-center gap-2">
+          {files ? (
+            <>
+              <Button variant="outline" onClick={() => fileInput.current?.click()}>
+                <UploadIcon />
+                {t('projects.import')}
+              </Button>
+              <input
+                ref={fileInput}
+                type="file"
+                accept=".json,application/json"
+                hidden
+                onChange={chosen}
+              />
+            </>
+          ) : null}
+          <Button onClick={() => void create()}>
+            <PlusIcon />
+            {t('projects.new')}
+          </Button>
+        </div>
       </header>
 
       {storage === 'memory' ? (
@@ -275,6 +421,7 @@ export function ProjectsScreen({
                 onStopRename={() => setEditing(undefined)}
                 onRename={(name) => rename(project, name)}
                 onDuplicate={() => void duplicate(project)}
+                {...(files ? { onExport: () => void exportOne(project) } : {})}
                 onDelete={() => remove(project)}
               />
             ))}
@@ -304,6 +451,17 @@ export function ProjectsScreen({
         ))}
         <span className="sr-only">{announcement}</span>
       </div>
+
+      <ImportDialog flow={flow} onConfirm={confirmImport} onClose={closeImport} />
+
+      {dragging ? (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none fixed inset-3 z-40 grid place-items-center rounded-xl border-2 border-dashed border-ember bg-background/80 font-medium text-lg"
+        >
+          {t('projects.dropHint')}
+        </div>
+      ) : null}
     </main>
   );
 }

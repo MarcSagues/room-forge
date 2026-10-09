@@ -7,3 +7,12 @@ export {
 } from './indexeddb-repository';
 export { createMemoryProjectRepository, type MemoryRepositoryOptions } from './memory-repository';
 export { type OpenedRepository, openProjectRepository } from './open-repository';
+export {
+  downloadFile,
+  type ExportedFile,
+  type ExportOptions,
+  exportFileName,
+  exportProject,
+  readProjectFile,
+  slugify,
+} from './project-files';

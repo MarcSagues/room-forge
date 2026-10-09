@@ -35,7 +35,7 @@ function buildRules({ web = 'apps/web/src', core = 'packages/core/src' } = {}) {
   const pkg = (names) => `(^|node_modules/)(${names.join('|')})(/|$)`;
   // Test files, core's test support (builders, fast-check arbitraries) and the `testing/` folder a
   // web module may keep for helpers that only its tests import (a repository contract, say).
-  const testSupport = `\\.(test|spec)\\.[jt]sx?$|^${c}/testing/|^${w}/[^/]+/testing/`;
+  const testSupport = `\\.(test|spec)\\.[jt]sx?$|^${c}/testing/|^${w}/.+/testing/`;
 
   return [
     {

@@ -1,7 +1,7 @@
 'use client';
 
 import type { ProjectSummary } from '@roomforge/core';
-import { CopyIcon, HouseIcon, PencilIcon, Trash2Icon } from 'lucide-react';
+import { CopyIcon, DownloadIcon, HouseIcon, PencilIcon, Trash2Icon } from 'lucide-react';
 import Link from 'next/link';
 import { type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { Button, buttonVariants } from '@/ui/components/button';
@@ -22,6 +22,8 @@ export interface ProjectCardProps {
   /** Resolves to a message when the name was refused (the card then stays in edit mode). */
   onRename(name: string): Promise<string | undefined>;
   onDuplicate(): void;
+  /** Absent when the app cannot export: the button is then not shown. */
+  onExport?: () => void;
   onDelete(): void;
 }
 
@@ -34,6 +36,7 @@ export function ProjectCard({
   onStopRename,
   onRename,
   onDuplicate,
+  onExport,
   onDelete,
 }: ProjectCardProps) {
   const { name } = project;
@@ -141,6 +144,17 @@ export function ProjectCard({
         >
           <CopyIcon />
         </Button>
+        {onExport ? (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={t('projects.export', { name })}
+            title={t('projects.export', { name })}
+            onClick={onExport}
+          >
+            <DownloadIcon />
+          </Button>
+        ) : null}
         <Button
           variant="ghost"
           size="icon-sm"

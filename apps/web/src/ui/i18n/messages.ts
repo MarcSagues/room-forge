@@ -45,6 +45,46 @@ export const en = {
   'projects.error.notFound': 'That project no longer exists.',
   'projects.error.invalidName': 'Use a name of 1 to {max} characters.',
   'projects.error.failed': 'Something went wrong. Try again.',
+  'projects.import': 'Import',
+  'projects.export': 'Export {name}',
+  'projects.exported': 'Exported “{name}”.',
+  'projects.imported': 'Imported “{name}”.',
+  'projects.dropHint': 'Drop a RoomForge project file to import it',
+  'projects.importTitle': 'Import a project',
+  'projects.importReading': 'Reading {file}…',
+  'projects.importIntro':
+    'This file will be added as a new project. Your existing projects are not changed.',
+  'projects.importName': 'Name of the new project',
+  'projects.importRooms': 'Rooms',
+  'projects.importObjects': 'Objects',
+  'projects.importWrittenBy': 'Written by RoomForge {version}',
+  'projects.importExportedAt': 'Exported {date}',
+  'projects.importMigrated': 'It was written in an older format and has been updated.',
+  'projects.importUnknown':
+    'Some items are not in this version’s catalog and will appear as placeholders:',
+  'projects.importConfirm': 'Import as new project',
+  'projects.importClose': 'Close',
+  'projects.importUntouched': 'Your projects were not changed.',
+  'projects.importDetails': 'Technical details',
+  'projects.importVersions': 'File version {found}; this version reads up to {supported}.',
+  'projects.importError.tooLarge':
+    'This file is larger than 5 MB, far more than a project needs. Check that you picked the right file.',
+  'projects.importError.invalidJson':
+    'This file is not valid JSON. It may be damaged, or it may not be a RoomForge project.',
+  'projects.importError.hostileInput':
+    'This file has a structure RoomForge refuses to open, to keep your browser safe.',
+  'projects.importError.notAProject':
+    'This is not a RoomForge project file. Export a project from this screen and import that file.',
+  'projects.importError.newerVersion':
+    'This file was made with a newer version of RoomForge. Update RoomForge to open it.',
+  'projects.importError.invalidVersion':
+    'The file does not say which version of RoomForge wrote it, so it cannot be opened safely.',
+  'projects.importError.migrationFailed':
+    'This file comes from an older version and could not be brought up to date.',
+  'projects.importError.invalidDocument':
+    'The scene inside this file is not valid, so it cannot be opened.',
+  'projects.importError.invariantViolation':
+    'The scene inside this file breaks the rules of a valid room, so it cannot be opened.',
   'editor.title': 'Editor',
   'editor.comingSoon': 'Coming soon.',
   'editor.corePackage': 'Core package: {name}',
@@ -199,6 +239,46 @@ export const es: Record<MessageKey, string> = {
   'projects.error.notFound': 'Ese proyecto ya no existe.',
   'projects.error.invalidName': 'Usa un nombre de 1 a {max} caracteres.',
   'projects.error.failed': 'Algo ha salido mal. Inténtalo de nuevo.',
+  'projects.import': 'Importar',
+  'projects.export': 'Exportar {name}',
+  'projects.exported': 'Se exportó «{name}».',
+  'projects.imported': 'Se importó «{name}».',
+  'projects.dropHint': 'Suelta un archivo de proyecto de RoomForge para importarlo',
+  'projects.importTitle': 'Importar un proyecto',
+  'projects.importReading': 'Leyendo {file}…',
+  'projects.importIntro':
+    'Este archivo se añadirá como un proyecto nuevo. Tus proyectos actuales no cambian.',
+  'projects.importName': 'Nombre del proyecto nuevo',
+  'projects.importRooms': 'Habitaciones',
+  'projects.importObjects': 'Objetos',
+  'projects.importWrittenBy': 'Escrito por RoomForge {version}',
+  'projects.importExportedAt': 'Exportado el {date}',
+  'projects.importMigrated': 'Estaba escrito en un formato anterior y se ha actualizado.',
+  'projects.importUnknown':
+    'Algunos objetos no están en el catálogo de esta versión y se mostrarán como marcadores:',
+  'projects.importConfirm': 'Importar como proyecto nuevo',
+  'projects.importClose': 'Cerrar',
+  'projects.importUntouched': 'Tus proyectos no se han modificado.',
+  'projects.importDetails': 'Detalles técnicos',
+  'projects.importVersions': 'Versión del archivo {found}; esta versión lee hasta la {supported}.',
+  'projects.importError.tooLarge':
+    'Este archivo pesa más de 5 MB, mucho más de lo que necesita un proyecto. Comprueba que has elegido el archivo correcto.',
+  'projects.importError.invalidJson':
+    'Este archivo no es un JSON válido. Puede estar dañado o no ser un proyecto de RoomForge.',
+  'projects.importError.hostileInput':
+    'Este archivo tiene una estructura que RoomForge se niega a abrir, para proteger tu navegador.',
+  'projects.importError.notAProject':
+    'Este no es un archivo de proyecto de RoomForge. Exporta un proyecto desde esta pantalla e importa ese archivo.',
+  'projects.importError.newerVersion':
+    'Este archivo se hizo con una versión más nueva de RoomForge. Actualiza RoomForge para abrirlo.',
+  'projects.importError.invalidVersion':
+    'El archivo no dice con qué versión de RoomForge se escribió, así que no se puede abrir con seguridad.',
+  'projects.importError.migrationFailed':
+    'Este archivo viene de una versión anterior y no se ha podido actualizar.',
+  'projects.importError.invalidDocument':
+    'La escena de este archivo no es válida, así que no se puede abrir.',
+  'projects.importError.invariantViolation':
+    'La escena de este archivo incumple las reglas de una habitación válida, así que no se puede abrir.',
   'editor.title': 'Editor',
   'editor.comingSoon': 'Próximamente.',
   'editor.corePackage': 'Paquete core: {name}',
