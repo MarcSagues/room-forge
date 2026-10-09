@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { isTypingTarget } from '@/editor';
 import { safeLayoutStorage } from './layout-storage';
-import { isTypingTarget } from './use-panel-hotkeys';
 import { shellModeForWidth } from './use-shell-mode';
 
 describe('shellModeForWidth', () => {

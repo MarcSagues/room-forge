@@ -10,6 +10,8 @@ export const LIMITS = {
   maxRooms: 16,
   maxObjects: 300,
   maxOpeningsPerWall: 6,
+  /** Clear wall between an opening and a corner, in metres (I4). */
+  openingCornerMargin: 0.1,
   maxNameLength: 80,
   maxImportBytes: 5 * 1024 * 1024,
   /** Any position coordinate, in metres from the room origin. */
