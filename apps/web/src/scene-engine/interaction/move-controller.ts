@@ -3,12 +3,13 @@ import {
   type CommandResult,
   type EditorSession,
   moveObjects,
+  normalizeAngle,
   type ObjectId,
   type PlacementInput,
   type PlacementResult,
   solvePlacement,
 } from '@roomforge/core';
-import { Plane, type Ray, Vector3 } from 'three';
+import { Plane, Ray, Vector3 } from 'three';
 import type { EntityRegistry } from '../objects/entity-registry';
 import { objectSize } from '../objects/placeholder-resources';
 import type { DragState, TransientStore } from './transient-store';
@@ -43,6 +44,12 @@ export class MoveController {
   private readonly grab = { x: 0, z: 0 };
   private readonly origin = { x: 0, z: 0 };
   private moved = false;
+  /** Extra turn (radians) the user added with the wheel or `R` during this drag. */
+  private turn = 0;
+  /** The last pointer ray, so that a turn can be applied without a pointer move. */
+  private readonly lastRay = new Ray();
+  private lastFree = false;
+  private hasRay = false;
   private readonly input: PlacementInput & {
     position: [number, number];
     size: { w: number; d: number };
@@ -62,6 +69,7 @@ export class MoveController {
     guides: [],
   };
   private readonly pose: DragState = {
+    kind: 'move',
     id: '' as ObjectId,
     x: 0,
     z: 0,
@@ -95,6 +103,8 @@ export class MoveController {
     const size = objectSize(this.deps.catalog, object.catalogId);
     this.id = id;
     this.moved = false;
+    this.turn = 0;
+    this.hasRay = false;
     this.start.x = x;
     this.start.y = y;
     this.start.z = z;
@@ -108,7 +118,28 @@ export class MoveController {
     this.input.room.depth = room.shape.depth;
     this.input.size.w = size.w * sx;
     this.input.size.d = size.d * sz;
+    // Published from the start so that readers (the camera rig locks its input) react to the press,
+    // not only to the first pointer move.
+    const pose = this.pose;
+    pose.id = id;
+    pose.x = x;
+    pose.z = z;
+    pose.rotationY = this.start.rotationY;
+    pose.valid = true;
+    pose.wall = null;
+    this.deps.transient.publishDrag(pose);
     return true;
+  }
+
+  /**
+   * Turns the object by `steps` whole steps of `stepDeg` degrees (wheel notch or `R`), re-solving
+   * the pose from the last pointer position. A wall snap still decides the orientation: the turn
+   * applies again once the object leaves the wall.
+   */
+  turnBy(steps: number, stepDeg: number): void {
+    if (!this.id) return;
+    this.turn += (steps * stepDeg * Math.PI) / 180;
+    if (this.hasRay) this.update(this.lastRay, this.lastFree);
   }
 
   /** One drag step (call at most once per frame). `free` (Alt) disables grid and wall snap. */
@@ -117,11 +148,16 @@ export class MoveController {
     const node = id ? this.deps.registry.get(id) : undefined;
     if (!id || !node || !ray.intersectPlane(floor, this.hit)) return;
 
+    this.lastRay.copy(ray);
+    this.lastFree = free;
+    this.hasRay = true;
+
     const input = this.input;
     input.position[0] = this.hit.x - this.origin.x - this.grab.x;
     input.position[1] = this.hit.z - this.origin.z - this.grab.z;
-    // Always solve from the original orientation: leaving a wall turns the object back.
-    input.rotationY = this.start.rotationY;
+    // Always solve from the original orientation (plus the user's turn): leaving a wall turns the
+    // object back.
+    input.rotationY = normalizeAngle(this.start.rotationY + this.turn);
     input.wallSnap = !free;
     input.gridStep =
       free || this.deps.gridStep === 0 ? undefined : (this.deps.gridStep ?? DEFAULT_DRAG_GRID);
@@ -183,6 +219,8 @@ export class MoveController {
   private finish() {
     this.id = null;
     this.moved = false;
+    this.turn = 0;
+    this.hasRay = false;
     this.deps.transient.clearDrag();
     this.deps.invalidate();
   }

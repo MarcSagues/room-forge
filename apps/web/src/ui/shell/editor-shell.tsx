@@ -43,12 +43,15 @@ export const PANEL_SIZES = {
 export function EditorShell({
   viewport,
   properties,
+  catalog,
   session,
   shortcuts,
 }: {
   viewport?: ReactNode;
   /** Content of the Properties tab (the app passes the selection details); a hint by default. */
   properties?: ReactNode;
+  /** Content of the left panel (the app passes the catalog panel); a hint by default. */
+  catalog?: ReactNode;
   /** The editor session, for the undo and redo buttons; they are placeholders without it. */
   session?: EditorSession;
   /** The shortcut registry the app fills with its shortcuts; the shell listens for keys with it. */
@@ -63,9 +66,24 @@ export function EditorShell({
   if (mode === 'viewer') shell = <ViewerShell viewport={viewport} />;
   else if (mode === 'full') {
     shell = (
-      <DockedShell wide={wide} viewport={viewport} properties={properties} session={session} />
+      <DockedShell
+        wide={wide}
+        viewport={viewport}
+        properties={properties}
+        catalog={catalog}
+        session={session}
+      />
     );
-  } else shell = <DrawerShell viewport={viewport} properties={properties} session={session} />;
+  } else {
+    shell = (
+      <DrawerShell
+        viewport={viewport}
+        properties={properties}
+        catalog={catalog}
+        session={session}
+      />
+    );
+  }
   return <ShortcutsProvider registry={registry}>{shell}</ShortcutsProvider>;
 }
 
@@ -73,11 +91,13 @@ function DockedShell({
   wide,
   viewport,
   properties,
+  catalog,
   session,
 }: {
   wide: boolean;
   viewport: ReactNode;
   properties: ReactNode;
+  catalog: ReactNode;
   session: EditorSession | undefined;
 }) {
   const left = useCollapsiblePanel();
@@ -113,7 +133,9 @@ function DockedShell({
           maxSize={PANEL_SIZES.left.max}
           onResize={left.onResize}
         >
-          <CatalogPanel hidden={!left.expanded} className="border-r" />
+          <CatalogSidebar hidden={!left.expanded} className="border-r">
+            {catalog}
+          </CatalogSidebar>
         </Panel>
         <ResizeHandle />
         <Panel id="viewport" minSize={320}>
@@ -143,10 +165,12 @@ function DockedShell({
 function DrawerShell({
   viewport,
   properties,
+  catalog,
   session,
 }: {
   viewport: ReactNode;
   properties: ReactNode;
+  catalog: ReactNode;
   session: EditorSession | undefined;
 }) {
   const [open, setOpen] = useState<'left' | 'right' | null>(null);
@@ -171,7 +195,7 @@ function DrawerShell({
         }}
       >
         <Drawer side="left" open={open === 'left'} onClose={close}>
-          <CatalogPanel hidden={open !== 'left'} />
+          <CatalogSidebar hidden={open !== 'left'}>{catalog}</CatalogSidebar>
         </Drawer>
         <Viewport>{viewport}</Viewport>
         <Drawer side="right" open={open === 'right'} onClose={close}>
@@ -245,11 +269,19 @@ function Drawer(props: {
   );
 }
 
-function CatalogPanel({ hidden, className }: { hidden: boolean; className?: string }) {
+function CatalogSidebar({
+  hidden,
+  className,
+  children,
+}: {
+  hidden: boolean;
+  className?: string;
+  children?: ReactNode;
+}) {
   return (
     <SidePanel id={LEFT_ID} label={t('shell.leftPanel')} hidden={hidden} className={className}>
       <PanelHeader>{t('shell.catalog')}</PanelHeader>
-      <PanelHint>{t('shell.catalogHint')}</PanelHint>
+      {children ?? <PanelHint>{t('shell.catalogHint')}</PanelHint>}
     </SidePanel>
   );
 }

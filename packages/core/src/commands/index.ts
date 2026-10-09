@@ -10,6 +10,15 @@ export {
   setObjectProps,
 } from './object';
 export {
+  type AddOpeningInput,
+  addOpening,
+  moveOpening,
+  OPENING_VARIANTS,
+  type OpeningVariant,
+  removeOpenings,
+  resizeOpening,
+} from './opening';
+export {
   createRoom,
   DEFAULT_ROOM_MATERIALS,
   type RoomSurface,
