@@ -8,6 +8,7 @@ next-env.d.ts
 *.tsbuildinfo
 playwright-report/
 test-results/
+budgets-report/
 
 # Local environment and secrets — never commit
 .env

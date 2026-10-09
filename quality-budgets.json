@@ -1,0 +1,25 @@
+{
+  "coverage": {
+    "core": { "lines": 90, "branches": 85 },
+    "web": { "lines": 70 }
+  },
+  "bundle": {
+    "initialJsGzipKb": {
+      "/": 270,
+      "/editor/": 580
+    },
+    "targetGzipKb": {
+      "/editor/": 450
+    }
+  },
+  "scene": {
+    "pattern": { "objects": 30, "lights": 0 },
+    "limits": {
+      "calls": 48,
+      "triangles": 600,
+      "programs": 5,
+      "geometries": 12,
+      "textures": 3
+    }
+  }
+}
