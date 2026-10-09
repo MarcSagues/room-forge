@@ -14,6 +14,7 @@ import { type Material, type Mesh, NeutralToneMapping, type Object3D, Vector3 } 
 import type { CameraHandle, CameraSnapshot } from '../camera/camera-director';
 import { CameraRig } from '../camera/camera-rig';
 import { createTransientStore } from '../interaction/transient-store';
+import { MaterialsProvider } from '../materials/materials-context';
 import { createEntityRegistry, type EntityRegistry } from '../objects/entity-registry';
 import { roomObjectName } from '../room/room-mesh';
 import { watchContext } from './context-events';
@@ -104,7 +105,9 @@ export function SceneCanvas(props: SceneCanvasProps) {
           <CameraRig handleRef={cameraRef} />
           <ReadyReporter onReady={onReady} camera={cameraRef} registry={registry} />
           {showStats && <StatsWriter target={statsRef} />}
-          <SceneContent registry={registry} />
+          <MaterialsProvider>
+            <SceneContent registry={registry} />
+          </MaterialsProvider>
         </SceneSessionProvider>
       </Canvas>
       {showStats && (

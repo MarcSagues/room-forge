@@ -6,6 +6,7 @@ import {
   type RoomId,
   removeObjects,
   resizeRoom,
+  setSurfaceMaterial,
 } from '@roomforge/core';
 import type { RenderInfo, RoomDisplay, SceneCamera, SceneHandle } from '@/scene-engine';
 
@@ -22,6 +23,7 @@ export interface RoomForgeTestHook {
     resizeRoom: typeof resizeRoom;
     addObject: typeof addObject;
     removeObjects: typeof removeObjects;
+    setSurfaceMaterial: typeof setSurfaceMaterial;
   };
   /** Renderer counters; `null` until the canvas is mounted. */
   info(): RenderInfo | null;
@@ -49,7 +51,7 @@ export function installTestHook(
   if (!enabled) return () => {};
   const hook: RoomForgeTestHook = {
     session: deps.session,
-    commands: { createRoom, resizeRoom, addObject, removeObjects },
+    commands: { createRoom, resizeRoom, addObject, removeObjects, setSurfaceMaterial },
     info: () => deps.getScene()?.renderInfo() ?? null,
     camera: {
       fit: () => deps.getScene()?.camera.fit(),

@@ -3,6 +3,7 @@
 import { useFrame, useThree } from '@react-three/fiber';
 import {
   type DeepReadonly,
+  type MaterialRef,
   type Opening,
   type Room,
   type RoomId,
@@ -15,9 +16,9 @@ import { useShallow } from 'zustand/react/shallow';
 import { prefersReducedMotion } from '../camera/reduced-motion';
 import { useSceneSession } from '../canvas/scene-context';
 import { useSessionState } from '../canvas/use-session-state';
+import { useMaterial } from '../materials/use-material';
 import { useMeshGeometry } from './buffer-geometry';
 import type { MeshData, Vec3 } from './mesh-data';
-import { placeholderColor } from './placeholder-colors';
 import { buildRoomGeometry } from './room-geometry';
 import { RoomGrid } from './room-grid';
 import { approach, WALL_TRANSITION_MS, wallHeightScale, wallTargetOpacity } from './wall-display';
@@ -77,11 +78,11 @@ function RoomModel({
   const { width, depth } = geometry;
   return (
     <group position={[room.origin[0], 0, room.origin[1]]}>
-      <Surface mesh={geometry.floor} color={placeholderColor(room.floor.material)} />
+      <Surface mesh={geometry.floor} material={room.floor.material} />
       <Surface
         name={roomObjectName.ceiling(room.id)}
         mesh={geometry.ceiling}
-        color={placeholderColor(room.ceiling.material)}
+        material={room.ceiling.material}
         visible={ceilingVisible}
       />
       <group ref={walls} name={roomObjectName.walls(room.id)}>
@@ -92,9 +93,10 @@ function RoomModel({
             mesh={geometry.walls[wall].mesh}
             position={geometry.walls[wall].position}
             rotationY={geometry.walls[wall].rotationY}
-            color={placeholderColor(room.walls[wall].material)}
-            // Always transparent, so fading never changes the shader program (no recompiles).
-            transparent
+            material={room.walls[wall].material}
+            // Always transparent, so fading never changes the shader program (no recompiles), and
+            // each wall has a material of its own: they fade one by one.
+            wall
             materialRef={materialRefs[wall]}
           />
         ))}
@@ -162,18 +164,33 @@ function WallFader(props: {
 
 const ORIGIN: Vec3 = [0, 0, 0];
 
+/** One face of the room: its geometry, and the material the shared factory gives for its look. */
 const Surface = memo(function Surface(props: {
   mesh: MeshData;
-  color: string;
+  material: DeepReadonly<MaterialRef>;
   name?: string;
   position?: Vec3;
   rotationY?: number;
   visible?: boolean;
-  transparent?: boolean;
+  /** A wall: see-through and with a material of its own, so that it can fade by itself. */
+  wall?: boolean;
   materialRef?: (material: MeshStandardMaterial | null) => void;
 }) {
-  const { mesh, color, position = ORIGIN, rotationY = 0, visible = true } = props;
+  const {
+    mesh,
+    position = ORIGIN,
+    rotationY = 0,
+    visible = true,
+    wall = false,
+    materialRef,
+  } = props;
   const geometry = useMeshGeometry(mesh);
+  const material = useMaterial(props.material, { transparent: wall, shared: !wall });
+  // The fader changes the opacity of each wall's material every frame: it is told which it is.
+  useEffect(() => {
+    materialRef?.(material);
+    return () => materialRef?.(null);
+  }, [material, materialRef]);
   return (
     <mesh
       name={props.name ?? ''}
@@ -182,13 +199,7 @@ const Surface = memo(function Surface(props: {
       rotation-y={rotationY}
       visible={visible}
     >
-      <meshStandardMaterial
-        ref={props.materialRef ?? null}
-        color={color}
-        roughness={0.9}
-        metalness={0}
-        transparent={props.transparent ?? false}
-      />
+      {material ? <primitive object={material} attach="material" dispose={null} /> : null}
     </mesh>
   );
 });
