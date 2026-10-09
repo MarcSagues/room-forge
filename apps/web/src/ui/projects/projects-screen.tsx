@@ -9,6 +9,7 @@ import {
   ProjectIdSchema,
   type ProjectRepository,
   type ProjectSummary,
+  type RoomSize,
   type SceneDocument,
 } from '@roomforge/core';
 import { PlusIcon, UploadIcon } from 'lucide-react';
@@ -19,6 +20,7 @@ import { translate } from '@/ui/i18n';
 import { repositoryErrorMessage } from './error-message';
 import { ImportDialog, type ImportFlow } from './import-dialog';
 import { matchesQuery, uniqueName } from './names';
+import { NewRoomDialog } from './new-room-dialog';
 import { ProjectCard } from './project-card';
 import type { ProjectFiles } from './project-files';
 
@@ -30,8 +32,8 @@ export const UNDO_MS = 8_000;
 
 export interface ProjectsScreenProps {
   repository: ProjectRepository;
-  /** The document a new project starts with. */
-  createDocument(): SceneDocument;
+  /** The document a new project starts with, with a room of `size` (the default one if none). */
+  createDocument(size?: RoomSize): SceneDocument;
   generateId?: IdGen;
   /** `memory` when the browser stores nothing: the person is told up front. */
   storage: 'indexeddb' | 'memory';
@@ -73,6 +75,7 @@ export function ProjectsScreen({
   const [pending, setPending] = useState<ProjectSummary[]>([]);
   const [query, setQuery] = useState('');
   const [editing, setEditing] = useState<ProjectId | undefined>();
+  const [choosingSize, setChoosingSize] = useState(false);
   const [announcement, setAnnouncement] = useState('');
   const [problem, setProblem] = useState<string | undefined>();
   const [focusRequest, setFocusRequest] = useState(0);
@@ -178,7 +181,7 @@ export function ProjectsScreen({
   );
   const hasProjects = projects.some((project) => !pendingIds.has(project.id));
 
-  async function create() {
+  async function create(size?: RoomSize) {
     setProblem(undefined);
     const name = uniqueName(
       t('projects.untitled'),
@@ -188,7 +191,7 @@ export function ProjectsScreen({
       const saved = await repository.save({
         id: ProjectIdSchema.parse(makeId()),
         name,
-        document: createDocument(),
+        document: createDocument(size),
       });
       setProjects((list) => upsert(list, saved));
       setQuery('');
@@ -348,6 +351,9 @@ export function ProjectsScreen({
               />
             </>
           ) : null}
+          <Button variant="outline" onClick={() => setChoosingSize(true)}>
+            {t('newRoom.open')}
+          </Button>
           <Button onClick={() => void create()}>
             <PlusIcon />
             {t('projects.new')}
@@ -399,10 +405,15 @@ export function ProjectsScreen({
           <div className="flex flex-col items-start gap-3 rounded-xl border border-dashed p-8">
             <h2 className="font-medium text-lg">{t('projects.emptyTitle')}</h2>
             <p className="text-fg-muted">{t('projects.emptyHint')}</p>
-            <Button onClick={() => void create()}>
-              <PlusIcon />
-              {t('projects.new')}
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={() => void create()}>
+                <PlusIcon />
+                {t('projects.new')}
+              </Button>
+              <Button variant="outline" onClick={() => setChoosingSize(true)}>
+                {t('newRoom.open')}
+              </Button>
+            </div>
           </div>
         ) : visible.length === 0 ? (
           <p className="text-fg-muted">{t('projects.noMatches', { query: query.trim() })}</p>
@@ -453,6 +464,15 @@ export function ProjectsScreen({
       </div>
 
       <ImportDialog flow={flow} onConfirm={confirmImport} onClose={closeImport} />
+
+      <NewRoomDialog
+        open={choosingSize}
+        onOpenChange={setChoosingSize}
+        onCreate={(size) => {
+          setChoosingSize(false);
+          void create(size);
+        }}
+      />
 
       {dragging ? (
         <div

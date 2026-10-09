@@ -55,7 +55,7 @@ export function ProjectsApp() {
     <ProjectsScreen
       repository={opened.repository}
       storage={opened.mode}
-      createDocument={createStarterDocument}
+      createDocument={(size) => createStarterDocument(size)}
       {...(files ? { files } : {})}
     />
   );
