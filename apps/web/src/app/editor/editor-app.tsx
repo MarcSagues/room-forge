@@ -4,7 +4,7 @@ import { nextWallMode } from '@roomforge/core';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { catalogEntries, stubCatalog } from '@/asset-library';
 import { createDemoSession, installHotkeys } from '@/editor';
-import { SceneCanvas, type SceneHandle } from '@/scene-engine';
+import { type LiveTransform, SceneCanvas, type SceneHandle } from '@/scene-engine';
 import { CatalogPanel, type CatalogPanelItem, EditorShell, SelectionSummary } from '@/ui';
 import { installTestHook } from './test-hook';
 
@@ -46,6 +46,14 @@ export default function EditorApp() {
     }),
     [],
   );
+  // The properties panel follows a drag in the scene through this.
+  const live = useMemo<LiveTransform>(
+    () => ({
+      read: () => scene.current?.live.read() ?? null,
+      subscribe: (listener) => scene.current?.live.subscribe(listener) ?? (() => {}),
+    }),
+    [],
+  );
 
   return (
     <EditorShell
@@ -56,7 +64,7 @@ export default function EditorApp() {
           onPlace={(id) => scene.current?.placement.placeAtCenter(id) ?? false}
         />
       }
-      properties={<SelectionSummary session={session} />}
+      properties={<SelectionSummary session={session} catalog={stubCatalog} live={live} />}
       viewport={
         <SceneCanvas
           session={session}
