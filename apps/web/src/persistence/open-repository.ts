@@ -16,6 +16,8 @@ export interface OpenedRepository {
   mode: 'indexeddb' | 'memory';
   /** Why there is no storage; set exactly when `mode` is `memory`. */
   problem?: RepositoryError;
+  /** Lets go of the database connection (a screen that opened it closes it when it goes away). */
+  close(): Promise<void>;
 }
 
 function browserStorageManager(): StorageManagerLike | undefined {
@@ -36,7 +38,7 @@ export async function openProjectRepository(
   const stored = createIndexedDbProjectRepository({ ...rest, storageManager });
   try {
     await stored.list();
-    return { repository: stored, mode: 'indexeddb' };
+    return { repository: stored, mode: 'indexeddb', close: () => stored.close() };
   } catch (error) {
     await stored.close();
     const { clock, idGen } = rest;
@@ -46,6 +48,7 @@ export async function openProjectRepository(
         ...(idGen ? { idGen } : {}),
       }),
       mode: 'memory',
+      close: async () => {},
       problem: error instanceof RepositoryError ? error : toRepositoryError(error, 'open'),
     };
   }

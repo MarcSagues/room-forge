@@ -23,6 +23,24 @@ describe('openProjectRepository', () => {
     expect((await again.repository.list()).map((p) => p.name)).toEqual(['Office']);
   });
 
+  it('close lets go of the database: a second visit can upgrade it, and close can be repeated', async () => {
+    const { repository, close } = await openProjectRepository();
+    await repository.save({ id: id('p1'), name: 'Office', document: documentWith(1) });
+    await close();
+    await expect(close()).resolves.toBeUndefined();
+    const again = await openProjectRepository();
+    expect((await again.repository.list()).map((p) => p.name)).toEqual(['Office']);
+    await again.close();
+  });
+
+  it('close does nothing in memory mode', async () => {
+    vi.stubGlobal('indexedDB', undefined);
+    const { repository, close } = await openProjectRepository();
+    await repository.save({ id: id('p1'), name: 'Office', document: documentWith(0) });
+    await close();
+    expect(await repository.list()).toHaveLength(1);
+  });
+
   it('without IndexedDB it falls back to memory, says why, and keeps working', async () => {
     vi.stubGlobal('indexedDB', undefined);
     const { repository, mode, problem } = await openProjectRepository();
