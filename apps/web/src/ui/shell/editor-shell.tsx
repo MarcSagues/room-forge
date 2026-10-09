@@ -264,7 +264,7 @@ function ShellFrame({ children, ...topBar }: ShellFrameProps) {
     <div className="flex h-dvh flex-col overflow-hidden bg-background">
       <TopBar {...topBar} leftPanelId={LEFT_ID} rightPanelId={RIGHT_ID} />
       {children}
-      <BottomBar />
+      <BottomBar session={topBar.session} />
     </div>
   );
 }
