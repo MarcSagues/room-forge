@@ -1,3 +1,4 @@
+import '../zod-config';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
 
