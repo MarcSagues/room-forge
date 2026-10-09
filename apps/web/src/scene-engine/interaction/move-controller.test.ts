@@ -145,6 +145,89 @@ describe('MoveController', () => {
     expect(desk.position.toArray()).toEqual([2, 0, 1.5]);
   });
 
+  it('begin publishes the pose at once, so the camera is locked before the first move', () => {
+    controller.begin(DESK, down(2, 1.5));
+    expect(transient.drag()).toMatchObject({ kind: 'move', id: DESK, x: 2, z: 1.5 });
+    controller.cancel();
+    expect(transient.drag()).toBeNull();
+  });
+
+  describe('turning while dragging (wheel or R)', () => {
+    const step = Math.PI / 12;
+
+    it('turns the object in place, without moving the pointer, in the same entry', () => {
+      controller.begin(DESK, down(2, 1.5));
+      controller.update(down(2.5, 1.5), false);
+      controller.turnBy(1, 15);
+      expect(desk.rotation.y).toBeCloseTo(step);
+      expect(desk.position.x).toBeCloseTo(2.5);
+      controller.turnBy(2, 15);
+      expect(desk.rotation.y).toBeCloseTo(3 * step);
+      expect(transient.drag()?.rotationY).toBeCloseTo(3 * step);
+
+      controller.end();
+      expect(session.getState().document.objects[DESK]?.transform.rotationY).toBeCloseTo(3 * step);
+      session.undo();
+      expect(session.getState().document.objects[DESK]?.transform).toMatchObject({
+        position: [2, 0, 1.5],
+        rotationY: 0,
+      });
+      expect(session.getState().history.canUndo).toBe(false);
+    });
+
+    it('keeps the turn while the pointer keeps moving, and Shift+R / negative steps undo it', () => {
+      controller.begin(DESK, down(2, 1.5));
+      controller.turnBy(2, 15);
+      controller.update(down(2.3, 1.7), false);
+      expect(desk.rotation.y).toBeCloseTo(2 * step);
+      controller.turnBy(-2, 15);
+      expect(desk.rotation.y).toBeCloseTo(0);
+    });
+
+    it('the fine step is whatever step it is given', () => {
+      controller.begin(DESK, down(2, 1.5));
+      controller.update(down(2.2, 1.5), true);
+      controller.turnBy(1, 1);
+      expect(desk.rotation.y).toBeCloseTo(Math.PI / 180);
+    });
+
+    it('keeps the turned footprint inside the room', () => {
+      controller.begin(DESK, down(2, 1.5));
+      controller.update(down(2, 2.7), false); // against the south wall: pushed to z = 2.7
+      controller.update(down(2, 2.4), true); // free: 0.6 from the wall, 1.2 wide
+      controller.turnBy(6, 15); // a quarter turn would need 0.6 each side, in z
+      expect(desk.rotation.y).toBeCloseTo(Math.PI / 2);
+      expect(desk.position.z).toBeLessThanOrEqual(3 - 0.6 + 1e-9);
+    });
+
+    it('a wall snap sets the orientation: the turn does not override it', () => {
+      controller.begin(DESK, down(2, 1.5));
+      controller.update(down(-3, 1.5), false); // snapped to the west wall
+      const snapped = desk.rotation.y;
+      controller.turnBy(3, 15);
+      expect(desk.rotation.y).toBeCloseTo(snapped);
+      controller.update(down(2, 1.5), false); // back in the open: the turn applies
+      expect(desk.rotation.y).toBeCloseTo(3 * step);
+    });
+
+    it('a new drag starts without the previous turn', () => {
+      controller.begin(DESK, down(2, 1.5));
+      controller.turnBy(4, 15);
+      controller.cancel();
+      controller.begin(DESK, down(2, 1.5));
+      controller.update(down(2.3, 1.5), false);
+      expect(desk.rotation.y).toBeCloseTo(0);
+    });
+
+    it('turning before the pointer has moved waits for the first move', () => {
+      controller.begin(DESK, down(2, 1.5));
+      controller.turnBy(1, 15);
+      expect(desk.rotation.y).toBe(0);
+      controller.update(down(2, 1.5), false);
+      expect(desk.rotation.y).toBeCloseTo(step);
+    });
+  });
+
   it('restores the Object3D if the command is rejected at drop', () => {
     controller.begin(DESK, down(2, 1.5));
     controller.update(down(2.5, 1.5), false);
