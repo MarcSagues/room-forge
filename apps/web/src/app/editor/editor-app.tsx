@@ -1,9 +1,8 @@
 'use client';
 
-import { nextWallMode } from '@roomforge/core';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { catalogEntries, stubCatalog } from '@/asset-library';
-import { createDemoSession, installHotkeys } from '@/editor';
+import { createDemoSession, createShortcutRegistry, editorShortcuts } from '@/editor';
 import { type LiveTransform, SceneCanvas, type SceneHandle } from '@/scene-engine';
 import { CatalogPanel, type CatalogPanelItem, EditorShell, SelectionSummary } from '@/ui';
 import { installTestHook } from './test-hook';
@@ -23,17 +22,12 @@ export default function EditorApp() {
 
   useEffect(() => installTestHook(window, { session, getScene: () => scene.current }), [session]);
 
-  useEffect(
-    () =>
-      installHotkeys(window, {
-        setView: (view) => session.setView(view),
-        fit: () => scene.current?.camera.fit(),
-        cycleWalls: () => session.setWallMode(nextWallMode(session.getState().wallMode)),
-        toggleCeiling: () => session.setShowCeiling(!session.getState().showCeiling),
-        deselect: () => session.select([]),
-      }),
-    [session],
-  );
+  // The shortcuts are data: the editor's own go in here, the shell adds the panels and the help.
+  const shortcuts = useMemo(() => {
+    const registry = createShortcutRegistry();
+    registry.registerAll(editorShortcuts({ session, fit: () => scene.current?.camera.fit() }));
+    return registry;
+  }, [session]);
 
   // The panel and the scene only meet here: the scene may not be mounted yet, so each call looks
   // it up when it happens.
@@ -57,6 +51,8 @@ export default function EditorApp() {
 
   return (
     <EditorShell
+      session={session}
+      shortcuts={shortcuts}
       catalog={
         <CatalogPanel
           items={CATALOG_ITEMS}
