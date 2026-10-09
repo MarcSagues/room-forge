@@ -1,9 +1,8 @@
 'use client';
 
-import { nextWallMode } from '@roomforge/core';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { emptyCatalog } from '@/asset-library';
-import { createDemoSession, installHotkeys } from '@/editor';
+import { createDemoSession, createShortcutRegistry, editorShortcuts } from '@/editor';
 import { SceneCanvas, type SceneHandle } from '@/scene-engine';
 import { EditorShell, SelectionSummary } from '@/ui';
 import { installTestHook } from './test-hook';
@@ -15,20 +14,17 @@ export default function EditorApp() {
 
   useEffect(() => installTestHook(window, { session, getScene: () => scene.current }), [session]);
 
-  useEffect(
-    () =>
-      installHotkeys(window, {
-        setView: (view) => session.setView(view),
-        fit: () => scene.current?.camera.fit(),
-        cycleWalls: () => session.setWallMode(nextWallMode(session.getState().wallMode)),
-        toggleCeiling: () => session.setShowCeiling(!session.getState().showCeiling),
-        deselect: () => session.select([]),
-      }),
-    [session],
-  );
+  // The shortcuts are data: the editor's own go in here, the shell adds the panels and the help.
+  const shortcuts = useMemo(() => {
+    const registry = createShortcutRegistry();
+    registry.registerAll(editorShortcuts({ session, fit: () => scene.current?.camera.fit() }));
+    return registry;
+  }, [session]);
 
   return (
     <EditorShell
+      session={session}
+      shortcuts={shortcuts}
       properties={<SelectionSummary session={session} />}
       viewport={
         <SceneCanvas

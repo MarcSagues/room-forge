@@ -1,7 +1,8 @@
 'use client';
 
+import type { EditorSession } from '@roomforge/core';
 import { XIcon } from 'lucide-react';
-import { type ReactNode, useCallback, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Group,
   Panel,
@@ -10,10 +11,12 @@ import {
   useDefaultLayout,
   usePanelRef,
 } from 'react-resizable-panels';
+import { createShortcutRegistry, type ShortcutRegistry } from '@/editor';
 import { Button } from '@/ui/components/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/components/tabs';
 import { translate } from '@/ui/i18n';
 import { cn } from '@/ui/lib/utils';
+import { ShortcutsProvider } from '@/ui/shortcuts/shortcuts-context';
 import { BottomBar } from './bottom-bar';
 import { SHELL_LAYOUT_ID, safeLayoutStorage } from './layout-storage';
 import { PanelHeader, PanelHint, SidePanel } from './side-panel';
@@ -40,28 +43,42 @@ export const PANEL_SIZES = {
 export function EditorShell({
   viewport,
   properties,
+  session,
+  shortcuts,
 }: {
   viewport?: ReactNode;
   /** Content of the Properties tab (the app passes the selection details); a hint by default. */
   properties?: ReactNode;
+  /** The editor session, for the undo and redo buttons; they are placeholders without it. */
+  session?: EditorSession;
+  /** The shortcut registry the app fills with its shortcuts; the shell listens for keys with it. */
+  shortcuts?: ShortcutRegistry;
 }) {
   const { mode, wide } = useShellMode();
-  if (mode === 'viewer') return <ViewerShell viewport={viewport} />;
-  return mode === 'full' ? (
-    <DockedShell wide={wide} viewport={viewport} properties={properties} />
-  ) : (
-    <DrawerShell viewport={viewport} properties={properties} />
-  );
+  const fallback = useMemo(() => (shortcuts ? null : createShortcutRegistry()), [shortcuts]);
+  const registry = shortcuts ?? (fallback as ShortcutRegistry);
+  useEffect(() => registry.attach(window), [registry]);
+
+  let shell: ReactNode;
+  if (mode === 'viewer') shell = <ViewerShell viewport={viewport} />;
+  else if (mode === 'full') {
+    shell = (
+      <DockedShell wide={wide} viewport={viewport} properties={properties} session={session} />
+    );
+  } else shell = <DrawerShell viewport={viewport} properties={properties} session={session} />;
+  return <ShortcutsProvider registry={registry}>{shell}</ShortcutsProvider>;
 }
 
 function DockedShell({
   wide,
   viewport,
   properties,
+  session,
 }: {
   wide: boolean;
   viewport: ReactNode;
   properties: ReactNode;
+  session: EditorSession | undefined;
 }) {
   const left = useCollapsiblePanel();
   const right = useCollapsiblePanel();
@@ -74,6 +91,7 @@ function DockedShell({
   const size = wide ? 'wide' : 'narrow';
   return (
     <ShellFrame
+      session={session}
       leftExpanded={left.expanded}
       rightExpanded={right.expanded}
       onToggleLeft={left.toggle}
@@ -122,7 +140,15 @@ function DockedShell({
 }
 
 /** 768–1023 px: the panels open as drawers over the viewport instead of taking its width. */
-function DrawerShell({ viewport, properties }: { viewport: ReactNode; properties: ReactNode }) {
+function DrawerShell({
+  viewport,
+  properties,
+  session,
+}: {
+  viewport: ReactNode;
+  properties: ReactNode;
+  session: EditorSession | undefined;
+}) {
   const [open, setOpen] = useState<'left' | 'right' | null>(null);
   const toggleLeft = useCallback(() => setOpen((o) => (o === 'left' ? null : 'left')), []);
   const toggleRight = useCallback(() => setOpen((o) => (o === 'right' ? null : 'right')), []);
@@ -131,6 +157,7 @@ function DrawerShell({ viewport, properties }: { viewport: ReactNode; properties
 
   return (
     <ShellFrame
+      session={session}
       leftExpanded={open === 'left'}
       rightExpanded={open === 'right'}
       onToggleLeft={toggleLeft}
@@ -168,6 +195,7 @@ function ViewerShell({ viewport }: { viewport: ReactNode }) {
 }
 
 interface ShellFrameProps {
+  session: EditorSession | undefined;
   leftExpanded: boolean;
   rightExpanded: boolean;
   onToggleLeft: () => void;
