@@ -40,7 +40,9 @@ test('the first visit makes a project, and it is listed on the projects screen',
   page,
 }) => {
   await openEditor(page);
-  await expect(page.getByRole('link', { name: 'Untitled project' })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Rename project: Untitled project' }),
+  ).toBeVisible();
   expect(await status(page)).toBe('saved');
   await page.goto('/projects/');
   await expect(page.getByRole('heading', { level: 2, name: 'Untitled project' })).toBeVisible();
@@ -97,13 +99,17 @@ test('Open on the projects screen opens that project, and the editor comes back 
 
   await page.getByRole('link', { name: 'Open Untitled project 2' }).click();
   await page.waitForFunction(() => window.__RF__?.session != null);
-  await expect(page.getByRole('link', { name: 'Untitled project 2' })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Rename project: Untitled project 2' }),
+  ).toBeVisible();
   await addObject(page, 'lamp');
   await waitSaved(page);
 
   // No address: it comes back to the last one, with its change.
   await openEditor(page, '/editor/');
-  await expect(page.getByRole('link', { name: 'Untitled project 2' })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Rename project: Untitled project 2' }),
+  ).toBeVisible();
   expect(await objectIds(page)).toEqual(['lamp']);
 });
 

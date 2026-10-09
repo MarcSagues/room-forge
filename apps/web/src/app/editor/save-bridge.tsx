@@ -28,11 +28,18 @@ export function SaveStatusBridge(props: {
   name: string;
   /** Exports the project; turns on the Export menu of the top bar. */
   onExport?: () => void;
+  /** Renames the project; turns the name in the top bar into a field. */
+  onRename?: (name: string) => Promise<void>;
   children: ReactNode;
 }) {
   const save = useSaveState(props.autosave);
   return (
-    <ProjectStatusProvider name={props.name} save={save.status} onExport={props.onExport}>
+    <ProjectStatusProvider
+      name={props.name}
+      save={save.status}
+      onExport={props.onExport}
+      onRename={props.onRename}
+    >
       {props.children}
     </ProjectStatusProvider>
   );

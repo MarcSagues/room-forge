@@ -62,7 +62,9 @@ test('Ctrl+Z undoes, Ctrl+Shift+Z and Ctrl+Y redo, and the buttons follow the hi
 }) => {
   const undo = page.getByRole('button', { name: 'Undo: Add object' });
   await expect(undo).toBeEnabled();
-  await expect(undo).toHaveAttribute('title', 'Undo: Add object');
+  await undo.hover();
+  await expect(page.getByRole('tooltip')).toContainText('Undo: Add object');
+  await expect(page.getByRole('tooltip')).toContainText('Ctrl');
   await expect(page.getByRole('button', { name: 'Nothing to redo' })).toBeDisabled();
 
   await page.keyboard.press('Control+z');

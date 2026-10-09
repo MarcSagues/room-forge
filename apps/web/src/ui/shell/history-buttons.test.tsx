@@ -36,7 +36,8 @@ describe('HistoryButtons', () => {
     move();
     const undo = screen.getByRole('button', { name: 'Undo: Move object' });
     expect(undo).toBeEnabled();
-    expect(undo).toHaveAttribute('title', 'Undo: Move object');
+    await userEvent.hover(undo);
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Undo: Move object');
     await userEvent.click(undo);
     expect(session.getState().document.objects[DESK]?.transform.position[0]).toBe(2);
 
