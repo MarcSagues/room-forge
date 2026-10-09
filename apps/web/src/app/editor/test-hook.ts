@@ -29,8 +29,11 @@ export interface RoomForgeTestHook {
   camera: SceneCamera;
   /** How a room is drawn (wall opacity and height, ceiling); `null` until it is drawn. */
   roomDisplay(roomId: RoomId): RoomDisplay | null;
-  /** Screen position (page pixels) of an object, to click it like a user; `null` if not drawn. */
-  project(id: ObjectId): { x: number; y: number } | null;
+  /**
+   * Screen position (page pixels) of an object, to click it like a user; `null` if not drawn.
+   * `local` picks another point in the object's frame (front = +z), such as the rotation knob.
+   */
+  project(id: ObjectId, local?: readonly [number, number, number]): { x: number; y: number } | null;
 }
 
 declare global {
@@ -59,7 +62,7 @@ export function installTestHook(
       setInputBlocked: (blocked) => deps.getScene()?.camera.setInputBlocked(blocked),
     },
     roomDisplay: (roomId) => deps.getScene()?.roomDisplay(roomId) ?? null,
-    project: (id) => deps.getScene()?.project(id) ?? null,
+    project: (id, local) => deps.getScene()?.project(id, local) ?? null,
   };
   target.__RF__ = hook;
   return () => {

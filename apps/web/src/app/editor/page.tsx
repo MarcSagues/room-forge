@@ -1,5 +1,5 @@
-import { EditorLoader } from './editor-loader';
+import { EditorRoot } from './editor-root';
 
 export default function EditorPage() {
-  return <EditorLoader />;
+  return <EditorRoot />;
 }
