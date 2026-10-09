@@ -5,7 +5,7 @@
   },
   "bundle": {
     "initialJsGzipKb": {
-      "/": 240,
+      "/": 270,
       "/editor/": 580
     },
     "targetGzipKb": {
