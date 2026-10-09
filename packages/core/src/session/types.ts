@@ -17,7 +17,8 @@ export type CommandErrorCode =
   | 'invalid'
   | 'limit-reached'
   | 'overlap'
-  | 'exception';
+  | 'exception'
+  | 'read-only';
 
 export interface CommandError {
   readonly code: CommandErrorCode;

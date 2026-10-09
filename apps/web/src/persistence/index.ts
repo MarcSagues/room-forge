@@ -41,3 +41,12 @@ export {
   openProjectForEditing,
   rememberLastProject,
 } from './project-loader';
+export {
+  browserLockApis,
+  type ChannelLike,
+  createProjectLock,
+  type LockManagerLike,
+  type LockRole,
+  type ProjectLock,
+  type ProjectLockOptions,
+} from './project-lock';
