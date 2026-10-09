@@ -1,7 +1,9 @@
-import { CheckIcon, PanelLeftIcon, PanelRightIcon, Redo2Icon, Undo2Icon } from 'lucide-react';
+import { PanelLeftIcon, PanelRightIcon, Redo2Icon, Undo2Icon } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/ui/components/button';
 import { Separator } from '@/ui/components/separator';
+import { useProjectStatus } from '@/ui/editor/project-status';
+import { SaveStatusPill } from '@/ui/editor/save-status';
 import { translate } from '@/ui/i18n';
 
 interface TopBarProps {
@@ -19,6 +21,7 @@ const t = (key: Parameters<typeof translate>[1]) => translate('en', key);
 export function TopBar(props: TopBarProps) {
   const { leftExpanded, rightExpanded, onToggleLeft, onToggleRight, leftPanelId, rightPanelId } =
     props;
+  const project = useProjectStatus();
   return (
     <header className="flex h-12 shrink-0 items-center gap-2 border-b bg-card px-3">
       <Button
@@ -35,11 +38,14 @@ export function TopBar(props: TopBarProps) {
         {t('app.name')}
       </Link>
       <Separator orientation="vertical" className="mx-1 h-5" />
-      <span className="truncate text-fg-muted">{t('shell.project')}</span>
-      <output className="inline-flex items-center gap-1 rounded-full bg-hover px-2 py-0.5 text-fg-muted text-xs">
-        <CheckIcon className="size-3 text-success" aria-hidden="true" />
-        {t('shell.saved')}
-      </output>
+      <Link
+        href="/projects/"
+        title={t('shell.projectsLink')}
+        className="truncate rounded-sm text-fg-muted hover:text-foreground"
+      >
+        {project.name ?? t('shell.project')}
+      </Link>
+      <SaveStatusPill status={project.save} />
       <div className="ml-2 flex items-center gap-1">
         <Button
           variant="ghost"

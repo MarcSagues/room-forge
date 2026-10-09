@@ -1,19 +1,101 @@
 'use client';
 
-import { nextWallMode } from '@roomforge/core';
-import { useEffect, useRef, useState } from 'react';
+import { nextWallMode, type SceneDocument } from '@roomforge/core';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { emptyCatalog } from '@/asset-library';
-import { createDemoSession, installHotkeys } from '@/editor';
+import { installHotkeys } from '@/editor';
+import {
+  type Autosave,
+  autosaveSourceOf,
+  createAutosave,
+  downloadFile,
+  exportFileOf,
+  installAutosaveLifecycle,
+  type SaveState,
+} from '@/persistence';
 import { SceneCanvas, type SceneHandle } from '@/scene-engine';
-import { EditorShell, SelectionSummary } from '@/ui';
+import {
+  EditorShell,
+  ProjectStatusProvider,
+  ProjectUnavailable,
+  SaveNotice,
+  type SaveProblem,
+  SelectionSummary,
+  translate,
+} from '@/ui';
+import type { BootedEditor } from './boot-editor';
 import { installTestHook } from './test-hook';
+import { useEditorBoot } from './use-editor-boot';
 
-/** Composition root of the editor route: session + shell + canvas (client-only, loaded by the loader). */
+const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? 'dev';
+
+const NO_AUTOSAVE: SaveState = { status: 'saved', lastSavedAt: null, error: null, failures: 0 };
+
+/** Where the work stands, re-rendering only when autosave says it changed. */
+function useSaveState(autosave: Autosave | null): SaveState {
+  const subscribe = useCallback(
+    (notify: () => void) => (autosave ? autosave.subscribe(() => notify()) : () => {}),
+    [autosave],
+  );
+  const snapshot = useCallback(() => autosave?.state() ?? NO_AUTOSAVE, [autosave]);
+  return useSyncExternalStore(subscribe, snapshot, snapshot);
+}
+
+/**
+ * Composition root of the editor route (client-only, loaded by the loader): opens the project to
+ * edit (the one in the address, the last one, or a new one), then shows the editor on it with
+ * autosave running. If the project cannot be opened it says why and leads back to the projects.
+ */
 export default function EditorApp() {
-  const [session] = useState(() => createDemoSession(emptyCatalog));
-  const scene = useRef<SceneHandle | null>(null);
+  const { boot, retry } = useEditorBoot();
+  if (boot.phase === 'loading') {
+    return (
+      <p role="status" className="grid h-dvh place-items-center text-fg-muted">
+        {translate('en', 'project.opening')}
+      </p>
+    );
+  }
+  if (boot.phase === 'failed') return <ProjectUnavailable reason={boot.failure} onRetry={retry} />;
+  return <Workspace editor={boot.editor} />;
+}
 
-  useEffect(() => installTestHook(window, { session, getScene: () => scene.current }), [session]);
+function Workspace({ editor }: { editor: BootedEditor }) {
+  const { session, project, repository, storage, journal } = editor;
+  const scene = useRef<SceneHandle | null>(null);
+  const autosaveRef = useRef<Autosave | null>(null);
+  const [autosave, setAutosave] = useState<Autosave | null>(null);
+  const save = useSaveState(autosave);
+
+  useEffect(
+    () =>
+      installTestHook(window, {
+        session,
+        getScene: () => scene.current,
+        getAutosave: () => autosaveRef.current,
+      }),
+    [session],
+  );
+
+  // Autosave lives as long as the editor does: it listens to the session, and when the editor goes
+  // away (or the page does) whatever is pending is written first.
+  useEffect(() => {
+    const instance = createAutosave({
+      repository,
+      projectId: project.id,
+      name: () => project.name,
+      source: autosaveSourceOf(session),
+      ...(journal ? { journal } : {}),
+    });
+    const removeLifecycle = installAutosaveLifecycle(instance, window);
+    autosaveRef.current = instance;
+    setAutosave(instance);
+    return () => {
+      removeLifecycle();
+      autosaveRef.current = null;
+      setAutosave(null);
+      void instance.dispose({ flush: true });
+    };
+  }, [repository, project.id, project.name, session, journal]);
 
   useEffect(
     () =>
@@ -27,18 +109,40 @@ export default function EditorApp() {
     [session],
   );
 
+  // A copy of what is on screen, not of what was last written: when saving fails, the work is here.
+  const exportCopy = useCallback(() => {
+    const document = session.getState().document as SceneDocument;
+    downloadFile(exportFileOf({ name: project.name, document }, { appVersion: APP_VERSION }));
+  }, [session, project.name]);
+
+  const problem: SaveProblem | null =
+    storage === 'memory'
+      ? { kind: 'memory' }
+      : save.status === 'error' && save.error
+        ? { kind: 'failed', code: save.error.code }
+        : null;
+
   return (
-    <EditorShell
-      properties={<SelectionSummary session={session} />}
-      viewport={
-        <SceneCanvas
-          session={session}
-          catalog={emptyCatalog}
-          onReady={(handle) => {
-            scene.current = handle;
-          }}
-        />
-      }
-    />
+    <ProjectStatusProvider name={project.name} save={save.status}>
+      <EditorShell
+        properties={<SelectionSummary session={session} />}
+        viewport={
+          <>
+            <SceneCanvas
+              session={session}
+              catalog={emptyCatalog}
+              onReady={(handle) => {
+                scene.current = handle;
+              }}
+            />
+            <SaveNotice
+              problem={problem}
+              onRetry={() => void autosave?.retry()}
+              onExport={exportCopy}
+            />
+          </>
+        }
+      />
+    </ProjectStatusProvider>
   );
 }

@@ -12,11 +12,13 @@ import { createMemoryProjectRepository } from './memory-repository';
 import {
   downloadFile,
   exportFileName,
+  exportFileOf,
   exportProject,
   REVOKE_AFTER_MS,
   readProjectFile,
   slugify,
 } from './project-files';
+import { documentWith } from './testing/contract';
 
 const pid = (value: string): ProjectId => ProjectIdSchema.parse(value);
 const fileOf = (text: string, name = 'x.roomforge.json') => new File([text], name);
@@ -89,6 +91,22 @@ describe('exportProject', () => {
     const attempt = exportProject(repository, pid('ghost'), { appVersion: 'x' });
     await expect(attempt).rejects.toBeInstanceOf(RepositoryError);
     await expect(attempt).rejects.toMatchObject({ code: 'NOT_FOUND' });
+  });
+});
+
+describe('exportFileOf (the project as it is in the editor)', () => {
+  it('writes the document it is given, whatever the repository holds', async () => {
+    const repository = createMemoryProjectRepository();
+    await repository.save({ id: pid('p1'), name: 'Office', document: documentWith(1) });
+    const inEditor = documentWith(4);
+    const file = exportFileOf(
+      { name: 'Office', document: inEditor },
+      { appVersion: '1.0.0', now: () => new Date(Date.UTC(2026, 9, 9, 12)) },
+    );
+    expect(JSON.parse(file.text).document).toEqual(inEditor);
+    expect(file.filename).toMatch(/^office-2026-10-\d\d\.roomforge\.json$/);
+    const read = await readProjectFile(fileOf(file.text));
+    expect(read.ok && read.value.document).toEqual(inEditor);
   });
 });
 

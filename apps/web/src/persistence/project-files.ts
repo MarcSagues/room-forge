@@ -8,6 +8,7 @@ import {
   parseProjectFile,
   RepositoryError,
   type Result,
+  type SceneDocument,
   serializeProject,
 } from '@roomforge/core';
 
@@ -46,6 +47,22 @@ export interface ExportOptions {
   now?: () => Date;
 }
 
+/**
+ * A project file of the project as it is *in the editor*, not as last saved. This is what a person
+ * exports when saving has failed (a full disk, blocked storage): the copy has to hold their work.
+ */
+export function exportFileOf(
+  project: { name: string; document: SceneDocument },
+  options: ExportOptions,
+): ExportedFile {
+  const now = options.now?.() ?? new Date();
+  const text = serializeProject(
+    { name: project.name, document: project.document },
+    { appVersion: options.appVersion, exportedAt: now.toISOString() },
+  );
+  return { filename: exportFileName(project.name, now), text };
+}
+
 /** Reads a saved project and writes it as a project file (the format of `core/serialization`). */
 export async function exportProject(
   repository: ProjectRepository,
@@ -54,12 +71,7 @@ export async function exportProject(
 ): Promise<ExportedFile> {
   const stored = await repository.get(id);
   if (!stored) throw new RepositoryError('NOT_FOUND', `There is no project ${id}`);
-  const now = options.now?.() ?? new Date();
-  const text = serializeProject(
-    { name: stored.name, document: stored.document },
-    { appVersion: options.appVersion, exportedAt: now.toISOString() },
-  );
-  return { filename: exportFileName(stored.name, now), text };
+  return exportFileOf(stored, options);
 }
 
 /**
