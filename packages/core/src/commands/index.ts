@@ -1,3 +1,4 @@
+export { type LightsChange, setAllLights, setLight, setLightingMode } from './light';
 export { resetObjectMaterial, setObjectMaterial } from './material';
 export {
   type AddObjectInput,
