@@ -1,4 +1,5 @@
 export { type LightsChange, setAllLights, setLight, setLightingMode } from './light';
+export { resetObjectMaterial, setObjectMaterial } from './material';
 export {
   type AddObjectInput,
   addObject,
@@ -10,6 +11,15 @@ export {
   rotateObjects,
   setObjectProps,
 } from './object';
+export {
+  type AddOpeningInput,
+  addOpening,
+  moveOpening,
+  OPENING_VARIANTS,
+  type OpeningVariant,
+  removeOpenings,
+  resizeOpening,
+} from './opening';
 export {
   createRoom,
   DEFAULT_ROOM_MATERIALS,

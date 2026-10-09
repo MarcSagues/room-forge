@@ -1,6 +1,12 @@
-import type { CatalogId, HexColor } from '../domain';
+import type { CatalogId, HexColor, MaterialRef } from '../domain';
 
 export type PlacementSurface = 'floor' | 'wall' | 'ceiling' | 'tabletop';
+
+/** A part of an item that can take its own material (a desk top, its frame), with its default. */
+export interface MaterialSlot {
+  readonly id: string;
+  readonly default: MaterialRef;
+}
 
 /** What an item that gives light is: its kind, its weight in the light budget, its colour. */
 export interface LightCapability {
@@ -20,6 +26,8 @@ export interface CatalogItem {
   readonly size: { readonly w: number; readonly h: number; readonly d: number };
   /** Allowed surfaces; the first one is the default. */
   readonly placement: { readonly surfaces: readonly [PlacementSurface, ...PlacementSurface[]] };
+  /** The material slots of the item; an item without any cannot be given a material. */
+  readonly slots?: readonly MaterialSlot[];
   /** Present only on items that give light: only those take a `light` state. */
   readonly light?: LightCapability;
 }

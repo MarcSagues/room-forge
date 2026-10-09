@@ -219,8 +219,9 @@ test('dragging among 50 objects renders at most one frame per pointer step and c
 
   console.log(`RENDER 50 objects: ${JSON.stringify({ idle, dragging, dropped })}`);
   if (!idle || !dragging || !dropped) throw new Error('no render info');
-  // The pointer is sampled once per animation frame, so a step can never cost more than a frame.
-  expect(dragging.frame - idle.frame).toBeLessThanOrEqual(STEPS + 2);
+  // The pointer is sampled once per animation frame, so a step costs at most one frame; the press
+  // (pose published, camera locked) and hiding the rotation handle add a few more, once.
+  expect(dragging.frame - idle.frame).toBeLessThanOrEqual(STEPS + 5);
   expect(dragging.frame - idle.frame).toBeGreaterThan(0);
   // Only the outline (and maybe a wall guide) is added while dragging: no new geometry, texture
   // or shader program.
