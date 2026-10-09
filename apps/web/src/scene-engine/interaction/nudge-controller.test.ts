@@ -107,7 +107,15 @@ describe('attachNudge', () => {
   });
 
   it('is inert while an object is being dragged', () => {
-    transient.publishDrag({ id: DESK, x: 2, z: 1.5, rotationY: 0, valid: true, wall: null });
+    transient.publishDrag({
+      kind: 'move',
+      id: DESK,
+      x: 2,
+      z: 1.5,
+      rotationY: 0,
+      valid: true,
+      wall: null,
+    });
     press('ArrowRight');
     expect(position(DESK)).toEqual([2, 0, 1.5]);
   });

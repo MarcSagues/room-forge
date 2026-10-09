@@ -20,6 +20,23 @@ export function objectSize(catalog: CatalogProvider, catalogId: string): ObjectS
   return catalog.getItem(catalogId)?.size ?? UNKNOWN_SIZE;
 }
 
+const coloured = new Map<string, MeshStandardMaterial>();
+
+/**
+ * The material of a placeholder box: one per colour, shared by every object of that colour (rule 6),
+ * or the default when the catalog gives none. Never disposed: they live as long as the page.
+ */
+export function placeholderMaterial(color: string | undefined): MeshStandardMaterial {
+  if (!color) return placeholderResources().material;
+  const key = color.toLowerCase();
+  let material = coloured.get(key);
+  if (!material) {
+    material = new MeshStandardMaterial({ color: key, roughness: 0.8 });
+    coloured.set(key, material);
+  }
+  return material;
+}
+
 export function placeholderResources() {
   shared ??= {
     // A unit box with its bottom face on the floor (an object's origin is its footprint centre at
