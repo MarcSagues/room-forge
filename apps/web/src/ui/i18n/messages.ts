@@ -48,6 +48,15 @@ export const en = {
   'properties.selectedCount': '{count} objects selected',
   'properties.unnamed': 'Unnamed object',
   'properties.catalogItem': 'Catalog item',
+  'catalog.search': 'Search the catalog',
+  'catalog.searchPlaceholder': 'Search…',
+  'catalog.list': 'Catalog items',
+  'catalog.hint':
+    'Drag an item into the room, or press Enter to place it in the middle of the view.',
+  'catalog.empty': 'No items match "{query}".',
+  'catalog.placed': '{name} placed.',
+  'catalog.notPlaced': '{name} could not be placed.',
+  'catalog.dimensions': '{width} × {depth} cm',
 } as const;
 
 export type MessageKey = keyof typeof en;
@@ -98,4 +107,13 @@ export const es: Record<MessageKey, string> = {
   'properties.selectedCount': '{count} objetos seleccionados',
   'properties.unnamed': 'Objeto sin nombre',
   'properties.catalogItem': 'Artículo del catálogo',
+  'catalog.search': 'Buscar en el catálogo',
+  'catalog.searchPlaceholder': 'Buscar…',
+  'catalog.list': 'Objetos del catálogo',
+  'catalog.hint':
+    'Arrastra un objeto a la habitación, o pulsa Intro para colocarlo en el centro de la vista.',
+  'catalog.empty': 'Ningún objeto coincide con "{query}".',
+  'catalog.placed': '{name} colocado.',
+  'catalog.notPlaced': 'No se pudo colocar {name}.',
+  'catalog.dimensions': '{width} × {depth} cm',
 };

@@ -40,17 +40,20 @@ export const PANEL_SIZES = {
 export function EditorShell({
   viewport,
   properties,
+  catalog,
 }: {
   viewport?: ReactNode;
   /** Content of the Properties tab (the app passes the selection details); a hint by default. */
   properties?: ReactNode;
+  /** Content of the left panel (the app passes the catalog panel); a hint by default. */
+  catalog?: ReactNode;
 }) {
   const { mode, wide } = useShellMode();
   if (mode === 'viewer') return <ViewerShell viewport={viewport} />;
   return mode === 'full' ? (
-    <DockedShell wide={wide} viewport={viewport} properties={properties} />
+    <DockedShell wide={wide} viewport={viewport} properties={properties} catalog={catalog} />
   ) : (
-    <DrawerShell viewport={viewport} properties={properties} />
+    <DrawerShell viewport={viewport} properties={properties} catalog={catalog} />
   );
 }
 
@@ -58,10 +61,12 @@ function DockedShell({
   wide,
   viewport,
   properties,
+  catalog,
 }: {
   wide: boolean;
   viewport: ReactNode;
   properties: ReactNode;
+  catalog: ReactNode;
 }) {
   const left = useCollapsiblePanel();
   const right = useCollapsiblePanel();
@@ -95,7 +100,9 @@ function DockedShell({
           maxSize={PANEL_SIZES.left.max}
           onResize={left.onResize}
         >
-          <CatalogPanel hidden={!left.expanded} className="border-r" />
+          <CatalogSidebar hidden={!left.expanded} className="border-r">
+            {catalog}
+          </CatalogSidebar>
         </Panel>
         <ResizeHandle />
         <Panel id="viewport" minSize={320}>
@@ -122,7 +129,15 @@ function DockedShell({
 }
 
 /** 768–1023 px: the panels open as drawers over the viewport instead of taking its width. */
-function DrawerShell({ viewport, properties }: { viewport: ReactNode; properties: ReactNode }) {
+function DrawerShell({
+  viewport,
+  properties,
+  catalog,
+}: {
+  viewport: ReactNode;
+  properties: ReactNode;
+  catalog: ReactNode;
+}) {
   const [open, setOpen] = useState<'left' | 'right' | null>(null);
   const toggleLeft = useCallback(() => setOpen((o) => (o === 'left' ? null : 'left')), []);
   const toggleRight = useCallback(() => setOpen((o) => (o === 'right' ? null : 'right')), []);
@@ -144,7 +159,7 @@ function DrawerShell({ viewport, properties }: { viewport: ReactNode; properties
         }}
       >
         <Drawer side="left" open={open === 'left'} onClose={close}>
-          <CatalogPanel hidden={open !== 'left'} />
+          <CatalogSidebar hidden={open !== 'left'}>{catalog}</CatalogSidebar>
         </Drawer>
         <Viewport>{viewport}</Viewport>
         <Drawer side="right" open={open === 'right'} onClose={close}>
@@ -217,11 +232,19 @@ function Drawer(props: {
   );
 }
 
-function CatalogPanel({ hidden, className }: { hidden: boolean; className?: string }) {
+function CatalogSidebar({
+  hidden,
+  className,
+  children,
+}: {
+  hidden: boolean;
+  className?: string;
+  children?: ReactNode;
+}) {
   return (
     <SidePanel id={LEFT_ID} label={t('shell.leftPanel')} hidden={hidden} className={className}>
       <PanelHeader>{t('shell.catalog')}</PanelHeader>
-      <PanelHint>{t('shell.catalogHint')}</PanelHint>
+      {children ?? <PanelHint>{t('shell.catalogHint')}</PanelHint>}
     </SidePanel>
   );
 }

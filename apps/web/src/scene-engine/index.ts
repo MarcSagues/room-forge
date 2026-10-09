@@ -10,3 +10,4 @@ export {
   type SceneCanvasProps,
   type SceneHandle,
 } from './canvas/scene-canvas';
+export type { PlacementApi } from './interaction/placement-api';
