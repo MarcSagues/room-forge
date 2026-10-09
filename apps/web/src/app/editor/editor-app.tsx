@@ -16,9 +16,11 @@ import {
   type Autosave,
   autosaveSourceOf,
   createAutosave,
+  createBackupReminder,
   downloadFile,
   exportFileOf,
   installAutosaveLifecycle,
+  readStorageHealth,
 } from '@/persistence';
 import { type LiveTransform, SceneCanvas, type SceneHandle } from '@/scene-engine';
 import {
@@ -32,12 +34,15 @@ import {
   RoomMaterialsPanel,
   RoomSizePanel,
   SelectionSummary,
+  showBackupReminder,
+  showStorageWarning,
   translate,
 } from '@/ui';
 import type { BootedEditor } from './boot-editor';
 import { SaveNoticeBridge, SaveStatusBridge } from './save-bridge';
+import { installStorageCare } from './storage-care';
 import { installTestHook } from './test-hook';
-import { useEditorBoot } from './use-editor-boot';
+import { browserStorage, useEditorBoot } from './use-editor-boot';
 import { useProjectLock } from './use-project-lock';
 
 const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? 'dev';
@@ -194,11 +199,28 @@ function Workspace(props: {
     return () => clearTimeout(timer);
   }, [context]);
 
+  const reminder = useMemo(() => createBackupReminder({ storage: browserStorage() }), []);
+
   // A copy of what is on screen, not of what was last written: when saving fails, the work is here.
   const exportCopy = useCallback(() => {
     const document = session.getState().document as SceneDocument;
     downloadFile(exportFileOf({ name: nameRef.current, document }, { appVersion: APP_VERSION }));
-  }, [session]);
+    reminder.recordExport();
+  }, [session, reminder]);
+
+  // The browser may clear what it stores: warn once if it might, and suggest a copy now and then.
+  useEffect(() => {
+    if (!owner || storage !== 'indexeddb') return;
+    return installStorageCare({
+      session,
+      reminder,
+      storage: browserStorage(),
+      readHealth: () => readStorageHealth(),
+      exportCopy,
+      showBackupReminder,
+      showStorageWarning,
+    });
+  }, [owner, storage, session, reminder, exportCopy]);
 
   // The next autosave already writes the new name; if renaming fails it goes back to the old one.
   const rename = useCallback(
