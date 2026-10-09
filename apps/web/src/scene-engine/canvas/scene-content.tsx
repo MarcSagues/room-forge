@@ -3,7 +3,8 @@
 import { useShallow } from 'zustand/react/shallow';
 import { DragGuides } from '../interaction/drag-guides';
 import { PlacementGhost } from '../interaction/placement-ghost';
-import { KeyboardNudge, Picking, SelectionOutline } from '../interaction/selection';
+import { RotationHandle } from '../interaction/rotation-handle';
+import { ObjectKeys, Picking, SelectionOutline } from '../interaction/selection';
 import { type EntityRegistry, EntityRegistryProvider } from '../objects/entity-registry';
 import { ObjectList } from '../objects/object-views';
 import { RoomMesh } from '../room/room-mesh';
@@ -24,7 +25,8 @@ export function SceneContent({ registry }: { registry?: EntityRegistry }) {
         <DragGuides />
         <PlacementGhost />
         <Picking />
-        <KeyboardNudge />
+        <RotationHandle />
+        <ObjectKeys />
       </EntityRegistryProvider>
     </>
   );

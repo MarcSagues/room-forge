@@ -12,6 +12,8 @@ import { describe, expect, it } from 'vitest';
 import { createEntityRegistry } from '../objects/entity-registry';
 import { MoveController } from './move-controller';
 import { PlaceController } from './place-controller';
+import { RotateController } from './rotate-controller';
+import { hitsHandle } from './rotate-handle';
 import { createTransientStore } from './transient-store';
 
 // Drag code runs on every frame and must not allocate (AGENTS rule 3). The V8 sampling heap
@@ -194,6 +196,92 @@ describe('hot path: no allocations per step', () => {
         );
       }
     }
+  });
+
+  describe('rotation', () => {
+    const DESK = 'desk-1' as ObjectId;
+    const down = (x: number, z: number) => new Ray(new Vector3(x, 10, z), new Vector3(0, -1, 0));
+    // Rays on a circle of radius 1 around the desk centre (2, 1.5), there and back.
+    const circle = sweep(720, 0, 2 * Math.PI).map((angle) =>
+      down(2 + Math.sin(angle), 1.5 + Math.cos(angle)),
+    );
+
+    function setup() {
+      const session = createEditorSession({
+        initialDocument: buildDocument(),
+        catalog: createFixtureCatalog(),
+      });
+      const registry = createEntityRegistry();
+      for (const object of Object.values(session.getState().document.objects)) {
+        const node = new Object3D();
+        node.position.fromArray(object.transform.position);
+        registry.register(object.id, node);
+      }
+      const transient = createTransientStore();
+      transient.subscribe(() => {});
+      return { session, registry, transient };
+    }
+
+    for (const free of [false, true]) {
+      it(
+        `RotateController.update${free ? ' with Alt' : ''}`,
+        async () => {
+          const { session, registry, transient } = setup();
+          const controller = new RotateController({
+            session,
+            catalog: createFixtureCatalog(),
+            registry,
+            transient,
+            invalidate: () => {},
+          });
+          controller.begin(DESK, down(2, 2.5));
+          expectQuiet(
+            await largeBytesPerCall((i) =>
+              controller.update(circle[i % circle.length] as Ray, free),
+            ),
+          );
+          controller.cancel();
+        },
+        SLOW,
+      );
+    }
+
+    it(
+      'MoveController.turnBy',
+      async () => {
+        const { session, registry, transient } = setup();
+        const controller = new MoveController({
+          session,
+          catalog: createFixtureCatalog(),
+          registry,
+          transient,
+          invalidate: () => {},
+          gridStep: 0.1,
+        });
+        controller.begin(DESK, down(2, 1.5));
+        controller.update(down(2.4, 1.7), false);
+        expectQuiet(await largeBytesPerCall((i) => controller.turnBy(i % 2 === 0 ? 1 : -1, 15)));
+        controller.cancel();
+      },
+      SLOW,
+    );
+
+    it(
+      'hitsHandle, on every hover frame',
+      async () => {
+        const rays = sweep(400, 0, 4).map((x) => down(x, 1.5 + (x % 1)));
+        let grabbed = 0;
+        expectQuiet(
+          await largeBytesPerCall((i) => {
+            if (hitsHandle(rays[i % rays.length] as Ray, 2, 1.5, i * 0.01, 1, i % 3 === 0)) {
+              grabbed += 1;
+            }
+          }),
+        );
+        expect(grabbed).toBeGreaterThan(0);
+      },
+      SLOW,
+    );
   });
 
   describe('PlaceController.update (an item dragged in from the catalog)', () => {
