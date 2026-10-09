@@ -52,6 +52,14 @@ describe('EditorShell — docked (≥ 1024 px)', () => {
     expect(screen.getAllByRole('separator')).toHaveLength(2);
   });
 
+  it('shows the scene content in the Scene tab of the right panel', async () => {
+    const user = userEvent.setup();
+    render(<EditorShell scene={<p>outline here</p>} />);
+    expect(screen.queryByText('outline here')).toBeNull();
+    await user.click(within(rightPanel()).getByRole('tab', { name: 'Scene' }));
+    expect(screen.getByText('outline here')).toBeInTheDocument();
+  });
+
   it('collapses and expands the catalog from the top bar', async () => {
     const user = userEvent.setup();
     render(<EditorShell />);
