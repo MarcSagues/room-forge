@@ -192,22 +192,30 @@ Los secretos son del repositorio y cualquier workflow de una rama del propio rep
 Con GitHub Pro o repositorio público bastaría activar protección de ramas (PR + checks obligatorios, sin force-push) y un Environment `production` con revisores, y volver a un disparador por `push` a `main` con aprobación del entorno. Nada del diseño lo impide.
 ## 7. Cabeceras y caché (`_headers`, P1-08 → P7-09 → P8-03)
 
+`apps/web/scripts/write-headers.mjs` genera `out/_headers` justo después de `next build` (`pnpm build` lo ejecuta; no hay un `public/_headers` escrito a mano). Así la CSP lleva el hash de los scripts en línea de **esa** compilación:
+
 ```text
-# apps/web/public/_headers  (ESPECIFICACIÓN)
 /*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
-  Content-Security-Policy: default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; connect-src 'self'; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'
+
 /_next/static/*
   Cache-Control: public, max-age=31536000, immutable
-/assets/*
-  Cache-Control: public, max-age=31536000, immutable
-/*.html
-  Cache-Control: no-cache
+
+/editor/                      (una regla por página: /, /projects/, /editor/, /404.html …)
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-…' 'sha256-…' 'sha256-…'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; worker-src 'self' blob:; manifest-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
 ```
 
-Notas: la CSP exacta (scripts en línea de Next, Draco/Meshopt WASM, workers) se ajusta en P7-09 con la app real; `script-src` sin `unsafe-inline` si Next export lo permite con hashes. Los assets 3D llevan hash en el nombre (inmutables). Brotli lo aplica Cloudflare.
+Notas:
+
+- **Una sola regla fija la CSP de cada página.** Cloudflare une con coma los valores de una misma cabecera que fijan varias reglas, y dos políticas se aplican a la vez (gana la más estricta); por eso la CSP no va en `/*`.
+- Una URL que no corresponde a ninguna página (un 404 de verdad) solo recibe las cabeceras de `/*`: la página 404 no muestra datos de nadie.
+- **`wasm-unsafe-eval` no está** porque nada compila WebAssembly todavía; P4-04 lo añade en `script-src` si Draco/Meshopt lo necesitan. Cualquier fuente nueva (CDN, analítica de la Fase 8) se añade en `apps/web/scripts/headers.mjs` con su justificación y su prueba.
+- Un script en línea nuevo no necesita tocar nada: su hash se calcula solo. Un script **externo** de otro origen sí (y se discute en la PR).
+- El límite de Cloudflare es 2 000 caracteres por línea y 100 reglas: un test lo vigila.
+- `scripts/serve-static.mjs` aplica `out/_headers` igual que el host, de modo que el E2E prueba la política real.
+- Los assets 3D llevan hash en el nombre (inmutables). Brotli lo aplica Cloudflare.
 
 ## 8. Costes
 

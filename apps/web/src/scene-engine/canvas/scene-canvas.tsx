@@ -2,7 +2,6 @@
 
 import { addAfterEffect, Canvas, useThree } from '@react-three/fiber';
 import {
-  type CatalogProvider,
   type EditorSession,
   type ObjectId,
   type RoomId,
@@ -13,6 +12,9 @@ import { type RefObject, useEffect, useMemo, useRef } from 'react';
 import { type Material, type Mesh, NeutralToneMapping, type Object3D, Vector3 } from 'three';
 import type { CameraHandle, CameraSnapshot } from '../camera/camera-director';
 import { CameraRig } from '../camera/camera-rig';
+import { type LiveTransform, liveTransformOf } from '../interaction/live-transform';
+import { PlaceController } from '../interaction/place-controller';
+import { createPlacementApi, type PlacementApi } from '../interaction/placement-api';
 import { createTransientStore } from '../interaction/transient-store';
 import { MaterialsProvider } from '../materials/materials-context';
 import { createEntityRegistry, type EntityRegistry } from '../objects/entity-registry';
@@ -22,7 +24,13 @@ import { connectInvalidate } from './invalidate-bridge';
 import { createMutate, type Mutate } from './mutate';
 import { formatRenderInfo, type RenderInfo, readRenderInfo } from './render-info';
 import { SceneContent } from './scene-content';
-import { SceneSessionProvider, useSceneSession } from './scene-context';
+import {
+  type SceneCatalog,
+  SceneSessionProvider,
+  useSceneCatalog,
+  useSceneSession,
+  useTransientStore,
+} from './scene-context';
 
 /** The camera as the host sees it; `snapshot` is null until the rig is mounted. */
 export interface SceneCamera extends Omit<CameraHandle, 'snapshot'> {
@@ -43,20 +51,26 @@ export interface SceneHandle {
   /**
    * Where an object's centre appears on screen, in page pixels (`clientX/Y`); `null` if it is not
    * drawn or is behind the camera. Lets tests and tools click objects like a user would.
+   * `local` picks another point, in the object's own frame (its front is +z), e.g. the knob of
+   * the rotation handle.
    */
-  project(id: ObjectId): { x: number; y: number } | null;
+  project(id: ObjectId, local?: readonly [number, number, number]): { x: number; y: number } | null;
   /** Renderer counters (frame, draw calls, triangles, programs...). */
   renderInfo(): RenderInfo;
   /** Run a direct three.js mutation and request a frame. */
   mutate: Mutate;
   invalidate(): void;
   camera: SceneCamera;
+  /** Dragging an item in from the catalog panel, or placing it in the middle of the view. */
+  placement: PlacementApi;
+  /** The pose of the object being dragged, for readouts outside the canvas. */
+  live: LiveTransform;
 }
 
 export interface SceneCanvasProps {
   session: EditorSession;
   /** Object sizes for placeholders and picking; unknown ids draw as placeholder boxes. */
-  catalog?: CatalogProvider;
+  catalog?: SceneCatalog;
   onReady?: (handle: SceneHandle) => void;
   onContextLost?: () => void;
   onContextRestored?: () => void;
@@ -156,19 +170,33 @@ function ReadyReporter(props: {
   registry: EntityRegistry;
 }) {
   const { camera, registry } = props;
+  const session = useSceneSession();
+  const catalog = useSceneCatalog();
+  const transient = useTransientStore();
   const gl = useThree((state) => state.gl);
   const scene = useThree((state) => state.scene);
   const get = useThree((state) => state.get);
   const invalidate = useThree((state) => state.invalidate);
   const callback = useRef(props.onReady);
   callback.current = props.onReady;
+  const placement = useMemo(
+    () =>
+      createPlacementApi({
+        controller: new PlaceController({ session, catalog, transient, invalidate }),
+        canvas: gl.domElement,
+        getCamera: () => get().camera,
+      }),
+    [session, catalog, transient, invalidate, gl, get],
+  );
   const handle = useMemo<SceneHandle>(
     () => ({
       renderInfo: () => readRenderInfo(gl.info),
       roomDisplay: (roomId) => readRoomDisplay(scene, roomId),
-      project: (id) => projectEntity(registry.get(id), get().camera, gl.domElement),
+      project: (id, local) => projectEntity(registry.get(id), get().camera, gl.domElement, local),
       mutate: createMutate(invalidate),
       invalidate: () => invalidate(),
+      placement,
+      live: liveTransformOf(transient),
       // The rig mounts after this handle may be built, so every call looks it up when it happens.
       camera: {
         fit: () => camera.current?.fit(),
@@ -178,7 +206,7 @@ function ReadyReporter(props: {
         setInputBlocked: (blocked) => camera.current?.setInputBlocked(blocked),
       },
     }),
-    [gl, scene, get, invalidate, camera, registry],
+    [gl, scene, get, invalidate, camera, registry, placement, transient],
   );
   useEffect(() => {
     callback.current?.(handle);
@@ -192,11 +220,12 @@ function projectEntity(
   object: Object3D | undefined,
   camera: Parameters<Vector3['project']>[0],
   canvas: HTMLCanvasElement,
+  local: readonly [number, number, number] = [0, 0.1, 0],
 ): { x: number; y: number } | null {
   if (!object) return null;
   object.updateWorldMatrix(true, false);
-  // A little above the floor, where the placeholder box is.
-  projected.set(0, 0.1, 0).applyMatrix4(object.matrixWorld).project(camera);
+  // By default a little above the floor, where the placeholder box is.
+  projected.set(local[0], local[1], local[2]).applyMatrix4(object.matrixWorld).project(camera);
   if (projected.z > 1) return null;
   const rect = canvas.getBoundingClientRect();
   return {

@@ -4,7 +4,9 @@
   "version": "0.0.0",
   "description": "RoomForge editor core: pure TypeScript domain, commands, history and serialization. No React, no three.js, no DOM.",
   "type": "module",
-  "sideEffects": false,
+  "sideEffects": [
+    "./src/zod-config.ts"
+  ],
   "exports": {
     ".": "./src/index.ts",
     "./package.json": "./package.json",
