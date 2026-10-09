@@ -332,3 +332,30 @@ export function duplicateObjects(
     },
   };
 }
+
+// ── object/reorder ──────────────────────────────────────────────
+
+/**
+ * `object/reorder`: moves `id` to `index` in `objectOrder` (the outliner order), keeping the
+ * others in their order. Order only: nothing moves in the scene. Repeated moves of the same
+ * object coalesce, so stepping it up several rows is one entry.
+ */
+export function reorderObject(id: ObjectId, index: number): Command {
+  return {
+    type: 'object/reorder',
+    label: 'Reorder object',
+    mergeKey: `object/reorder:${id}`,
+    apply(draft) {
+      const from = draft.objectOrder.indexOf(id);
+      if (from === -1) return notFound(id);
+      if (!Number.isInteger(index) || index < 0 || index >= draft.objectOrder.length) {
+        return invalid(`Index ${index} is outside the object list`);
+      }
+      if (from === index) return;
+      const order = draft.objectOrder.filter((other) => other !== id);
+      order.splice(index, 0, id);
+      // One replace patch for the whole list instead of a patch per shifted entry.
+      draft.objectOrder = order;
+    },
+  };
+}
