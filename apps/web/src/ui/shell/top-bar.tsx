@@ -2,6 +2,7 @@ import { PanelLeftIcon, PanelRightIcon, Redo2Icon, Undo2Icon } from 'lucide-reac
 import Link from 'next/link';
 import { Button } from '@/ui/components/button';
 import { Separator } from '@/ui/components/separator';
+import { ExportMenu } from '@/ui/editor/export-menu';
 import { useProjectStatus } from '@/ui/editor/project-status';
 import { SaveStatusPill } from '@/ui/editor/save-status';
 import { translate } from '@/ui/i18n';
@@ -67,9 +68,7 @@ export function TopBar(props: TopBarProps) {
         </Button>
       </div>
       <div className="ml-auto flex items-center gap-1">
-        <Button variant="outline" size="sm" disabled title={t('shell.soon')}>
-          {t('shell.export')}
-        </Button>
+        <ExportMenu />
         <Button variant="outline" size="sm" disabled title={t('shell.soon')}>
           {t('shell.share')}
         </Button>

@@ -26,11 +26,13 @@ export function useSaveState(autosave: Autosave | null): SaveState {
 export function SaveStatusBridge(props: {
   autosave: Autosave | null;
   name: string;
+  /** Exports the project; turns on the Export menu of the top bar. */
+  onExport?: () => void;
   children: ReactNode;
 }) {
   const save = useSaveState(props.autosave);
   return (
-    <ProjectStatusProvider name={props.name} save={save.status}>
+    <ProjectStatusProvider name={props.name} save={save.status} onExport={props.onExport}>
       {props.children}
     </ProjectStatusProvider>
   );

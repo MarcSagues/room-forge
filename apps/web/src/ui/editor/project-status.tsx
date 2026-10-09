@@ -8,9 +8,11 @@ export interface ProjectStatus {
   /** The project's name; the generic "Untitled project" while it is not known. */
   name: string | undefined;
   save: SaveIndicator;
+  /** Exports the open project as a file; without it the Export button is the placeholder. */
+  onExport?: (() => void) | undefined;
 }
 
-const DEFAULT: ProjectStatus = { name: undefined, save: 'saved' };
+const DEFAULT: ProjectStatus = { name: undefined, save: 'saved', onExport: undefined };
 
 const ProjectStatusContext = createContext<ProjectStatus>(DEFAULT);
 
@@ -19,8 +21,8 @@ const ProjectStatusContext = createContext<ProjectStatus>(DEFAULT);
  * shell's layouts. Without a provider the bar shows the placeholders it always had.
  */
 export function ProjectStatusProvider(props: ProjectStatus & { children: ReactNode }) {
-  const { name, save, children } = props;
-  const value = useMemo(() => ({ name, save }), [name, save]);
+  const { name, save, onExport, children } = props;
+  const value = useMemo(() => ({ name, save, onExport }), [name, save, onExport]);
   return <ProjectStatusContext.Provider value={value}>{children}</ProjectStatusContext.Provider>;
 }
 

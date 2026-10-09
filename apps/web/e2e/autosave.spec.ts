@@ -174,3 +174,25 @@ test('without IndexedDB the editor works and says the changes only live in this 
   expect(await objectIds(page)).toEqual(['tmp']);
   await expect(notice.getByRole('button', { name: 'Export a copy' })).toBeVisible();
 });
+
+test('the Export menu of the top bar downloads the project as it is on screen, changes not yet saved included', async ({
+  page,
+}) => {
+  await openEditor(page);
+  await addObject(page, 'fresh');
+  expect(await status(page)).toBe('dirty');
+
+  await page.getByRole('button', { name: 'Export' }).click();
+  const downloading = page.waitForEvent('download');
+  await page.getByRole('menuitem', { name: 'Project (.roomforge.json)' }).click();
+  const download = await downloading;
+  expect(download.suggestedFilename()).toMatch(
+    /^untitled-project-\d{4}-\d\d-\d\d\.roomforge\.json$/,
+  );
+  const exported = JSON.parse(readFileSync(await download.path(), 'utf8'));
+  expect(exported).toMatchObject({
+    format: 'roomforge-scene',
+    project: { name: 'Untitled project' },
+  });
+  expect(Object.keys(exported.document.objects)).toEqual(['fresh']);
+});

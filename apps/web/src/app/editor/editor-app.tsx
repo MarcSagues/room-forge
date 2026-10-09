@@ -96,7 +96,7 @@ function Workspace({ editor }: { editor: BootedEditor }) {
   }, [session, project.name]);
 
   return (
-    <SaveStatusBridge autosave={autosave} name={project.name}>
+    <SaveStatusBridge autosave={autosave} name={project.name} onExport={exportCopy}>
       <EditorShell
         properties={<SelectionSummary session={session} />}
         viewport={

@@ -105,6 +105,7 @@ export const en = {
   'shell.unsaved': 'Unsaved changes',
   'shell.saveFailed': 'Not saved',
   'shell.projectsLink': 'All projects',
+  'shell.exportProject': 'Project (.roomforge.json)',
   'save.failedTitle': 'Your latest changes are not saved.',
   'save.failed.quota': 'The browser has no storage left. Free some space or export a copy.',
   'save.failed.unavailable': 'The browser is not letting RoomForge store projects.',
@@ -259,6 +260,7 @@ export const es: Record<MessageKey, string> = {
   'shell.unsaved': 'Cambios sin guardar',
   'shell.saveFailed': 'Sin guardar',
   'shell.projectsLink': 'Todos los proyectos',
+  'shell.exportProject': 'Proyecto (.roomforge.json)',
   'save.failedTitle': 'Tus últimos cambios no se han guardado.',
   'save.failed.quota':
     'El navegador se ha quedado sin espacio. Libera espacio o exporta una copia.',
