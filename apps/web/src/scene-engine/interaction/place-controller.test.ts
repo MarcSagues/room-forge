@@ -31,7 +31,6 @@ function setup(document?: SceneDocument) {
     catalog: createFixtureCatalog(),
     transient,
     invalidate,
-    gridStep: 0.1,
   });
 }
 
@@ -273,5 +272,23 @@ describe('PlaceController: placing in the middle of the view (click or Enter)', 
     });
     expect(big.placeAtCenter('big', null)).toBeNull();
     expect(added()).toHaveLength(0);
+  });
+});
+
+describe('PlaceController: snap settings from the session', () => {
+  it('uses the grid size chosen in the session', () => {
+    session.setSnap({ gridStep: 0.5 });
+    controller.begin(CHAIR);
+    controller.update(down(1.23, 1.58), false);
+    expect(transient.ghost()?.x).toBeCloseTo(1);
+    expect(transient.ghost()?.z).toBeCloseTo(1.5);
+  });
+
+  it('with snap off, places freely like holding Alt', () => {
+    session.setSnap({ enabled: false });
+    controller.begin(DESK);
+    controller.update(down(0.65, 1.5), false);
+    expect(transient.ghost()?.wall).toBeNull();
+    expect(transient.ghost()?.rotationY).toBe(0);
   });
 });

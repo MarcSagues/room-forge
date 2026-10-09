@@ -8,13 +8,7 @@ import {
 } from '@roomforge/core';
 import { objectSize } from '../objects/placeholder-resources';
 import { widgetOwnsKeys } from './key-owner';
-import {
-  FINE_STEP_DEG,
-  ROTATE_STEP_DEG,
-  type RotationResult,
-  rotationByStep,
-  solveRotation,
-} from './rotation';
+import { FINE_STEP_DEG, type RotationResult, rotationByStep, solveRotation } from './rotation';
 import type { TransientStore } from './transient-store';
 
 export interface RotateKeysDeps {
@@ -44,7 +38,7 @@ export function attachRotateKeys(deps: RotateKeysDeps): () => void {
     event.preventDefault();
     if (event.repeat) return; // a held key is one press, not a spin
 
-    const stepDeg = event.altKey ? FINE_STEP_DEG : ROTATE_STEP_DEG;
+    const stepDeg = event.altKey ? FINE_STEP_DEG : deps.session.getState().snap.angleStepDeg;
     const direction = event.shiftKey ? -1 : 1;
     const turns: { id: ObjectId; rotationY: number; position: Vec3 }[] = [];
     let pushed = false;

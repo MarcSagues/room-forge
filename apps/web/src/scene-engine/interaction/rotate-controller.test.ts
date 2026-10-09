@@ -214,3 +214,19 @@ describe('RotateController', () => {
     expect(desk.position.z).toBeCloseTo(1.5);
   });
 });
+
+describe('RotateController: snap settings from the session', () => {
+  it('snaps to the angle chosen in the session', () => {
+    session.setSnap({ angleStepDeg: 45 });
+    controller.begin(DESK, around(0));
+    controller.update(around(0.5), false); // 28.6° → 45°
+    expect(desk.rotation.y).toBeCloseTo(Math.PI / 4);
+  });
+
+  it('with snap off, turns freely like holding Alt', () => {
+    session.setSnap({ enabled: false });
+    controller.begin(DESK, around(0));
+    controller.update(around(0.3), false);
+    expect(desk.rotation.y).toBeCloseTo(0.3);
+  });
+});

@@ -184,7 +184,6 @@ describe('hot path: no allocations per step', () => {
               registry,
               transient,
               invalidate: () => {},
-              gridStep: 0.1,
             });
             controller.begin(DESK, down(2, 1.5));
             expectQuiet(
@@ -256,7 +255,6 @@ describe('hot path: no allocations per step', () => {
           registry,
           transient,
           invalidate: () => {},
-          gridStep: 0.1,
         });
         controller.begin(DESK, down(2, 1.5));
         controller.update(down(2.4, 1.7), false);
@@ -304,7 +302,6 @@ describe('hot path: no allocations per step', () => {
             catalog: createFixtureCatalog(),
             transient,
             invalidate: () => {},
-            gridStep: 0.1,
           });
           controller.begin('desk.basic.120');
           expectQuiet(

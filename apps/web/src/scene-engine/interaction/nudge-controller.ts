@@ -8,11 +8,9 @@ import {
 } from '@roomforge/core';
 import { objectSize } from '../objects/placeholder-resources';
 import { widgetOwnsKeys } from './key-owner';
-import { DEFAULT_DRAG_GRID } from './move-controller';
 import type { TransientStore } from './transient-store';
 
-/** One arrow press moves the selection this far (metres); Shift multiplies it by ten. */
-export const NUDGE_STEP = DEFAULT_DRAG_GRID;
+/** One arrow press moves the selection one grid step (the snap size); Shift, ten. */
 export const NUDGE_FAST_FACTOR = 10;
 
 /** Room axes: x grows to the east, z to the south (up on screen in the top view is north). */
@@ -49,7 +47,8 @@ export function attachNudge(deps: NudgeDeps): () => void {
     if (selection.length === 0) return;
     event.preventDefault();
 
-    const step = NUDGE_STEP * (event.shiftKey ? NUDGE_FAST_FACTOR : 1);
+    // One grid step (snap size), whether snap is on or not.
+    const step = deps.session.getState().snap.gridStep * (event.shiftKey ? NUDGE_FAST_FACTOR : 1);
     const moves: { id: ObjectId; position: Vec3 }[] = [];
     for (const id of selection) {
       const object = document.objects[id as ObjectId];

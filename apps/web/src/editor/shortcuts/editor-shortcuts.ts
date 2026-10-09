@@ -79,6 +79,13 @@ export function editorShortcuts({ session, fit }: EditorShortcutDeps): ShortcutD
       },
     },
     {
+      id: 'edit.snap',
+      keys: [{ key: 'g' }],
+      category: 'edit',
+      description: 'shortcut.snap',
+      handler: () => session.setSnap({ enabled: !session.getState().snap.enabled }),
+    },
+    {
       id: 'selection.clear',
       keys: [{ key: 'Escape' }],
       category: 'selection',
