@@ -16,4 +16,10 @@ export * from './materials';
 export * from './ports';
 export * from './serialization';
 export * from './session';
+export {
+  DEFAULT_ROOM_SIZE,
+  ROOM_PRESETS,
+  type RoomPreset,
+  type RoomSize,
+} from './session/room-presets';
 export { createStarterDocument } from './session/starter-document';

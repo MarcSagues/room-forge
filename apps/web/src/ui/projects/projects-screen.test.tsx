@@ -399,3 +399,41 @@ describe('ProjectsScreen: when storage fails', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 });
+
+describe('ProjectsScreen: a room of the size you choose', () => {
+  it('"New project" still creates straight away, with the default room', async () => {
+    const { createDocument } = setup([summary('a', 'Office')]);
+    await screen.findByRole('list', { name: 'Your projects' });
+    await userEvent.click(screen.getByRole('button', { name: 'New project' }));
+    await waitFor(() => expect(createDocument).toHaveBeenCalledTimes(1));
+    expect(createDocument).toHaveBeenCalledWith(undefined);
+  });
+
+  it('opens the wizard from the header and creates the project with the size chosen', async () => {
+    const { createDocument, repository } = setup([summary('a', 'Office')]);
+    await screen.findByRole('list', { name: 'Your projects' });
+    await userEvent.click(screen.getByRole('button', { name: 'Custom room size…' }));
+    expect(screen.getByRole('dialog', { name: 'New room' })).toBeInTheDocument();
+    expect(createDocument).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole('button', { name: /^Small/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Create project' }));
+
+    await waitFor(() => expect(createDocument).toHaveBeenCalledTimes(1));
+    expect(createDocument).toHaveBeenCalledWith({ width: 3, depth: 3, height: 2.6 });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(repository.save).toHaveBeenCalledTimes(1);
+    expect(names()).toContain('Untitled project');
+  });
+
+  it('is also offered in the empty state, and cancelling creates nothing', async () => {
+    const { createDocument } = setup([]);
+    await screen.findByText('No projects yet');
+    const buttons = screen.getAllByRole('button', { name: 'Custom room size…' });
+    expect(buttons.length).toBeGreaterThan(0);
+    await userEvent.click(buttons[0] as HTMLElement);
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(createDocument).not.toHaveBeenCalled();
+  });
+});
