@@ -22,6 +22,12 @@ export {
   type ReadonlyStore,
   type SessionState,
 } from './session';
+export {
+  type AngleStepDeg,
+  DEFAULT_SNAP,
+  type GridStep,
+  type SnapSettings,
+} from './snap';
 export type {
   Command,
   CommandContext,

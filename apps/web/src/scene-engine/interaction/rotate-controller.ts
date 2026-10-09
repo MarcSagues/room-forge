@@ -11,13 +11,7 @@ import {
 import { Plane, type Ray, Vector3 } from 'three';
 import type { EntityRegistry } from '../objects/entity-registry';
 import { objectSize } from '../objects/placeholder-resources';
-import {
-  pointerAngle,
-  ROTATE_STEP_DEG,
-  type RotationInput,
-  type RotationResult,
-  solveRotation,
-} from './rotation';
+import { pointerAngle, type RotationInput, type RotationResult, solveRotation } from './rotation';
 import type { DragState, TransientStore } from './transient-store';
 
 export interface RotateControllerDeps {
@@ -27,8 +21,6 @@ export interface RotateControllerDeps {
   transient: TransientStore;
   /** Requests a frame (`frameloop="demand"`). */
   invalidate(): void;
-  /** Angle snap in degrees while turning (Alt disables it). */
-  stepDeg?: number;
 }
 
 const floor = new Plane(new Vector3(0, 1, 0), 0);
@@ -128,7 +120,7 @@ export class RotateController {
     return true;
   }
 
-  /** One turn step (call at most once per frame). `free` (Alt) disables the angle snap. */
+  /** One turn step (call at most once per frame). `free` (Alt) or snap off: no angle snap. */
   update(ray: Ray, free: boolean): void {
     const id = this.id;
     const node = id ? this.deps.registry.get(id) : undefined;
@@ -138,9 +130,9 @@ export class RotateController {
     const pointer = this.angleOf(this.hit.x, this.hit.z, this.grabAngle);
     const wanted = this.start.rotationY + (pointer - this.grabAngle);
     const request = this.request;
-    request.rotationY = free
-      ? normalizeAngle(wanted)
-      : snapAngle(wanted, this.deps.stepDeg ?? ROTATE_STEP_DEG);
+    const { snap } = this.deps.session.getState();
+    request.rotationY =
+      free || !snap.enabled ? normalizeAngle(wanted) : snapAngle(wanted, snap.angleStepDeg);
     request.position[0] = this.start.x;
     request.position[1] = this.start.z;
     const result = solveRotation(request, this.result);

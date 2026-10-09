@@ -180,3 +180,13 @@ describe('attachRotateKeys', () => {
     expect(transform(DESK)?.rotationY).toBe(0);
   });
 });
+
+describe('attachRotateKeys: the step is the snap angle', () => {
+  it('turns by the angle chosen in the session; Alt keeps the fine step', () => {
+    session.setSnap({ angleStepDeg: 90 });
+    press('r');
+    expect(transform(DESK)?.rotationY).toBeCloseTo(Math.PI / 2);
+    press('r', { altKey: true });
+    expect(transform(DESK)?.rotationY).toBeCloseTo(Math.PI / 2 + Math.PI / 180);
+  });
+});

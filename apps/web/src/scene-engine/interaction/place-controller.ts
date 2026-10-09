@@ -19,11 +19,7 @@ export interface PlaceControllerDeps {
   transient: TransientStore;
   /** Requests a frame (`frameloop="demand"`). */
   invalidate(): void;
-  /** Grid snap in metres while placing (Alt disables it). */
-  gridStep?: number;
 }
-
-const DEFAULT_PLACE_GRID = 0.1;
 
 /** A room as the session hands it out: part of the frozen document, never modified here. */
 type Room = NonNullable<ReturnType<EditorSession['getState']>['document']['rooms'][RoomId]>;
@@ -164,8 +160,10 @@ export class PlaceController {
     input.position[0] = x;
     input.position[1] = z;
     input.rotationY = 0;
-    input.wallSnap = !free;
-    input.gridStep = free ? undefined : (this.deps.gridStep ?? DEFAULT_PLACE_GRID);
+    const { snap } = this.deps.session.getState();
+    const snapping = snap.enabled && !free;
+    input.wallSnap = snapping;
+    input.gridStep = snapping ? snap.gridStep : undefined;
     const result = solvePlacement(input, this.result);
 
     this.room = room;

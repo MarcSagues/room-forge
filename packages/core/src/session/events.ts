@@ -1,6 +1,7 @@
 import type { Patch } from 'immer';
 import type { HistoryStatus } from '../history';
 import type { EntityId } from './selection';
+import type { SnapSettings } from './snap';
 import type { CommandError } from './types';
 import type { ViewMode, WallMode } from './view';
 
@@ -10,6 +11,7 @@ export interface SessionEvents {
   'selection:changed': { ids: readonly EntityId[] };
   'view:changed': { view: ViewMode };
   'display:changed': { wallMode: WallMode; showCeiling: boolean };
+  'snap:changed': SnapSettings;
   'gesture:started': { label: string };
   'gesture:ended': { label: string; committed: boolean };
   'session:error': { error: CommandError };

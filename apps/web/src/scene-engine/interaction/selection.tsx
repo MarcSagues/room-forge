@@ -23,7 +23,7 @@ import { attachPicking } from './picking-controller';
 import { RotateController } from './rotate-controller';
 import { handleRadius, handleTarget, hitsHandle } from './rotate-handle';
 import { attachRotateKeys } from './rotate-keys';
-import { FINE_STEP_DEG, ROTATE_STEP_DEG } from './rotation';
+import { FINE_STEP_DEG } from './rotation';
 import { tokenColor } from './token-color';
 
 const raycaster = new Raycaster();
@@ -112,7 +112,8 @@ export function Picking() {
           mover.end();
         },
         cancel: () => mover.cancel(),
-        turn: (steps, fine) => mover.turnBy(steps, fine ? FINE_STEP_DEG : ROTATE_STEP_DEG),
+        turn: (steps, fine) =>
+          mover.turnBy(steps, fine ? FINE_STEP_DEG : session.getState().snap.angleStepDeg),
       },
       rotate: {
         hit: (x, y) => {

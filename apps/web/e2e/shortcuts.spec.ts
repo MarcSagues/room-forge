@@ -108,8 +108,9 @@ test('? opens the shortcuts dialog with every registered shortcut, and Esc close
   await page.keyboard.press('Shift+?');
   const dialog = page.getByRole('dialog', { name: 'Keyboard shortcuts' });
   await expect(dialog).toBeVisible();
-  // Ten of the editor, the two panels and the help itself.
-  await expect(dialog.getByRole('listitem')).toHaveCount(13);
+  // Eleven of the editor, the two panels and the help itself.
+  await expect(dialog.getByRole('listitem')).toHaveCount(14);
+  await expect(dialog.getByText('Turn snap on or off')).toBeVisible();
   await expect(dialog.getByText('Undo', { exact: true })).toBeVisible();
   await expect(dialog.getByText('Show or hide the catalog panel')).toBeVisible();
   await expect(dialog.getByText('Show the keyboard shortcuts')).toBeVisible();

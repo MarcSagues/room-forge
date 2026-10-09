@@ -50,7 +50,6 @@ beforeEach(() => {
     registry,
     transient,
     invalidate,
-    gridStep: 0.1,
   });
 });
 
@@ -243,5 +242,25 @@ describe('MoveController', () => {
     const result = controller.end();
     expect(result?.ok).toBe(false);
     expect(desk.position.x).toBe(2);
+  });
+});
+
+describe('MoveController: snap settings from the session', () => {
+  it('uses the grid size chosen in the session', () => {
+    session.setSnap({ gridStep: 0.25 });
+    controller.begin(DESK, down(2.2, 1.5));
+    controller.update(down(2.62, 1.5), false); // wants 2.42
+    expect(desk.position.x).toBeCloseTo(2.5);
+  });
+
+  it('with snap off, moves freely: no grid and no wall snap, like holding Alt', () => {
+    session.setSnap({ enabled: false });
+    controller.begin(DESK, down(2.2, 1.5));
+    controller.update(down(2.72, 1.5), false);
+    expect(desk.position.x).toBeCloseTo(2.52);
+    controller.update(down(-3, 1.5), false);
+    expect(desk.position.x).toBeCloseTo(0.6); // kept inside, but not turned against the wall
+    expect(desk.rotation.y).toBe(0);
+    expect(transient.drag()?.wall ?? null).toBeNull();
   });
 });

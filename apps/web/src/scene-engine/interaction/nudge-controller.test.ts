@@ -1,8 +1,15 @@
-import { createEditorSession, type EditorSession, type ObjectId } from '@roomforge/core';
+import {
+  createEditorSession,
+  DEFAULT_SNAP,
+  type EditorSession,
+  type ObjectId,
+} from '@roomforge/core';
 import { buildDocument, createFixtureCatalog } from '@roomforge/core/testing';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { attachNudge, NUDGE_STEP } from './nudge-controller';
+import { attachNudge } from './nudge-controller';
 import { createTransientStore, type TransientStore } from './transient-store';
+
+const NUDGE_STEP = DEFAULT_SNAP.gridStep;
 
 // Fixture room 4 × 3 at the world origin; desk-1 (1.2 × 0.6) at (2, 0, 1.5) with monitor-1 on it.
 const DESK = 'desk-1' as ObjectId;
@@ -143,5 +150,16 @@ describe('attachNudge', () => {
     detach();
     press('ArrowRight');
     expect(position(DESK)).toEqual([2, 0, 1.5]);
+  });
+});
+
+describe('attachNudge: the step is the snap grid size', () => {
+  it('moves by the grid size chosen in the session, on or off', () => {
+    session.setSnap({ gridStep: 0.25 });
+    press('ArrowRight');
+    expect(position(DESK)?.[0]).toBeCloseTo(2.25);
+    session.setSnap({ enabled: false, gridStep: 0.05 });
+    press('ArrowRight');
+    expect(position(DESK)?.[0]).toBeCloseTo(2.3);
   });
 });

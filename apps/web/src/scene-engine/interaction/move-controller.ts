@@ -21,11 +21,7 @@ export interface MoveControllerDeps {
   transient: TransientStore;
   /** Requests a frame (`frameloop="demand"`). */
   invalidate(): void;
-  /** Grid snap in metres while dragging (Alt disables it). */
-  gridStep?: number;
 }
-
-export const DEFAULT_DRAG_GRID = 0.1;
 
 const floor = new Plane(new Vector3(0, 1, 0), 0);
 
@@ -142,7 +138,10 @@ export class MoveController {
     if (this.hasRay) this.update(this.lastRay, this.lastFree);
   }
 
-  /** One drag step (call at most once per frame). `free` (Alt) disables grid and wall snap. */
+  /**
+   * One drag step (call at most once per frame). `free` (Alt), like snap off in the session,
+   * disables grid and wall snap.
+   */
   update(ray: Ray, free: boolean): void {
     const id = this.id;
     const node = id ? this.deps.registry.get(id) : undefined;
@@ -158,9 +157,10 @@ export class MoveController {
     // Always solve from the original orientation (plus the user's turn): leaving a wall turns the
     // object back.
     input.rotationY = normalizeAngle(this.start.rotationY + this.turn);
-    input.wallSnap = !free;
-    input.gridStep =
-      free || this.deps.gridStep === 0 ? undefined : (this.deps.gridStep ?? DEFAULT_DRAG_GRID);
+    const { snap } = this.deps.session.getState();
+    const snapping = snap.enabled && !free;
+    input.wallSnap = snapping;
+    input.gridStep = snapping ? snap.gridStep : undefined;
     const result = solvePlacement(input, this.result);
 
     node.position.x = result.position[0];

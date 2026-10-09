@@ -14,6 +14,7 @@ import {
   sameIds,
   type ToolId,
 } from './selection';
+import { DEFAULT_SNAP, mergeSnap, type SnapSettings, sameSnap } from './snap';
 import type { Command, CommandContext, CommandError, CommandResult } from './types';
 import type { ViewMode, WallMode } from './view';
 
@@ -21,7 +22,7 @@ enablePatches();
 
 /**
  * Everything the editor shows. `document` is undoable; `history` mirrors the undo stack; selection,
- * hover, tool, view and wall display are session-only state (never in the history, never persisted).
+ * hover, tool, view, wall display and snap are session-only state (never in the history, never persisted).
  */
 export interface SessionState {
   readonly document: DeepReadonly<SceneDocument>;
@@ -33,6 +34,7 @@ export interface SessionState {
   readonly wallMode: WallMode;
   /** Ceiling preview; the ceiling is hidden while editing and always in the plan view. */
   readonly showCeiling: boolean;
+  readonly snap: SnapSettings;
 }
 
 /** The store without `setState`: only the session writes (ADR-0003). Works with zustand's `useStore`. */
@@ -87,6 +89,8 @@ export interface EditorSession {
   /** Emits `display:changed` when it changes. Not undoable. */
   setWallMode(mode: WallMode): void;
   setShowCeiling(show: boolean): void;
+  /** Applies the valid parts of `change`; emits `snap:changed` when it changes. Not undoable. */
+  setSnap(change: Partial<SnapSettings>): void;
   on: Emitter<SessionEvents>['on'];
 }
 
@@ -123,6 +127,7 @@ export function createEditorSession(options: EditorSessionOptions): EditorSessio
     view: 'perspective',
     wallMode: 'cutaway',
     showCeiling: false,
+    snap: DEFAULT_SNAP,
   }));
   let gesture: OpenGesture | undefined;
 
@@ -286,6 +291,13 @@ export function createEditorSession(options: EditorSessionOptions): EditorSessio
       if (showCeiling === state.showCeiling) return;
       store.setState({ showCeiling });
       emitter.emit('display:changed', { wallMode: state.wallMode, showCeiling });
+    },
+    setSnap(change) {
+      const current = store.getState().snap;
+      const snap = mergeSnap(current, change);
+      if (sameSnap(snap, current)) return;
+      store.setState({ snap });
+      emitter.emit('snap:changed', snap);
     },
     on: emitter.on,
   };

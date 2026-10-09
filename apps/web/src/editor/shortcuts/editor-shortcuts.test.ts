@@ -134,6 +134,15 @@ describe('editor shortcuts: the view', () => {
     expect(session.getState().showCeiling).toBe(!ceiling);
   });
 
+  it('G turns snap off and on again, and is left alone while typing', () => {
+    expect(press('g')).toBe(true);
+    expect(session.getState().snap.enabled).toBe(false);
+    expect(press('G', { shiftKey: true })).toBe(false);
+    expect(press('g', {}, document.createElement('input'))).toBe(false);
+    expect(press('g')).toBe(true);
+    expect(session.getState().snap.enabled).toBe(true);
+  });
+
   it('none of them fires with Ctrl, Alt or Shift (those belong to the browser and later shortcuts)', () => {
     expect(press('f', { ctrlKey: true })).toBe(false);
     expect(press('w', { altKey: true })).toBe(false);
@@ -160,6 +169,7 @@ describe('editor shortcuts: the list', () => {
       'edit.redo',
       'edit.duplicate',
       'edit.delete',
+      'edit.snap',
       'selection.clear',
       'view.perspective',
       'view.top',
