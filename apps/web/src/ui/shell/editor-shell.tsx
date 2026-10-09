@@ -336,10 +336,10 @@ function PropertiesPanel({
             <TabsTrigger value="scene">{t('shell.scene')}</TabsTrigger>
           </TabsList>
         </div>
-        <TabsContent value="properties">
+        <TabsContent value="properties" className="min-h-0 overflow-y-auto">
           {children ?? <PanelHint>{t('shell.propertiesHint')}</PanelHint>}
         </TabsContent>
-        <TabsContent value="scene">
+        <TabsContent value="scene" className="min-h-0 overflow-y-auto">
           <PanelHint>{t('shell.sceneHint')}</PanelHint>
         </TabsContent>
       </Tabs>

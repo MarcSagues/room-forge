@@ -20,6 +20,7 @@ import {
   type ContextState,
   EditorShell,
   ProjectUnavailable,
+  RoomMaterialsPanel,
   SelectionSummary,
   translate,
 } from '@/ui';
@@ -149,7 +150,12 @@ function Workspace({ editor, errorLog }: { editor: BootedEditor; errorLog?: Erro
           />
         }
         onPanelError={(error, panel) => errorLog?.record(error, { source: 'react', where: panel })}
-        properties={<SelectionSummary session={session} catalog={stubCatalog} live={live} />}
+        properties={
+          <>
+            <SelectionSummary session={session} catalog={stubCatalog} live={live} />
+            <RoomMaterialsPanel session={session} />
+          </>
+        }
         viewport={
           <>
             <SceneCanvas

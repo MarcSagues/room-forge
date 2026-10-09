@@ -408,6 +408,13 @@ flowchart LR
 - **Paredes:** son `transparent` desde el inicio y **cada una tiene su material** (`shared: false`), porque se atenúan una a una; las texturas se comparten igualmente.
 - **React:** `MaterialsProvider` crea la fábrica con el renderer (en un efecto, por Strict Mode) y la libera con él; `useMaterial(ref, opciones)` toma el lease en un `useLayoutEffect` (se vuelve a renderizar antes de pintar) y lo actualiza al cambiar el aspecto. Aún no se usa en los objetos: llegará con los modelos (P4-04/P4-05) y el panel de materiales (P5-03), que reutilizan el mismo hook.
 
+### 6.12 Panel de materiales de la sala (P5-03, `ui/materials`)
+
+- **Un comando para varias superficies:** `room/setSurfacesMaterial(roomId, superficies, material)` aplica el mismo material al suelo, al techo o a una, varias o las cuatro paredes en **una** entrada de historial («todas las paredes» no son cuatro deshacer). Valida antes de tocar nada (lista vacía, superficie desconocida, material fuera de rango, sala inexistente) y conserva un `presetId` desconocido (I6).
+- **Un arrastre = una entrada:** la `mergeKey` incluye la lista ordenada de superficies, así que una ráfaga de cambios sobre las mismas superficies (selector de color, deslizadores) se fusiona en una entrada dentro de la ventana de coalescencia de la sesión; elegir otra superficie abre otra entrada.
+- **`RoomMaterialsPanel`** muestra el material de la superficie elegida («todas las paredes» muestra el de la pared norte). Se suscribe solo a **primitivas** de ese material (`useShallow` compara un nivel), así que no se renderiza por cambios del resto del documento ni por el hover. Elegir un preset parte de un material limpio; el tinte y el acabado se aplican sobre el actual y conservan el resto.
+- **Color:** selector nativo, campo hex (acepta `#rgb`, `#rrggbb`, con o sin `#`; vacío quita el tinte; un valor inválido muestra el error y **no cambia nada ni añade historial**) y una paleta rápida. La conversión vive en `parseHexColor`, con propiedades de fast-check.
+
 ## 7. Biblioteca de assets (`asset-library`)
 
 ```mermaid

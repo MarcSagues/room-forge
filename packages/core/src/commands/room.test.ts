@@ -10,7 +10,13 @@ import {
   createFixtureCatalog,
   createSeqIdGen,
 } from '../testing';
-import { createRoom, DEFAULT_ROOM_MATERIALS, resizeRoom, setSurfaceMaterial } from './room';
+import {
+  createRoom,
+  DEFAULT_ROOM_MATERIALS,
+  resizeRoom,
+  setSurfaceMaterial,
+  setSurfacesMaterial,
+} from './room';
 
 const ROOM = 'room-1' as RoomId;
 
@@ -179,6 +185,99 @@ describe('room/setSurfaceMaterial', () => {
       setSurfaceMaterial('nope' as RoomId, 'floor', { presetId: 'x' }),
     );
     expect(missing).toMatchObject({ ok: false, error: { code: 'not-found' } });
+  });
+});
+
+describe('room/setSurfacesMaterial', () => {
+  const navy = { presetId: 'paint.navy', tint: '#334455' } as const;
+
+  it('changes several surfaces at once, and only those', () => {
+    const session = setup();
+    const before = copy(session.getState().document.rooms[ROOM]);
+    expect(
+      session.execute(setSurfacesMaterial(ROOM, ['north', 'east', 'south', 'west'], navy)).ok,
+    ).toBe(true);
+    const room = session.getState().document.rooms[ROOM];
+    for (const wall of ['north', 'east', 'south', 'west'] as const) {
+      expect(room?.walls[wall].material).toEqual(navy);
+    }
+    expect(room?.floor.material).toEqual(before?.floor.material);
+    expect(room?.ceiling.material).toEqual(before?.ceiling.material);
+  });
+
+  it('is one history entry, undone and redone as one', () => {
+    const session = setup();
+    const before = copy(session.getState().document);
+    session.execute(setSurfacesMaterial(ROOM, ['floor', 'ceiling', 'north'], navy));
+    expect(session.getState().history.undoLabel).toBe('Change room material');
+    session.undo();
+    expect(session.getState().document).toEqual(before);
+    session.redo();
+    expect(session.getState().document.rooms[ROOM]?.floor.material).toEqual(navy);
+  });
+
+  it('merges a burst of changes of the same surfaces into one entry (a colour being dragged)', () => {
+    const session = setup();
+    for (let step = 0; step < 30; step += 1) {
+      session.execute(
+        setSurfacesMaterial(ROOM, ['north', 'east', 'south', 'west'], {
+          presetId: 'paint.matte',
+          tint: `#${(16 + step).toString(16)}8844` as `#${string}`,
+        }),
+      );
+    }
+    session.undo();
+    // One undo took all thirty back: nothing of the burst is left, and nothing earlier was lost.
+    expect(session.getState().document.rooms[ROOM]?.walls.north.material).toEqual(
+      DEFAULT_ROOM_MATERIALS.wall,
+    );
+    expect(session.getState().history.canUndo).toBe(false);
+  });
+
+  it('keeps bursts on different surfaces apart', () => {
+    const session = setup();
+    session.execute(setSurfacesMaterial(ROOM, ['floor'], navy));
+    session.execute(setSurfacesMaterial(ROOM, ['ceiling'], navy));
+    session.undo();
+    expect(session.getState().document.rooms[ROOM]?.floor.material).toEqual(navy);
+    expect(session.getState().document.rooms[ROOM]?.ceiling.material).toEqual(
+      DEFAULT_ROOM_MATERIALS.ceiling,
+    );
+  });
+
+  it('counts a surface once however many times it is named', () => {
+    const session = setup();
+    expect(session.execute(setSurfacesMaterial(ROOM, ['floor', 'floor'], navy)).ok).toBe(true);
+    session.undo();
+    expect(session.getState().history.canUndo).toBe(false);
+  });
+
+  it('refuses an empty list, bad materials and unknown rooms or surfaces, changing nothing', () => {
+    const session = setup();
+    const before = copy(session.getState().document);
+    expect(session.execute(setSurfacesMaterial(ROOM, [], navy))).toMatchObject({
+      ok: false,
+      error: { code: 'invalid' },
+    });
+    expect(
+      session.execute(setSurfacesMaterial(ROOM, ['floor'], { presetId: 'x', roughness: 2 })),
+    ).toMatchObject({ ok: false, error: { code: 'invalid' } });
+    expect(session.execute(setSurfacesMaterial('nope' as RoomId, ['floor'], navy))).toMatchObject({
+      ok: false,
+      error: { code: 'not-found' },
+    });
+    expect(
+      session.execute(setSurfacesMaterial(ROOM, ['floor', 'roof' as never], navy)),
+    ).toMatchObject({ ok: false, error: { code: 'invalid' } });
+    expect(session.getState().document).toEqual(before);
+  });
+
+  it('keeps an unknown preset id (invariant I6)', () => {
+    const session = setup();
+    session.execute(setSurfacesMaterial(ROOM, ['floor', 'west'], { presetId: 'from.the.future' }));
+    expect(session.getState().document.rooms[ROOM]?.walls.west.material.presetId).toBe(
+      'from.the.future',
+    );
   });
 });
 
