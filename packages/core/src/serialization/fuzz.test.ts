@@ -187,6 +187,15 @@ const edit: fc.Arbitrary<Edit> = fc.oneof(
   }),
 );
 
+/**
+ * A fresh copy of a generated value. fast-check replays the same inputs while it shrinks, and a
+ * later edit can add a key to a value an earlier one inserted: editing the generated instance
+ * itself would corrupt later runs (and could make the document refer to itself).
+ */
+function fresh(value: unknown): unknown {
+  return value === undefined ? undefined : JSON.parse(JSON.stringify(value));
+}
+
 function applyEdit(root: unknown, e: Edit): void {
   const target = locate(root, e.path);
   if (!target) return;
@@ -195,7 +204,7 @@ function applyEdit(root: unknown, e: Edit): void {
   if (e.op === 'set') {
     // Defined as an own property, so that a "__proto__" key survives JSON.stringify as hostile text.
     Object.defineProperty(record, key, {
-      value: e.value,
+      value: fresh(e.value),
       enumerable: true,
       writable: true,
       configurable: true,
@@ -206,7 +215,7 @@ function applyEdit(root: unknown, e: Edit): void {
     const holder = record[key];
     if (typeof holder === 'object' && holder !== null) {
       Object.defineProperty(holder, e.key, {
-        value: e.value,
+        value: fresh(e.value),
         enumerable: true,
         writable: true,
         configurable: true,
