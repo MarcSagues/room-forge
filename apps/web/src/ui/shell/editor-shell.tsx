@@ -14,6 +14,8 @@ import { Button } from '@/ui/components/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/components/tabs';
 import { translate } from '@/ui/i18n';
 import { cn } from '@/ui/lib/utils';
+import { ErrorBoundary } from '@/ui/resilience/error-boundary';
+import { PanelFallback } from '@/ui/resilience/failure-screen';
 import { BottomBar } from './bottom-bar';
 import { SHELL_LAYOUT_ID, safeLayoutStorage } from './layout-storage';
 import { PanelHeader, PanelHint, SidePanel } from './side-panel';
@@ -40,17 +42,45 @@ export const PANEL_SIZES = {
 export function EditorShell({
   viewport,
   properties,
+  onPanelError,
 }: {
   viewport?: ReactNode;
   /** Content of the Properties tab (the app passes the selection details); a hint by default. */
   properties?: ReactNode;
+  /** Told about an error inside a panel, with the panel's name (the app logs it). */
+  onPanelError?: (error: Error, panel: string) => void;
 }) {
   const { mode, wide } = useShellMode();
-  if (mode === 'viewer') return <ViewerShell viewport={viewport} />;
+  // A panel that throws shows a fallback of its own: the others, the bars and the document go on.
+  const guard = (panel: string, node: ReactNode) =>
+    node === undefined ? undefined : (
+      <Guarded panel={panel} onError={onPanelError}>
+        {node}
+      </Guarded>
+    );
+  const guardedViewport = guard(t('shell.viewport'), viewport);
+  const guardedProperties = guard(t('shell.properties'), properties);
+  if (mode === 'viewer') return <ViewerShell viewport={guardedViewport} />;
   return mode === 'full' ? (
-    <DockedShell wide={wide} viewport={viewport} properties={properties} />
+    <DockedShell wide={wide} viewport={guardedViewport} properties={guardedProperties} />
   ) : (
-    <DrawerShell viewport={viewport} properties={properties} />
+    <DrawerShell viewport={guardedViewport} properties={guardedProperties} />
+  );
+}
+
+function Guarded(props: {
+  panel: string;
+  onError: ((error: Error, panel: string) => void) | undefined;
+  children: ReactNode;
+}) {
+  const { panel, onError, children } = props;
+  return (
+    <ErrorBoundary
+      onError={(error) => onError?.(error, panel)}
+      fallback={({ error, reset }) => <PanelFallback panel={panel} error={error} onRetry={reset} />}
+    >
+      {children}
+    </ErrorBoundary>
   );
 }
 

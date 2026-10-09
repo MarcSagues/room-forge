@@ -481,7 +481,12 @@ flowchart LR
 
 ## 13. Observabilidad (ligera)
 
-- Errores: `ErrorBoundary` + registro local (últimos 50) descargable con «Reportar problema».
+- Errores (P7-08): `ErrorBoundary` + registro local (últimos 50) descargable con «Reportar problema».
+  - **Registro** (`editor/error-log.ts`): mensaje, pila (acotados), origen (`react`, `window`, `promise`, `webgl`) y lugar; guardado en `localStorage` (clave `roomforge.errors`) para que sobreviva a una recarga; nunca contiene datos del proyecto. `installErrorCapture` recoge `error` y `unhandledrejection`.
+  - **Contención:** una frontera global (`EditorRoot`) muestra `FailureScreen` (Reintentar, Descargar el registro, Reportar problema; «Exportar una copia» aparece cuando la app puede ofrecerla, P6-05) y el *shell* envuelve cada panel y el viewport en su propia frontera (`PanelFallback`): un panel que falla no tumba el documento, los demás paneles ni las barras.
+  - **«Reportar problema»** abre una issue prellenada con el error, el lugar, la versión y el navegador, y **sin datos del proyecto**: `buildReportUrl` no tiene ningún parámetro que pueda llevarlos (la URL se recorta para caber).
+  - **Pérdida de contexto WebGL:** `watchContext` hace `preventDefault()` (sin eso el navegador no lo devuelve), el editor muestra `ContextNotice` y, al restaurarse, three recrea sus recursos y el escenario se redibuja idéntico desde el documento y la selección (que viven fuera del canvas); el E2E lo comprueba con `WEBGL_lose_context` y compara la imagen píxel a píxel.
+  - Pendiente: recuperar tras un fallo el último estado **autoguardado** (depende del autoguardado, P6-03).
 - Métricas de render (solo dev/E2E): `window.__RF__` expone `renderer.info`, sesión y utilidades de test cuando `NEXT_PUBLIC_E2E=1`.
 - Producción: analítica de eventos agregada sin PII (Fase 8).
 
