@@ -102,11 +102,26 @@ Reglas:
 
 | Métrica | Cómo se mide | Umbral (CI) |
 |---|---|---|
-| Draw calls, triángulos, programas de shader | `renderer.info` en la escena patrón (30 objetos + 8 luces) | Presupuestos de [R3F_PERFORMANCE §3](research/R3F_PERFORMANCE.md) |
+| Draw calls, triángulos, programas de shader, geometrías, texturas | `renderer.info` en la escena patrón (30 objetos; **las 8 luminarias se añaden con P5-05**) | `quality-budgets.json` → `scene.limits` (hoy: 37 llamadas, 410 triángulos, 3 programas, 8 geometrías, 1 textura, con ≈ 25 % de margen) |
 | Frames en reposo | `renderer.info.render.frame` constante 5 s | 0 |
 | Fugas | 200 ciclos añadir/eliminar + 50 cambios día/noche | `memory.geometries/textures` estables (±0) |
-| Bundle | Análisis de chunks | JS inicial editor ≤ 450 kB gz |
+| Bundle | Playwright: todo el JS que descarga cada ruta hasta estar lista, en gzip, por chunk | `quality-budgets.json` → `bundle.initialJsGzipKb` (`/` 240 kB, `/editor/` 580 kB). **Objetivo del editor: 450 kB** (`targetGzipKb`); hoy son ≈ 523 kB (three/R3F ≈ 299 kB), así que el tope impide crecer y la reducción es trabajo de P7-04 |
 | FPS reales | Manual/semiautomático en hardware de referencia (no fiable en CI por el render por software) | Informe en `docs/perf/` |
+
+### Puertas de calidad (P7-03)
+
+Los números viven en un único fichero versionado, **`quality-budgets.json`** en la raíz, y **solo se cambian con una justificación en la PR** (los tests de `tools/checks/budgets.test.mjs` fijan los mínimos que el fichero no puede rebajar en silencio: `core` 90 %/85 %, `web` 70 %, objetivo del editor 450 kB).
+
+| Puerta | Dónde se comprueba | Falla cuando |
+|---|---|---|
+| Cobertura | `pnpm test:coverage` (job `check`) con `thresholds` de `vitest.config.mts` leídos del JSON | `core` < 90 % líneas o < 85 % ramas; `web` < 70 % líneas |
+| Bundle | `e2e/budgets.spec.ts` (job `e2e`): suma el gzip de cada `.js` que carga la ruta | una ruta carga más que su presupuesto, o `/` carga three.js |
+| Escena | `e2e/budgets.spec.ts`: 30 objetos en cuadrícula fija, contadores de `renderer.info` en reposo | llamadas, triángulos, programas, geometrías o texturas por encima del límite |
+
+- Un límite que no se midió **falla** (una comprobación que dejó de medir no puede pasar en silencio).
+- **Informe:** el spec escribe una tabla por ruta con sus chunks (los 15 mayores) y los contadores de la escena en el *resumen del job* de GitHub Actions y en el artefacto `budgets` (`budgets.md` y `budgets.json`), para ver tendencias entre PR.
+- **Las puertas se prueban a sí mismas:** `budgets.test.mjs` incluye los casos que deben fallar (una ruta que crece 100 kB, una llamada de dibujo de más), y `coverage-gate.test.mjs` ejecuta el `vitest.config.mts` real con umbrales imposibles (`QUALITY_BUDGETS_FILE`) y comprueba que la ejecución falla, y que pasa con umbrales que se cumplen.
+- La medición de bundle y escena usa el build E2E (con el gancho `window.__RF__`), unos kB mayor que el de producción; es la misma referencia en cada ejecución.
 
 Los FPS **no** se usan como puerta de CI (el renderizado por software no es representativo); se miden en hardware real por issue de rendimiento.
 

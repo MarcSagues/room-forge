@@ -72,6 +72,14 @@ jobs:
       - run: pnpm e2e
         env:
           NEXT_PUBLIC_APP_VERSION: ${{ github.sha }}
+      # Bundle sizes per chunk and the pattern-scene counters (P7-03), also in the job summary.
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() }}
+        with:
+          name: budgets
+          path: apps/web/budgets-report
+          retention-days: 14
+          if-no-files-found: ignore
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: ${{ failure() }}
         with:
