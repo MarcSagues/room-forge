@@ -1,3 +1,4 @@
+export { resetObjectMaterial, setObjectMaterial } from './material';
 export {
   type AddObjectInput,
   addObject,
