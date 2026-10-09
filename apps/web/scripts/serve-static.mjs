@@ -1,12 +1,17 @@
 // Minimal static server for the `out/` export (E2E and local previews). No dependencies on purpose.
 // Mirrors the production host: `trailingSlash: true`, so `/editor/` serves `/editor/index.html`.
 import { createReadStream } from 'node:fs';
-import { stat } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { basename, dirname, extname, join, normalize, resolve, sep } from 'node:path';
+import { headersFor, parseHeaders } from './headers.mjs';
 
 const root = resolve(process.argv[2] ?? 'out');
 const port = Number(process.env.PORT ?? 4173);
+
+// The host reads `_headers` from the export (written by write-headers.mjs); so does this server,
+// which lets E2E check the real policy. Without the file there are simply no extra headers.
+const headerRules = await readFile(join(root, '_headers'), 'utf8').then(parseHeaders, () => []);
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -53,7 +58,9 @@ async function resolveFile(urlPath) {
 createServer(async (req, res) => {
   const file = await resolveFile(req.url ?? '/').catch(() => null);
   const target = file ?? join(root, '404.html');
+  const { pathname } = new URL(req.url ?? '/', 'http://localhost');
   res.writeHead(file ? 200 : 404, {
+    ...Object.fromEntries(headersFor(headerRules, pathname)),
     'content-type': TYPES[extname(target)] ?? 'application/octet-stream',
   });
   createReadStream(target)
