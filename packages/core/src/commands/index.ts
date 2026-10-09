@@ -8,6 +8,7 @@ export {
   moveObjects,
   type ObjectProps,
   removeObjects,
+  reorderObject,
   rotateObjects,
   setObjectProps,
 } from './object';

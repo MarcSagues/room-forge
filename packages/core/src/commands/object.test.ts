@@ -22,6 +22,7 @@ import {
   duplicateObjects,
   moveObjects,
   removeObjects,
+  reorderObject,
   rotateObjects,
   setObjectProps,
 } from './object';
@@ -482,6 +483,85 @@ describe('object command sequences (property)', () => {
         expect(doc()).toEqual(original);
       }),
       { numRuns: 300 },
+    );
+  });
+});
+
+describe('object/reorder', () => {
+  /** A fresh session on buildDocument plus chair-1..chair-3 (unknown items: placed as asked). */
+  function withChairs() {
+    const ctx = setup();
+    for (const n of [1, 2, 3]) {
+      ctx.session.execute(
+        addObject({
+          id: `chair-${n}`,
+          catalogId: 'unknown.item',
+          roomId: ROOM,
+          position: [n, 0, 0.5],
+          rotationY: 0,
+        }),
+      );
+    }
+    return setup(copy(ctx.doc()) as SceneDocument);
+  }
+
+  it('moves an object to the given index, keeping the others in order', () => {
+    const { session, doc } = withChairs();
+    const result = session.execute(reorderObject('chair-3' as ObjectId, 0));
+    expect(result.ok).toBe(true);
+    expect(doc().objectOrder).toEqual(['chair-3', DESK, MONITOR, 'chair-1', 'chair-2']);
+    session.execute(reorderObject(DESK, 4));
+    expect(doc().objectOrder).toEqual(['chair-3', MONITOR, 'chair-1', 'chair-2', DESK]);
+  });
+
+  it('is labelled, and repeated moves of one object coalesce into one entry', () => {
+    const { session, clock, doc } = withChairs();
+    const before = copy(doc().objectOrder);
+    session.execute(reorderObject('chair-3' as ObjectId, 3));
+    clock.advance(100);
+    session.execute(reorderObject('chair-3' as ObjectId, 2));
+    expect(session.getState().history.undoLabel).toBe('Reorder object');
+    session.undo();
+    expect(doc().objectOrder).toEqual(before);
+  });
+
+  it('rejects unknown ids and indices outside the list without changing anything', () => {
+    const { session, doc } = withChairs();
+    const before = copy(doc());
+    expect(session.execute(reorderObject('nope' as ObjectId, 0))).toMatchObject({
+      ok: false,
+      error: { code: 'not-found' },
+    });
+    for (const index of [-1, 5, 1.5, Number.NaN]) {
+      expect(session.execute(reorderObject(DESK, index))).toMatchObject({
+        ok: false,
+        error: { code: 'invalid' },
+      });
+    }
+    expect(doc()).toEqual(before);
+  });
+
+  it('keeps the order a permutation, invariants hold and undo restores it (property)', () => {
+    fc.assert(
+      fc.property(fc.array(fc.tuple(fc.nat(), fc.nat()), { maxLength: 15 }), (moves) => {
+        const { session, doc } = withChairs();
+        const original = copy(doc());
+        for (const [from, to] of moves) {
+          const order = doc().objectOrder;
+          const id = order[from % order.length] as ObjectId;
+          const index = to % order.length;
+          const others = order.filter((other) => other !== id);
+          expect(session.execute(reorderObject(id, index)).ok).toBe(true);
+          const next = doc().objectOrder;
+          expect([...next].sort()).toEqual([...order].sort());
+          expect(next[index]).toBe(id);
+          expect(next.filter((other) => other !== id)).toEqual(others);
+          expect(checkInvariants(doc(), catalog)).toEqual([]);
+        }
+        while (session.undo());
+        expect(doc()).toEqual(original);
+      }),
+      { numRuns: 200 },
     );
   });
 });
