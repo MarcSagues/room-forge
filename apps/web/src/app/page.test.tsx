@@ -11,4 +11,11 @@ describe('HomePage', () => {
       /^\/editor\/?$/,
     );
   });
+
+  it('links to the projects screen', () => {
+    render(<HomePage />);
+    expect(screen.getByRole('link', { name: 'My projects' }).getAttribute('href')).toMatch(
+      /^\/projects\/?$/,
+    );
+  });
 });
