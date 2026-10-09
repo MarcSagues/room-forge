@@ -27,11 +27,11 @@ import {
   ContextNotice,
   type ContextState,
   EditorShell,
+  LazySceneOutliner,
   ProjectUnavailable,
   ReadOnlyNotice,
   RoomMaterialsPanel,
   RoomSizePanel,
-  SceneOutliner,
   SelectionSummary,
   translate,
 } from '@/ui';
@@ -245,7 +245,7 @@ function Workspace(props: {
             <RoomMaterialsPanel session={session} />
           </>
         }
-        scene={<SceneOutliner session={session} itemName={itemName} />}
+        scene={<LazySceneOutliner session={session} itemName={itemName} />}
         viewport={
           <>
             <SceneCanvas
