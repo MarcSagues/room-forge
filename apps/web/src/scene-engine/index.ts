@@ -10,3 +10,5 @@ export {
   type SceneCanvasProps,
   type SceneHandle,
 } from './canvas/scene-canvas';
+export type { LiveTransform } from './interaction/live-transform';
+export type { PlacementApi } from './interaction/placement-api';

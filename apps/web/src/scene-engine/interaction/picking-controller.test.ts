@@ -16,6 +16,15 @@ function setup() {
     move: vi.fn(),
     end: vi.fn(),
     cancel: vi.fn(),
+    turn: vi.fn(),
+  };
+  // The rotation handle sits in the right quarter of the element.
+  const rotate = {
+    hit: vi.fn((ndcX: number) => (ndcX > 0.5 ? ('a' as ObjectId) : null)),
+    start: vi.fn((_id: ObjectId, _x: number, _y: number) => true),
+    move: vi.fn(),
+    end: vi.fn(),
+    cancel: vi.fn(),
   };
   const detach = attachPicking({
     element,
@@ -23,6 +32,7 @@ function setup() {
     onHover,
     onClick,
     drag,
+    rotate,
     requestFrame: (callback) => frames.push(callback),
     cancelFrame: (handle) => {
       frames[handle - 1] = () => {};
@@ -33,7 +43,14 @@ function setup() {
   };
   const pointer = (type: string, x: number, init: PointerEventInit = {}) =>
     element.dispatchEvent(new PointerEvent(type, { clientX: x, clientY: 50, ...init }));
-  return { element, pick, onHover, onClick, drag, detach, flush, pointer };
+  // happy-dom's WheelEvent drops the modifier keys, so build it from a MouseEvent.
+  const wheel = (deltaY: number, init: MouseEventInit = {}) => {
+    const event = new MouseEvent('wheel', { cancelable: true, ...init });
+    Object.defineProperty(event, 'deltaY', { value: deltaY });
+    element.dispatchEvent(event);
+    return event;
+  };
+  return { element, pick, onHover, onClick, drag, rotate, detach, flush, pointer, wheel };
 }
 
 let ctx: ReturnType<typeof setup>;
@@ -170,5 +187,113 @@ describe('attachPicking: drag', () => {
     ctx.pointer('pointermove', 40);
     ctx.detach();
     expect(ctx.drag.cancel).toHaveBeenCalledOnce();
+  });
+});
+
+describe('attachPicking: rotation handle', () => {
+  it('starts turning at once on the handle, without waiting for the click slop', () => {
+    ctx.pointer('pointerdown', 190, { button: 0 });
+    expect(ctx.rotate.start).toHaveBeenCalledOnce();
+    const [id, ndcX, ndcY] = ctx.rotate.start.mock.calls[0] ?? [];
+    expect(id).toBe('a');
+    expect(ndcX).toBeCloseTo(0.9);
+    expect(ndcY).toBeCloseTo(0);
+    expect(ctx.drag.start).not.toHaveBeenCalled();
+  });
+
+  it('moves at most once per frame, passes Alt, and ends without a click', () => {
+    ctx.pointer('pointerdown', 190, { button: 0 });
+    ctx.pointer('pointermove', 180);
+    ctx.pointer('pointermove', 170, { altKey: true });
+    ctx.flush();
+    expect(ctx.rotate.move).toHaveBeenCalledTimes(1);
+    expect(ctx.rotate.move.mock.calls[0]?.[0]).toBeCloseTo(0.7);
+    expect(ctx.rotate.move.mock.calls[0]?.[2]).toBe(true);
+    ctx.pointer('pointerup', 160, { button: 0 });
+    expect(ctx.rotate.move).toHaveBeenCalledTimes(2);
+    expect(ctx.rotate.move.mock.lastCall?.[0]).toBeCloseTo(0.6);
+    expect(ctx.rotate.move.mock.lastCall?.[2]).toBe(false);
+    expect(ctx.rotate.end).toHaveBeenCalledOnce();
+    expect(ctx.onClick).not.toHaveBeenCalled();
+    expect(ctx.drag.move).not.toHaveBeenCalled();
+  });
+
+  it('a refused handle press is ignored, not turned into a click or a drag', () => {
+    ctx.rotate.start.mockReturnValueOnce(false);
+    ctx.pointer('pointerdown', 190, { button: 0 });
+    ctx.pointer('pointermove', 170);
+    ctx.pointer('pointerup', 170, { button: 0 });
+    expect(ctx.rotate.move).not.toHaveBeenCalled();
+    expect(ctx.rotate.end).not.toHaveBeenCalled();
+    expect(ctx.onClick).not.toHaveBeenCalled();
+  });
+
+  it('Escape cancels the turn instead of ending it', () => {
+    ctx.pointer('pointerdown', 190, { button: 0 });
+    ctx.pointer('pointermove', 170);
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(ctx.rotate.cancel).toHaveBeenCalledOnce();
+    ctx.pointer('pointerup', 170, { button: 0 });
+    expect(ctx.rotate.end).not.toHaveBeenCalled();
+  });
+
+  it('cancels a turn in progress on cleanup', () => {
+    ctx.pointer('pointerdown', 190, { button: 0 });
+    ctx.detach();
+    expect(ctx.rotate.cancel).toHaveBeenCalledOnce();
+  });
+
+  it('hovering the handle shows a grab cursor and does not hover the object', () => {
+    ctx.pointer('pointermove', 190);
+    ctx.flush();
+    expect(ctx.element.style.cursor).toBe('grab');
+    expect(ctx.onHover).not.toHaveBeenCalled();
+    ctx.pointer('pointermove', 100);
+    ctx.flush();
+    expect(ctx.element.style.cursor).toBe('');
+  });
+});
+
+describe('attachPicking: turning while dragging an object', () => {
+  const startDrag = () => {
+    ctx.pointer('pointerdown', 20, { button: 0 });
+    ctx.pointer('pointermove', 40);
+  };
+
+  it('the wheel turns one step per notch, Alt for the fine step', () => {
+    startDrag();
+    const up = ctx.wheel(-100);
+    expect(ctx.drag.turn).toHaveBeenLastCalledWith(1, false);
+    expect(up.defaultPrevented).toBe(true);
+    ctx.wheel(100);
+    expect(ctx.drag.turn).toHaveBeenLastCalledWith(-1, false);
+    ctx.wheel(-100, { altKey: true });
+    expect(ctx.drag.turn).toHaveBeenLastCalledWith(1, true);
+  });
+
+  it('R turns one step, Shift+R the other way', () => {
+    startDrag();
+    const press = (init: KeyboardEventInit) => {
+      const event = new KeyboardEvent('keydown', { cancelable: true, ...init });
+      window.dispatchEvent(event);
+      return event;
+    };
+    expect(press({ key: 'r' }).defaultPrevented).toBe(true);
+    expect(ctx.drag.turn).toHaveBeenLastCalledWith(1, false);
+    press({ key: 'R', shiftKey: true });
+    expect(ctx.drag.turn).toHaveBeenLastCalledWith(-1, false);
+    press({ key: 'r', altKey: true });
+    expect(ctx.drag.turn).toHaveBeenLastCalledWith(1, true);
+    press({ key: 'r', ctrlKey: true });
+    expect(ctx.drag.turn).toHaveBeenCalledTimes(3);
+  });
+
+  it('leaves the wheel and R alone when nothing is being dragged', () => {
+    const event = ctx.wheel(-100);
+    expect(event.defaultPrevented).toBe(false);
+    const key = new KeyboardEvent('keydown', { key: 'r', cancelable: true });
+    window.dispatchEvent(key);
+    expect(key.defaultPrevented).toBe(false);
+    expect(ctx.drag.turn).not.toHaveBeenCalled();
   });
 });

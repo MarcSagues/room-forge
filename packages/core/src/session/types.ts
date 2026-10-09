@@ -16,6 +16,7 @@ export type CommandErrorCode =
   | 'not-found'
   | 'invalid'
   | 'limit-reached'
+  | 'overlap'
   | 'exception';
 
 export interface CommandError {
