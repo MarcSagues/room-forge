@@ -7,9 +7,14 @@ export default function HomePage() {
     <main className="mx-auto flex min-h-dvh max-w-3xl flex-col items-start justify-center gap-5 px-6">
       <h1 className="font-semibold text-5xl tracking-tight">{translate('en', 'app.name')}</h1>
       <p className="text-base text-fg-muted">{translate('en', 'home.tagline')}</p>
-      <Link href="/editor/" className={buttonVariants({ size: 'lg' })}>
-        {translate('en', 'home.openEditor')}
-      </Link>
+      <div className="flex flex-wrap gap-3">
+        <Link href="/editor/" className={buttonVariants({ size: 'lg' })}>
+          {translate('en', 'home.openEditor')}
+        </Link>
+        <Link href="/projects/" className={buttonVariants({ size: 'lg', variant: 'outline' })}>
+          {translate('en', 'home.projects')}
+        </Link>
+      </div>
     </main>
   );
 }

@@ -6,7 +6,9 @@ import {
   type RoomId,
   removeObjects,
   resizeRoom,
+  setSurfaceMaterial,
 } from '@roomforge/core';
+import type { Autosave, SaveState } from '@/persistence';
 import type { RenderInfo, RoomDisplay, SceneCamera, SceneHandle } from '@/scene-engine';
 
 /**
@@ -22,6 +24,7 @@ export interface RoomForgeTestHook {
     resizeRoom: typeof resizeRoom;
     addObject: typeof addObject;
     removeObjects: typeof removeObjects;
+    setSurfaceMaterial: typeof setSurfaceMaterial;
   };
   /** Renderer counters; `null` until the canvas is mounted. */
   info(): RenderInfo | null;
@@ -29,8 +32,13 @@ export interface RoomForgeTestHook {
   camera: SceneCamera;
   /** How a room is drawn (wall opacity and height, ceiling); `null` until it is drawn. */
   roomDisplay(roomId: RoomId): RoomDisplay | null;
-  /** Screen position (page pixels) of an object, to click it like a user; `null` if not drawn. */
-  project(id: ObjectId): { x: number; y: number } | null;
+  /**
+   * Screen position (page pixels) of an object, to click it like a user; `null` if not drawn.
+   * `local` picks another point in the object's frame (front = +z), such as the rotation knob.
+   */
+  project(id: ObjectId, local?: readonly [number, number, number]): { x: number; y: number } | null;
+  /** Autosave: where the work stands, and writing it now. Both inert until it is running. */
+  autosave: { state(): SaveState | null; flush(): Promise<void> };
 }
 
 declare global {
@@ -43,13 +51,17 @@ export const E2E_ENABLED = process.env.NEXT_PUBLIC_E2E === '1';
 
 export function installTestHook(
   target: Window,
-  deps: { session: EditorSession; getScene: () => SceneHandle | null },
+  deps: {
+    session: EditorSession;
+    getScene: () => SceneHandle | null;
+    getAutosave?: () => Autosave | null;
+  },
   enabled: boolean = E2E_ENABLED,
 ): () => void {
   if (!enabled) return () => {};
   const hook: RoomForgeTestHook = {
     session: deps.session,
-    commands: { createRoom, resizeRoom, addObject, removeObjects },
+    commands: { createRoom, resizeRoom, addObject, removeObjects, setSurfaceMaterial },
     info: () => deps.getScene()?.renderInfo() ?? null,
     camera: {
       fit: () => deps.getScene()?.camera.fit(),
@@ -59,7 +71,11 @@ export function installTestHook(
       setInputBlocked: (blocked) => deps.getScene()?.camera.setInputBlocked(blocked),
     },
     roomDisplay: (roomId) => deps.getScene()?.roomDisplay(roomId) ?? null,
-    project: (id) => deps.getScene()?.project(id) ?? null,
+    project: (id, local) => deps.getScene()?.project(id, local) ?? null,
+    autosave: {
+      state: () => deps.getAutosave?.()?.state() ?? null,
+      flush: async () => void (await deps.getAutosave?.()?.flush()),
+    },
   };
   target.__RF__ = hook;
   return () => {

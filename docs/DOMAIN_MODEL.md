@@ -290,6 +290,24 @@ flowchart LR
 }
 ```
 
+### 7.1 Importar y exportar (P6-01)
+
+`serializeProject(project, { appVersion, exportedAt })` escribe el envelope; `parseProjectFile(texto, { catalog? })` y `parseProjectValue(valor)` (para un registro ya leído de IndexedDB o un enlace) abren un archivo. Son funciones puras de `core` que **no lanzan**: devuelven `Result<ParsedProject, ImportError>`. Código de cada fallo, en el orden en que se comprueban:
+
+| Código | Cuándo |
+|---|---|
+| `TOO_LARGE` | Más de 5 MB (bytes UTF-8), sin llegar a parsearlo. |
+| `INVALID_JSON` | No es JSON. |
+| `HOSTILE_INPUT` | Claves `__proto__`/`constructor`/`prototype`, anidación > 32, más de 200 000 valores o un ciclo (recorrido iterativo: el coste está acotado). |
+| `NOT_A_PROJECT` | JSON válido pero no es un archivo RoomForge. |
+| `NEWER_VERSION` | `formatVersion` o `schemaVersion` mayores que los que conoce la app («Actualiza la app»). |
+| `INVALID_VERSION` | Versión ausente o que no es un entero ≥ 0. |
+| `MIGRATION_FAILED` | Una migración no pudo leer un archivo antiguo. |
+| `INVALID_DOCUMENT` | zod rechaza el documento o el nombre del proyecto (`details` lista `ruta: mensaje`); las claves desconocidas se descartan. |
+| `INVARIANT_VIOLATION` | Bien formado pero imposible (p. ej. un objeto fuera de su sala). |
+
+Un `catalogId` desconocido **no** es un error: se conserva (I6) y se lista en `unknownCatalogIds`. Las migraciones viven en `serialization/migrations/` (`vN → vN+1`, autocontenidas, sin importar valores por defecto vivos) y cada una exige su *golden file* en `golden/` (documento real de la versión anterior → resultado esperado, que nunca se edita): los tests fallan si se sube `SCHEMA_VERSION` sin migración o se añade una migración sin golden. La migración v0 → v1 es de ejemplo (v0 era el formato del primer prototipo).
+
 ## 8. Camino de evolución (cómo se amplía sin romper)
 
 | Necesidad futura | Cambio en el modelo | Impacto |

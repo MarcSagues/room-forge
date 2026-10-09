@@ -41,6 +41,7 @@ describe('installTestHook', () => {
       'createRoom',
       'removeObjects',
       'resizeRoom',
+      'setSurfaceMaterial',
     ]);
     expect(hook?.info()).toEqual(info);
   });
