@@ -11,6 +11,7 @@ export * from './commands';
 export * from './domain';
 export * from './geometry';
 export * from './history';
+export * from './materials';
 export * from './ports';
 export * from './serialization';
 export * from './session';
