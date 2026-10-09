@@ -93,6 +93,7 @@ Reglas **verificadas por herramientas** (no por convención):
 1. `core` no declara `react`, `three` ni tipos DOM (`"lib": ["ES2023"]` en su `tsconfig`): usar `window`/`document` es un **error de compilación**.
 2. `dependency-cruiser` (`pnpm check:deps`, en CI) aplica la matriz anterior dentro de `apps/web/src`.
 3. Las únicas importaciones entre módulos web van por el `index.ts` público de cada módulo.
+4. **Esos `index.ts` no pueden costar bundle:** `apps/web/package.json` declara `"sideEffects": ["*.css"]`, de modo que el empaquetador descarta de cada barril lo que una página no usa (sin ello la portada cargaba la pantalla de proyectos y zod con ella: ≈ 88 kB gz de más). Consecuencia: un módulo de `apps/web` importado **solo por su efecto** (`import './x'`) se perdería; `tools/checks/side-effects.test.mjs` falla si aparece uno que no esté listado en `sideEffects`.
 
 ### 2.2 Estructura de carpetas objetivo
 
