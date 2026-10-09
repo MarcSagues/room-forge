@@ -8,4 +8,13 @@ export {
   installErrorCapture,
   type StorageLike,
 } from './error-log';
-export { type HotkeyAction, type HotkeyHandlers, installHotkeys, resolveHotkey } from './hotkeys';
+export { type EditorShortcutDeps, editorShortcuts } from './shortcuts/editor-shortcuts';
+export {
+  createShortcutRegistry,
+  detectMac,
+  formatCombo,
+  isTypingTarget,
+  type KeyCombo,
+  type ShortcutDef,
+  type ShortcutRegistry,
+} from './shortcuts/registry';

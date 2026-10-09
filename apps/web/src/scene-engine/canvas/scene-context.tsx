@@ -1,14 +1,17 @@
 'use client';
 
-import type { CatalogProvider, EditorSession } from '@roomforge/core';
+import type { EditorSession } from '@roomforge/core';
 import { createContext, type ReactNode, useContext, useMemo } from 'react';
 import { createTransientStore, type TransientStore } from '../interaction/transient-store';
+import type { SceneCatalog } from './scene-catalog';
+
+export type { SceneCatalog } from './scene-catalog';
 
 const SceneSessionContext = createContext<EditorSession | null>(null);
 
 /** Every catalog id is unknown (I6): objects draw and pick as placeholder boxes. */
-const NO_CATALOG: CatalogProvider = { getItem: () => undefined };
-const SceneCatalogContext = createContext<CatalogProvider>(NO_CATALOG);
+const NO_CATALOG: SceneCatalog = { getItem: () => undefined };
+const SceneCatalogContext = createContext<SceneCatalog>(NO_CATALOG);
 const TransientContext = createContext<TransientStore | null>(null);
 
 /**
@@ -22,7 +25,7 @@ export function SceneSessionProvider({
   children,
 }: {
   session: EditorSession;
-  catalog?: CatalogProvider;
+  catalog?: SceneCatalog;
   /** Per-frame interaction state (drag pose); one is created if not given. */
   transient?: TransientStore;
   children: ReactNode;
@@ -46,7 +49,7 @@ export function useSceneSession(): EditorSession {
 }
 
 /** Object sizes for placeholders and pick proxies. */
-export function useSceneCatalog(): CatalogProvider {
+export function useSceneCatalog(): SceneCatalog {
   return useContext(SceneCatalogContext);
 }
 

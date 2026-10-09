@@ -112,14 +112,17 @@ describe('checkInvariants', () => {
       invariantsOf(withEntities({ openings }));
 
     it('accepts openings that fit, including ones that touch', () => {
-      const a = buildOpening({ id: 'a', wall: 'north', offset: 0, width: 1 });
-      const b = buildOpening({ id: 'b', wall: 'north', offset: 1, width: 3 });
+      const a = buildOpening({ id: 'a', wall: 'north', offset: 0.1, width: 1 });
+      const b = buildOpening({ id: 'b', wall: 'north', offset: 1.1, width: 2.8 });
       expect(check(a, b)).toEqual([]);
     });
 
     it('rejects openings past the end of the wall or above the ceiling', () => {
       // North wall is 4 m long, east wall 3 m; the room is 2.6 m high.
       expect(check(buildOpening({ wall: 'north', offset: 3.5, width: 0.9 }))).toContain('I4');
+      // 10 cm of wall must remain at each corner.
+      expect(check(buildOpening({ wall: 'north', offset: 0.05, width: 0.9 }))).toContain('I4');
+      expect(check(buildOpening({ wall: 'north', offset: 3.05, width: 0.9 }))).toContain('I4');
       expect(check(buildOpening({ wall: 'east', offset: 2.5, width: 0.9 }))).toContain('I4');
       expect(check(buildOpening({ kind: 'window', sill: 1.5, height: 1.2 }))).toContain('I4');
     });
