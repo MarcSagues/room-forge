@@ -25,6 +25,7 @@ export function ProjectName() {
     return (
       <Link
         href="/projects/"
+        prefetch={false}
         title={t('shell.projectsLink')}
         className="truncate rounded-sm text-fg-muted hover:text-foreground"
       >
@@ -36,6 +37,7 @@ export function ProjectName() {
     <>
       <Link
         href="/projects/"
+        prefetch={false}
         aria-label={t('shell.projectsLink')}
         title={t('shell.projectsLink')}
         className={buttonVariants({ variant: 'ghost', size: 'icon' })}

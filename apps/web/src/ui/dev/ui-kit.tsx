@@ -1,6 +1,5 @@
 'use client';
 
-import { toast } from 'sonner';
 import { Button } from '@/ui/components/button';
 import {
   Dialog,
@@ -32,6 +31,7 @@ import { Separator } from '@/ui/components/separator';
 import { Slider } from '@/ui/components/slider';
 import { Switch } from '@/ui/components/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/components/tabs';
+import { notify } from '@/ui/components/toast';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/components/tooltip';
 import { translate } from '@/ui/i18n';
 import { ThemeToggle } from '@/ui/theme-toggle';
@@ -198,7 +198,7 @@ export function UiKit() {
           </DropdownMenu>
           <Button
             variant="outline"
-            onClick={() => toast.success(translate('en', 'devui.toast.message'))}
+            onClick={() => notify((toast) => toast.success(translate('en', 'devui.toast.message')))}
           >
             {translate('en', 'devui.toast.show')}
           </Button>

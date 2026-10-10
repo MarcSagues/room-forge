@@ -2,8 +2,8 @@
 
 import { Share2Icon } from 'lucide-react';
 import { useState } from 'react';
-import { toast } from 'sonner';
 import { Button } from '@/ui/components/button';
+import { notify, type Toast } from '@/ui/components/toast';
 import { type MessageKey, translate } from '@/ui/i18n';
 import { type ShareOutcome, useProjectStatus } from './project-status';
 
@@ -32,7 +32,7 @@ export function ShareButton() {
       outcome = { kind: 'copy-failed' };
     }
     setBusy(false);
-    tell(outcome, onExport);
+    notify((toast) => tell(toast, outcome, onExport));
   };
   return (
     <Button variant="outline" size="sm" onClick={share} disabled={busy} aria-busy={busy}>
@@ -42,7 +42,7 @@ export function ShareButton() {
   );
 }
 
-function tell(outcome: ShareOutcome, onExport: (() => void) | undefined) {
+function tell(toast: Toast, outcome: ShareOutcome, onExport: (() => void) | undefined) {
   const exportAction = onExport ? { label: t('share.export'), onClick: onExport } : undefined;
   switch (outcome.kind) {
     case 'copied':

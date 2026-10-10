@@ -39,7 +39,7 @@ export function SitePage({ locale, page, children }: SitePageProps) {
             <Link href="/projects/" className={buttonVariants({ variant: 'ghost' })}>
               {t.nav.projects}
             </Link>
-            <Link href="/editor/" className={buttonVariants()}>
+            <Link href="/editor/" prefetch={false} className={buttonVariants()}>
               {t.nav.editor}
             </Link>
           </nav>

@@ -105,7 +105,7 @@ Reglas:
 | Draw calls, triángulos, programas de shader, geometrías, texturas | `renderer.info` en la escena patrón (30 objetos; **las 8 luminarias se añaden con P5-05**) | `quality-budgets.json` → `scene.limits` (hoy: 37 llamadas, 410 triángulos, 3 programas, 8 geometrías, 1 textura, con ≈ 25 % de margen) |
 | Frames en reposo | `renderer.info.render.frame` constante 5 s | 0 |
 | Fugas | 200 ciclos añadir/eliminar + 50 cambios día/noche | `memory.geometries/textures` estables (±0) |
-| Bundle | Playwright: todo el JS que descarga cada ruta hasta estar lista, en gzip, por chunk | `quality-budgets.json` → `bundle.initialJsGzipKb` (`/` 240 kB, `/editor/` 580 kB). **Objetivo del editor: 450 kB** (`targetGzipKb`); hoy son ≈ 523 kB (three/R3F ≈ 299 kB), así que el tope impide crecer y la reducción es trabajo de P7-04 |
+| Bundle | Playwright: todo el JS que descarga cada ruta hasta estar lista, en gzip, por chunk | `quality-budgets.json` → `bundle.initialJsGzipKb` (`/` 270 kB, `/editor/` 552 kB). **Objetivo del editor: 450 kB** (`targetGzipKb`). Tras P7-04 el editor carga ≈ 536 kB (three ≈ 191 kB, R3F ≈ 47 kB, next/react ≈ 127 kB: el suelo fijo ronda los 380 kB); sin *prefetch* de otras rutas, con sonner, el diálogo de atajos y los menús de Radix cargados al usarse y core sobre `zod/mini`. El tope deja ≈ 15 kB de margen |
 | FPS reales | Manual/semiautomático en hardware de referencia (no fiable en CI por el render por software) | Informe en `docs/perf/` |
 
 ### Puertas de calidad (P7-03)
@@ -121,6 +121,7 @@ Los números viven en un único fichero versionado, **`quality-budgets.json`** e
 - Un límite que no se midió **falla** (una comprobación que dejó de medir no puede pasar en silencio).
 - **Informe:** el spec escribe una tabla por ruta con sus chunks (los 15 mayores) y los contadores de la escena en el *resumen del job* de GitHub Actions y en el artefacto `budgets` (`budgets.md` y `budgets.json`), para ver tendencias entre PR.
 - **Las puertas se prueban a sí mismas:** `budgets.test.mjs` incluye los casos que deben fallar (una ruta que crece 100 kB, una llamada de dibujo de más), y `coverage-gate.test.mjs` ejecuta el `vitest.config.mts` real con umbrales imposibles (`QUALITY_BUDGETS_FILE`) y comprueba que la ejecución falla, y que pasa con umbrales que se cumplen.
+- **De qué está hecho un chunk:** `BUNDLE_SOURCEMAPS=1 pnpm --filter @roomforge/web build:e2e`, el spec de presupuestos sobre ese build y `node tools/checks/bundle-breakdown.mjs --route=/editor/` (con `--files` para ver ficheros en vez de paquetes) reparten los bytes de cada chunk entre sus fuentes según los *source maps*. Sin dependencias; es la herramienta para decidir qué diferir antes de tocar código (P7-04).
 - La medición de bundle y escena usa el build E2E (con el gancho `window.__RF__`), unos kB mayor que el de producción; es la misma referencia en cada ejecución.
 
 Los FPS **no** se usan como puerta de CI (el renderizado por software no es representativo); se miden en hardware real por issue de rendimiento.

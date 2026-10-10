@@ -49,7 +49,7 @@ export function TopBar(props: TopBarProps) {
       >
         <PanelLeftIcon />
       </Button>
-      <Link href="/" className="rounded-sm font-semibold tracking-tight">
+      <Link href="/" prefetch={false} className="rounded-sm font-semibold tracking-tight">
         {t('app.name')}
       </Link>
       <Separator orientation="vertical" className="mx-1 h-5" />
