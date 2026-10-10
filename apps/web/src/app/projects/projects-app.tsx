@@ -9,10 +9,13 @@ import {
   type OpenedRepository,
   openProjectRepository,
   readProjectFile,
+  readStorageHealth,
 } from '@/persistence';
 import { type ProjectFiles, ProjectsScreen, translate } from '@/ui';
 
 const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? 'dev';
+
+const readStorage = () => readStorageHealth();
 
 /**
  * Opens the browser's project storage (IndexedDB, or memory where it is not allowed) and shows the
@@ -56,6 +59,7 @@ export function ProjectsApp() {
       repository={opened.repository}
       storage={opened.mode}
       createDocument={(size) => createStarterDocument(size)}
+      readStorage={readStorage}
       {...(files ? { files } : {})}
     />
   );
