@@ -6,7 +6,7 @@ import {
   type ObjectId,
   type PlacedObject,
 } from '../domain';
-import type { AmbiencePreset } from '../lighting';
+import { type AmbiencePreset, lightStateOf } from '../lighting';
 import type { CatalogItem } from '../ports';
 import type { Command, CommandError } from '../session';
 
@@ -25,16 +25,6 @@ function describeIssues(error: z.ZodError): string {
 }
 
 const PatchSchema = LightStateSchema.partial();
-
-/** What a light that was never configured looks like: on, steady, at the item's own colour. */
-function defaultLight(item: CatalogItem | undefined): LightState {
-  return {
-    on: true,
-    color: item?.light?.defaultColor ?? '#ffffff',
-    intensity: 1,
-    effect: { kind: 'static' },
-  };
-}
 
 /** A copy that shares nothing with `state` (core has no structuredClone). */
 const cloneLight = (state: LightState): LightState => JSON.parse(JSON.stringify(state));
@@ -67,7 +57,7 @@ export function setLight(ids: readonly ObjectId[], patch: Partial<LightState>): 
       }
       const { on, color, intensity, effect } = parsed.data;
       for (const { object, item } of targets) {
-        const next: LightState = { ...(object.light ?? defaultLight(item)) };
+        const next: LightState = { ...lightStateOf(object, item) };
         if (on !== undefined) next.on = on;
         if (color !== undefined) next.color = color;
         if (intensity !== undefined) next.intensity = intensity;
@@ -103,7 +93,7 @@ export function setAllLights(change: LightsChange): Command {
       if ('on' in change) {
         if (typeof change.on !== 'boolean') return invalid('"on" must be true or false');
         for (const { object, item } of lights) {
-          object.light = { ...(object.light ?? defaultLight(item)), on: change.on };
+          object.light = { ...lightStateOf(object, item), on: change.on };
         }
         return;
       }
