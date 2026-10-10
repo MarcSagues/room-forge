@@ -1,10 +1,13 @@
 import {
   addObject,
+  addOpening,
   createRoom,
   type EditorSession,
-  type ObjectId,
+  type EntityId,
+  moveOpening,
   type RoomId,
   removeObjects,
+  removeOpenings,
   resizeRoom,
   setSurfaceMaterial,
 } from '@roomforge/core';
@@ -24,6 +27,9 @@ export interface RoomForgeTestHook {
     resizeRoom: typeof resizeRoom;
     addObject: typeof addObject;
     removeObjects: typeof removeObjects;
+    addOpening: typeof addOpening;
+    moveOpening: typeof moveOpening;
+    removeOpenings: typeof removeOpenings;
     setSurfaceMaterial: typeof setSurfaceMaterial;
   };
   /** Renderer counters; `null` until the canvas is mounted. */
@@ -33,10 +39,11 @@ export interface RoomForgeTestHook {
   /** How a room is drawn (wall opacity and height, ceiling); `null` until it is drawn. */
   roomDisplay(roomId: RoomId): RoomDisplay | null;
   /**
-   * Screen position (page pixels) of an object, to click it like a user; `null` if not drawn.
-   * `local` picks another point in the object's frame (front = +z), such as the rotation knob.
+   * Screen position (page pixels) of an object or opening, to click it like a user; `null` if not
+   * drawn. `local` picks another point in its frame (an object's front is +z; an opening's origin
+   * is the bottom centre of its hole), such as the rotation knob.
    */
-  project(id: ObjectId, local?: readonly [number, number, number]): { x: number; y: number } | null;
+  project(id: EntityId, local?: readonly [number, number, number]): { x: number; y: number } | null;
   /** Autosave: where the work stands, and writing it now. Both inert until it is running. */
   autosave: { state(): SaveState | null; flush(): Promise<void> };
 }
@@ -61,7 +68,16 @@ export function installTestHook(
   if (!enabled) return () => {};
   const hook: RoomForgeTestHook = {
     session: deps.session,
-    commands: { createRoom, resizeRoom, addObject, removeObjects, setSurfaceMaterial },
+    commands: {
+      createRoom,
+      resizeRoom,
+      addObject,
+      removeObjects,
+      addOpening,
+      moveOpening,
+      removeOpenings,
+      setSurfaceMaterial,
+    },
     info: () => deps.getScene()?.renderInfo() ?? null,
     camera: {
       fit: () => deps.getScene()?.camera.fit(),

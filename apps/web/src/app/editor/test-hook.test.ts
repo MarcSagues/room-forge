@@ -38,8 +38,11 @@ describe('installTestHook', () => {
     expect(hook?.session).toBe(session);
     expect(Object.keys(hook?.commands ?? {}).sort()).toEqual([
       'addObject',
+      'addOpening',
       'createRoom',
+      'moveOpening',
       'removeObjects',
+      'removeOpenings',
       'resizeRoom',
       'setSurfaceMaterial',
     ]);

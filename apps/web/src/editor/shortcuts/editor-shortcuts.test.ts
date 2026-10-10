@@ -3,6 +3,7 @@ import {
   type EditorSession,
   moveObjects,
   type ObjectId,
+  type OpeningId,
 } from '@roomforge/core';
 import { buildDocument, createFixtureCatalog } from '@roomforge/core/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -86,6 +87,15 @@ describe('editor shortcuts: the selection', () => {
     session.select([DESK]);
     expect(press('Backspace')).toBe(true);
     expect(objectIds()).toEqual([]);
+  });
+
+  it('Delete removes a selected door or window, and undo brings it back', () => {
+    session.select(['window-1' as OpeningId]);
+    expect(press('Delete')).toBe(true);
+    expect(Object.keys(session.getState().document.openings)).toEqual(['door-1']);
+    expect(objectIds()).toHaveLength(2);
+    press('z', { ctrlKey: true });
+    expect(Object.keys(session.getState().document.openings)).toContain('window-1');
   });
 
   it('does nothing without a selection', () => {
