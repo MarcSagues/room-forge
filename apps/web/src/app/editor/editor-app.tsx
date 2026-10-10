@@ -1,6 +1,6 @@
 'use client';
 
-import type { SceneDocument } from '@roomforge/core';
+import { OPENING_VARIANTS, type SceneDocument } from '@roomforge/core';
 import {
   type RefObject,
   useCallback,
@@ -30,6 +30,7 @@ import {
   type ContextState,
   EditorShell,
   LazySceneOutliner,
+  type MessageKey,
   ProjectUnavailable,
   ReadOnlyNotice,
   RoomMaterialsPanel,
@@ -55,6 +56,15 @@ const CATALOG_ITEMS: readonly CatalogPanelItem[] = catalogEntries().map((entry) 
   color: entry.color,
   size: entry.size,
 }));
+/** The Structure tab: the four door and window variants (P3-12), sized as their opening. */
+const OPENING_ITEMS: readonly CatalogPanelItem[] = Object.entries(OPENING_VARIANTS).map(
+  ([variant, size]) => ({
+    id: variant,
+    name: translate('en', `catalog.opening.${variant}` as MessageKey),
+    color: size.kind === 'door' ? '#b88a55' : '#cfe3ee',
+    size: { w: size.width, h: size.height, d: 0.1 },
+  }),
+);
 const ITEM_NAMES = new Map(CATALOG_ITEMS.map((item) => [item.id, item.name]));
 const itemName = (catalogId: string) => ITEM_NAMES.get(catalogId);
 
@@ -185,6 +195,20 @@ function Workspace(props: {
     }),
     [],
   );
+  const structure = useMemo(
+    () => ({
+      items: OPENING_ITEMS,
+      placement: {
+        begin: (id: string) => scene.current?.openingPlacement.begin(id) ?? false,
+        move: (x: number, y: number, free: boolean) =>
+          scene.current?.openingPlacement.move(x, y, free),
+        end: (x: number, y: number) => scene.current?.openingPlacement.end(x, y) ?? false,
+        cancel: () => scene.current?.openingPlacement.cancel(),
+      },
+      onPlace: (id: string) => scene.current?.openingPlacement.placeAtCenter(id) ?? false,
+    }),
+    [],
+  );
   // The properties panel follows a drag in the scene through this.
   const live = useMemo<LiveTransform>(
     () => ({
@@ -257,6 +281,7 @@ function Workspace(props: {
             items={CATALOG_ITEMS}
             placement={placement}
             onPlace={(id) => scene.current?.placement.placeAtCenter(id) ?? false}
+            structure={structure}
           />
         }
         onPanelError={(error, panel) => errorLog?.record(error, { source: 'react', where: panel })}

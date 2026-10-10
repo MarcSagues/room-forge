@@ -13,6 +13,7 @@ import { type Material, type Mesh, NeutralToneMapping, type Object3D, Vector3 } 
 import type { CameraHandle, CameraSnapshot } from '../camera/camera-director';
 import { CameraRig } from '../camera/camera-rig';
 import { type LiveTransform, liveTransformOf } from '../interaction/live-transform';
+import { OpeningPlaceController } from '../interaction/opening-place-controller';
 import { PlaceController } from '../interaction/place-controller';
 import { createPlacementApi, type PlacementApi } from '../interaction/placement-api';
 import { createTransientStore } from '../interaction/transient-store';
@@ -63,6 +64,8 @@ export interface SceneHandle {
   camera: SceneCamera;
   /** Dragging an item in from the catalog panel, or placing it in the middle of the view. */
   placement: PlacementApi;
+  /** The same for doors and windows (ids are `OPENING_VARIANTS` keys): they go on a wall. */
+  openingPlacement: PlacementApi;
   /** The pose of the object being dragged, for readouts outside the canvas. */
   live: LiveTransform;
 }
@@ -188,6 +191,15 @@ function ReadyReporter(props: {
       }),
     [session, catalog, transient, invalidate, gl, get],
   );
+  const openingPlacement = useMemo(
+    () =>
+      createPlacementApi({
+        controller: new OpeningPlaceController({ session, transient, invalidate }),
+        canvas: gl.domElement,
+        getCamera: () => get().camera,
+      }),
+    [session, transient, invalidate, gl, get],
+  );
   const handle = useMemo<SceneHandle>(
     () => ({
       renderInfo: () => readRenderInfo(gl.info),
@@ -196,6 +208,7 @@ function ReadyReporter(props: {
       mutate: createMutate(invalidate),
       invalidate: () => invalidate(),
       placement,
+      openingPlacement,
       live: liveTransformOf(transient),
       // The rig mounts after this handle may be built, so every call looks it up when it happens.
       camera: {
@@ -206,7 +219,7 @@ function ReadyReporter(props: {
         setInputBlocked: (blocked) => camera.current?.setInputBlocked(blocked),
       },
     }),
-    [gl, scene, get, invalidate, camera, registry, placement, transient],
+    [gl, scene, get, invalidate, camera, registry, placement, openingPlacement, transient],
   );
   useEffect(() => {
     callback.current?.(handle);
