@@ -23,14 +23,7 @@ import type { ReactNode } from 'react';
 import { useStore } from 'zustand';
 import { useShallow } from 'zustand/react/shallow';
 import { Button } from '@/ui/components/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from '@/ui/components/dropdown-menu';
+import { DeferredDropdownMenu } from '@/ui/components/deferred-dropdown-menu';
 import { Separator } from '@/ui/components/separator';
 import { TooltipProvider } from '@/ui/components/tooltip';
 import { type MessageKey, translate } from '@/ui/i18n';
@@ -151,29 +144,32 @@ export function ViewControls({ session }: { session: EditorSession }) {
           {t('bar.top')}
         </Button>
       </ShortcutTooltip>
-      <DropdownMenu>
-        <ShortcutTooltip label={t('bar.wallsMenu')} shortcutId="view.walls">
-          <DropdownMenuTrigger asChild>
+      <ShortcutTooltip label={t('bar.wallsMenu')} shortcutId="view.walls">
+        <DeferredDropdownMenu
+          trigger={
             <Button variant="ghost" size="sm">
               {t('bar.walls', { mode: wallName(wallMode) })}
               <ChevronDownIcon aria-hidden="true" />
             </Button>
-          </DropdownMenuTrigger>
-        </ShortcutTooltip>
-        <DropdownMenuContent align="start" side="top">
-          <DropdownMenuLabel>{t('bar.wallsMenu')}</DropdownMenuLabel>
-          <DropdownMenuRadioGroup
-            value={wallMode}
-            onValueChange={(mode) => session.setWallMode(mode as WallMode)}
-          >
-            {WALL_MODES.map((mode) => (
-              <DropdownMenuRadioItem key={mode} value={mode}>
-                {wallName(mode)}
-              </DropdownMenuRadioItem>
-            ))}
-          </DropdownMenuRadioGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          }
+        >
+          {(menu, content) => (
+            <menu.DropdownMenuContent align="start" side="top" {...content}>
+              <menu.DropdownMenuLabel>{t('bar.wallsMenu')}</menu.DropdownMenuLabel>
+              <menu.DropdownMenuRadioGroup
+                value={wallMode}
+                onValueChange={(mode) => session.setWallMode(mode as WallMode)}
+              >
+                {WALL_MODES.map((mode) => (
+                  <menu.DropdownMenuRadioItem key={mode} value={mode}>
+                    {wallName(mode)}
+                  </menu.DropdownMenuRadioItem>
+                ))}
+              </menu.DropdownMenuRadioGroup>
+            </menu.DropdownMenuContent>
+          )}
+        </DeferredDropdownMenu>
+      </ShortcutTooltip>
     </fieldset>
   );
 }
@@ -197,28 +193,31 @@ function StepMenu({
   onChange(value: number): void;
 }) {
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+    <DeferredDropdownMenu
+      trigger={
         <Button variant="ghost" size="sm" aria-label={label} title={label}>
           {icon}
           {format(value)}
           <ChevronDownIcon aria-hidden="true" />
         </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" side="top">
-        <DropdownMenuLabel>{menuLabel}</DropdownMenuLabel>
-        <DropdownMenuRadioGroup
-          value={String(value)}
-          onValueChange={(next) => onChange(Number(next))}
-        >
-          {options.map((option) => (
-            <DropdownMenuRadioItem key={option} value={String(option)}>
-              {format(option)}
-            </DropdownMenuRadioItem>
-          ))}
-        </DropdownMenuRadioGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
+      }
+    >
+      {(menu, content) => (
+        <menu.DropdownMenuContent align="start" side="top" {...content}>
+          <menu.DropdownMenuLabel>{menuLabel}</menu.DropdownMenuLabel>
+          <menu.DropdownMenuRadioGroup
+            value={String(value)}
+            onValueChange={(next) => onChange(Number(next))}
+          >
+            {options.map((option) => (
+              <menu.DropdownMenuRadioItem key={option} value={String(option)}>
+                {format(option)}
+              </menu.DropdownMenuRadioItem>
+            ))}
+          </menu.DropdownMenuRadioGroup>
+        </menu.DropdownMenuContent>
+      )}
+    </DeferredDropdownMenu>
   );
 }
 
