@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>RoomForge · Coste de luces (P2-11)</title>
+  <style>
+    body{margin:0;font:14px system-ui,sans-serif;background:#111418;color:#e6ecef}
+    header{padding:12px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    h1{font-size:16px;margin:0}
+    button{padding:8px 12px;border-radius:6px;border:1px solid #3b4650;background:#1c232a;color:inherit;cursor:pointer}
+    #stage canvas{display:block}
+    #status{color:#9fb2bd}
+    table{border-collapse:collapse;margin:16px;font-variant-numeric:tabular-nums}
+    td,th{border:1px solid #2c363f;padding:4px 8px;text-align:right}
+    th{background:#1c232a}
+    td:first-child{text-align:left}
+  </style>
+  <script type="importmap">{"imports":{"three":"./vendor/three.module.js","three/addons/":"./vendor/addons/"}}</script>
+</head>
+<body>
+  <header>
+    <h1>Prototipo desechable · coste de luces</h1>
+    <button id="run" type="button">Medir</button>
+    <button id="copy" type="button">Copiar JSON</button>
+    <span id="status" role="status"></span>
+  </header>
+  <div id="stage"></div>
+  <div id="results"></div>
+  <script type="module" src="./bench.js"></script>
+</body>
+</html>

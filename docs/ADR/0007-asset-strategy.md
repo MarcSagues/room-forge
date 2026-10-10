@@ -1,6 +1,6 @@
 # ADR-0007 — Estrategia de assets: híbrido GLB CC0 + objetos paramétricos
 
-- **Estado:** **Aceptada (provisional)** (2026-10-08) — se confirma o enmienda con el resultado del spike P4-01
+- **Estado:** **Aceptada** (2026-10-10, tras el spike P4-01; antes provisional desde 2026-10-08)
 - **Fecha:** 2026-10-08
 - **Revisar cuando:** P4-01 concluya, o aparezca un presupuesto/artista.
 
@@ -31,3 +31,23 @@ Es el **riesgo n.º 1** del producto: se necesitan ~30 objetos coherentes, liger
 
 ## Verificación
 P4-01: 3 objetos (silla, monitor, escritorio) hechos por cada vía, evaluados con capturas y presupuesto; resultado ⇒ actualización de esta ADR a **Aceptada**.
+
+**2026-10-09 — avance de P4-01 (#29):** disponibles nueve muestras propias (tres variantes
+por familia), visor con color por ranura y descarga GLB, y comparación con tres GLB
+CC0 de Kenney con licencia y versión verificadas. Véase
+[informe de muestras](../research/ASSET_SPIKE_P4_01.md). La geometría propia ofrece
+control de variantes y ranuras; los modelos CC0 usados son más simples y mucho más ligeros.
+Se propone mantener la mezcla por categoría y evaluar la vía propia para silla gaming.
+La ADR sigue **provisional** hasta recoger la valoración visual del propietario,
+la prueba con tres personas y la comparación en la sala del editor. No se da por
+cerrada #29 ni se integra el experimento como código de producto.
+
+**2026-10-10 — decisión (cierra P4-01, #29):** el propietario da el visto bueno a las nueve
+muestras propias y pide aplicarlas al editor. Queda aceptado:
+- **Modelos propios generados por código y exportados a GLB** (`tools/spikes/model-variants`, sin
+  assets de terceros, `LicenseRef-RoomForge-Proprietary`) para escritorios, sillas gaming y monitores,
+  con **ranuras de color** semánticas por modelo (p. ej. tablero/estructura/detalles).
+- Los GLB **CC0** siguen siendo la vía para objetos orgánicos (planta, sofá, puf) cuando el lote lo
+  necesite, siempre con licencia y procedencia registradas en el manifiesto.
+- Presupuesto por modelo: ≤ 20 000 triángulos y ≤ 300 kB, 3–4 ranuras, carga perezosa del catálogo.
+- La evaluación con tres personas queda como seguimiento de la beta (P8-04), no bloquea la integración.
