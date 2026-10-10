@@ -2,7 +2,7 @@
 
 import { createStarterDocument } from '@roomforge/core';
 import { useEffect, useMemo, useState } from 'react';
-import { emptyCatalog } from '@/asset-library';
+import { appCatalog, emptyCatalog } from '@/asset-library';
 import {
   downloadFile,
   exportProject,
@@ -60,6 +60,7 @@ export function ProjectsApp() {
       storage={opened.mode}
       createDocument={(size) => createStarterDocument(size)}
       readStorage={readStorage}
+      templateCatalog={appCatalog}
       {...(files ? { files } : {})}
     />
   );

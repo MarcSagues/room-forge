@@ -25,6 +25,24 @@ export const es: Record<MessageKey, string> = {
   'newRoom.preview': 'Plano de una sala de {width} por {depth} m',
   'newRoom.create': 'Crear proyecto',
   'newRoom.cancel': 'Cancelar',
+  'templates.open': 'Desde una plantilla…',
+  'templates.title': 'Empezar con una plantilla',
+  'templates.description':
+    'Elige una habitación ya montada. El proyecto nuevo es tuyo: la plantilla no cambia.',
+  'templates.list': 'Plantillas',
+  'templates.create': 'Crear proyecto',
+  'templates.cancel': 'Cancelar',
+  'templates.empty.name': 'Habitación vacía',
+  'templates.empty.hint': 'Una sala de 4 × 4,5 m sin nada, para empezar de cero.',
+  'templates.gaming.name': 'Setup gaming',
+  'templates.gaming.hint':
+    'Mesa ancha, pantalla ultrapanorámica, silla racing y luces RGB, de noche.',
+  'templates.office.name': 'Despacho en casa',
+  'templates.office.hint':
+    'Una mesa tranquila junto a la ventana, monitor con brazo y lámparas cálidas.',
+  'templates.streaming.name': 'Rincón de streaming',
+  'templates.streaming.hint':
+    'Dos pantallas, un letrero de neón, paneles de luz y una luz principal.',
   'projects.untitled': 'Proyecto sin título',
   'projects.search': 'Buscar proyectos',
   'projects.searchPlaceholder': 'Buscar por nombre',
