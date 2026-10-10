@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_LOCALE, LOCALES, translate } from './index';
-import { en, es } from './messages';
+import { DEFAULT_LOCALE, LOCALES, loadLocale, translate } from './index';
+import { en } from './messages';
+import { es } from './messages-es';
 
 const placeholders = (s: string) => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
 
@@ -19,10 +20,14 @@ describe('messages', () => {
 });
 
 describe('translate', () => {
-  it('uses English by default and knows both locales', () => {
+  it('uses English by default, and Spanish once it is loaded', async () => {
     expect(DEFAULT_LOCALE).toBe('en');
     expect(LOCALES).toEqual(['en', 'es']);
     expect(translate('en', 'home.openEditor')).toBe('Open the editor');
+    // Until its dictionary arrives a locale falls back to English instead of failing.
+    expect(translate('es', 'home.openEditor')).toBe('Open the editor');
+    await loadLocale('es');
+    await loadLocale('es');
     expect(translate('es', 'home.openEditor')).toBe('Abrir el editor');
   });
 
