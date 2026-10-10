@@ -123,6 +123,7 @@ export const en = {
   'shell.saveFailed': 'Not saved',
   'shell.projectsLink': 'All projects',
   'shell.exportProject': 'Project (.roomforge.json)',
+  'shell.exportImage': 'Image (.png)…',
   'save.failedTitle': 'Your latest changes are not saved.',
   'save.failed.quota': 'The browser has no storage left. Free some space or export a copy.',
   'save.failed.unavailable': 'The browser is not letting RoomForge store projects.',

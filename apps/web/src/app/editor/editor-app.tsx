@@ -18,6 +18,8 @@ import {
   createAutosave,
   createBackupReminder,
   createShareLink,
+  datedFileName,
+  downloadBlob,
   downloadFile,
   exportFileOf,
   installAutosaveLifecycle,
@@ -249,6 +251,20 @@ export function Workspace(props: {
     return { kind: 'copied', length: link.length, long: link.overTarget };
   }, [session]);
 
+  // A PNG of the view, `slug-date.png`. The export code is fetched the first time the dialog opens;
+  // the scene and the name are looked up when an image is made.
+  const imageExport = useCallback(
+    () =>
+      import('@/export').then(({ createImageExporter }) =>
+        createImageExporter({
+          imageApi: async () => (await scene.current?.image()) ?? null,
+          fileName: () => datedFileName(nameRef.current, new Date(), 'png'),
+          download: downloadBlob,
+        }),
+      ),
+    [],
+  );
+
   // The next autosave already writes the new name; if renaming fails it goes back to the old one.
   const rename = useCallback(
     async (next: string) => {
@@ -273,6 +289,7 @@ export function Workspace(props: {
       onExport={exportCopy}
       onRename={owner ? rename : undefined}
       onShare={viewer ? undefined : share}
+      imageExport={imageExport}
     >
       <EditorShell
         session={session}

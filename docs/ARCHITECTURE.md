@@ -83,7 +83,7 @@ flowchart TB
 | `web/scene-engine` | three/R3F: render, cámara, picking, controladores de interacción | `core`, three, R3F, drei, `asset-library` | `ui/` |
 | `web/asset-library` | Manifiesto de catálogo, carga/caché de modelos, `CatalogProvider` | `core`, three (loaders) | `ui/`, `scene-engine` internos |
 | `web/persistence` | Adaptadores IndexedDB, autosave, share links | `core`, `idb` (deflate: `CompressionStream` del navegador) | `ui/`, three |
-| `web/export` | PNG/miniaturas | `scene-engine` (vía interfaz `RendererHandle`) | `ui/` |
+| `web/export` | PNG/miniaturas | `scene-engine` (vía `SceneImageApi`, solo tipos) | `ui/` |
 | `web/editor` | Hooks `useEditor`, `useDocument(selector)`, herramientas, atajos | `core`, `scene-engine` (API pública) | detalles internos de three |
 | `web/ui` | Componentes React/shadcn | `editor`, `core` (solo tipos) | `scene-engine` internals, `persistence` |
 | `web/ai` | Puerto + adaptadores futuros | `core` | `ui/` |
@@ -365,6 +365,9 @@ flowchart LR
 - No se usa `preserveDrawingBuffer` (penaliza todo el render). Se renderiza a un **`WebGLRenderTarget` fuera de pantalla** (MSAA 4×) con tamaño de exportación, se lee a un canvas 2D y `toBlob`.
 - Opciones: 1×/2×/4× (límite por memoria/`MAX_TEXTURE_SIZE`), fondo transparente opcional, ocultar rejilla/gizmos.
 - Debe pasar por el mismo pipeline que el viewport (incluye bloom) para que «lo que ves es lo que exportas».
+- **Implementación (P6-06).** `SceneHandle.image()` carga bajo demanda `scene-engine/capture` (`SceneImageApi`: `viewportSize`, `limits`, `backdrop`, `capture`). `capture` oculta con `visible` los objetos marcados como **ayudas de edición** (`markOverlay`/`userData.editorOverlay`: rejilla, contorno de selección y *hover*, asa de giro, guía de pared, fantasma de colocación), renderiza **una vez** con la cámara del viewport a un `WebGLRenderTarget` MSAA (HalfFloat si hay `EXT_color_buffer_float`), aplica *tone mapping* y espacio de color con un `OutputPass` a un destino RGBA8 (el renderer solo los aplica en pantalla) y lo lee con `readRenderTargetPixelsAsync`. Todo lo que cambia (destino, color de borrado, fondo, visibilidad) se restaura **antes** de esperar, se liberan los destinos y se pide un fotograma (`invalidate`). Las filas se invierten y el alfa se des-premultiplica en sitio.
+- `web/export` (`planImage`, `renderPng`, `createImageExporter`, también bajo demanda) decide el tamaño: viewport (px CSS) × 1/2/4, reducido manteniendo el aspecto al lado máximo de la GPU (mín. de `MAX_TEXTURE_SIZE`, `MAX_RENDERBUFFER_SIZE`, `MAX_VIEWPORT_DIMS` y 8192) y a **4096² px**; las muestras MSAA (borrador 0, estándar 4, alta 8) se reducen hasta `px × muestras ≤ 2²⁵`. El fondo («como en el visor», transparente o color sólido) se pinta en el canvas 2D **detrás** de la imagen (`destination-over`), así que el transparente tiene alfa real. Errores tipados: `context-lost`, `too-large` (framebuffer incompleto, `OUT_OF_MEMORY`, canvas 2D o `toBlob` que fallan), `failed`; la app añade `unavailable` (sin vista). El diálogo (`ui/editor/image-export-dialog`, chunk propio, textos en `i18n/messages-image.ts`) avisa cuando el tamaño se reduce, muestra el progreso (renderizar → guardar) y no se puede cerrar a mitad. Archivo `slug-fecha.png` (`datedFileName`).
+- **Pendiente:** la iluminación es la actual (`CaptureRequest.lighting: 'current'`); P5-06 añadirá los valores día/noche. Sin postproceso todavía: cuando llegue el bloom, `capture` debe pasar por el mismo *composer* en lugar del `OutputPass` suelto.
 
 ### 6.7 Geometría de sala (`scene-engine/room`, P2-07)
 
