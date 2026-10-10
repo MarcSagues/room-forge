@@ -348,7 +348,7 @@ flowchart LR
 ### 6.4 Next.js + R3F
 
 - El editor es **client-only** (`'use client'` + `dynamic(..., { ssr: false })`); la landing no carga three.
-- **Sitio público (P8-01):** la landing (`/`, `/es/`) y las páginas públicas son *server components* sin JS propio (`ui/site/`); sus textos viven en `ui/site/site-messages.ts` (EN/ES, fuera del diccionario de la app, así no llegan al bundle del editor). `app/seo.ts` genera metadatos, `robots.txt` y `sitemap.xml` en el build a partir de `SITE_URL` (`app/site-config.ts`); la imagen social `/og.png` se dibuja en el build con `next/og`.
+- **Sitio público (P8-01):** la landing (`/`, `/es/`) y las páginas públicas son *server components* sin JS propio (`ui/site/`); sus textos viven en `ui/site/site-messages.ts` (EN/ES, fuera del diccionario de la app, así no llegan al bundle del editor). `app/seo.ts` genera metadatos, `robots.txt` y `sitemap.xml` en el build a partir de `SITE_URL` (`app/site-config.ts`); la imagen social `/og.png` la dibuja `scripts/write-og-image.mjs` tras el build con `next/og` (como script y no como ruta: un módulo asíncrono en la app añade su runtime a todas las páginas).
 - `next.config`: `output: 'export'`, `images: { unoptimized: true }`, `trailingSlash: true`.
 - El código de `scene-engine` no importa nada de `next/*`.
 - React Strict Mode: R3F v9 avisa de efectos duplicados en desarrollo; los controladores se escriben idempotentes (cleanup simétrico).

@@ -4,7 +4,7 @@ import { absoluteUrl, PUBLIC_PAGES, type PublicPage, type SiteConfig } from './s
 
 const OG_LOCALE: Record<Locale, string> = { en: 'en_US', es: 'es_ES' };
 
-/** The card image (`og.png/route.tsx`), shared by every public page. */
+/** The card image, drawn after the build by `scripts/write-og-image.mjs`. */
 export const OG_IMAGE = { url: '/og.png', width: 1200, height: 630, alt: 'RoomForge' } as const;
 
 /**
