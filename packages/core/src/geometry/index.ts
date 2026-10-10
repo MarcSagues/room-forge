@@ -12,6 +12,20 @@ export {
   snapToGrid,
 } from './basics';
 export {
+  intersectRayWall,
+  type OpeningOffsetInput,
+  type OpeningOffsetReason,
+  type OpeningOffsetResult,
+  pickWall,
+  type RoomBox,
+  solveOpeningOffset,
+  WALL_PICK_DISTANCE,
+  type WallHit,
+  wallLength,
+  wallPoint,
+  wallU,
+} from './openings';
+export {
   type PlacementGuide,
   type PlacementInput,
   type PlacementReason,

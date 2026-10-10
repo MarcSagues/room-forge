@@ -1,13 +1,14 @@
 'use client';
 
 import { useFrame, useThree } from '@react-three/fiber';
-import type { ObjectId } from '@roomforge/core';
+import type { EntityId, ObjectId, OpeningId } from '@roomforge/core';
 import { useEffect, useMemo, useRef } from 'react';
 import {
   Color,
   LineBasicMaterial,
   LineSegments,
   Matrix4,
+  type Object3D,
   Raycaster,
   Vector2,
   Vector3,
@@ -15,6 +16,8 @@ import {
 import { useSceneCatalog, useSceneSession, useTransientStore } from '../canvas/scene-context';
 import { useEntityRegistry } from '../objects/entity-registry';
 import { objectSize } from '../objects/placeholder-resources';
+import { FRAME_PROUD } from '../room/opening-parts';
+import { WALL_THICKNESS } from '../room/room-geometry';
 import { MoveController } from './move-controller';
 import { attachNudge } from './nudge-controller';
 import { outlineGeometry } from './outline-geometry';
@@ -61,26 +64,33 @@ export function Picking() {
 
   useEffect(() => {
     // Reused between picks: one proxy object per entity, refreshed in place.
-    const cache = new Map<ObjectId, PickProxy>();
+    const cache = new Map<EntityId, PickProxy>();
     const proxies: PickProxy[] = [];
-    const pick = (x: number, y: number): ObjectId | null => {
-      const { objects } = session.getState().document;
+    const proxyOf = (id: EntityId, object3d: Object3D) => {
+      let proxy = cache.get(id);
+      if (!proxy) {
+        proxy = { id, matrixWorld: object3d.matrixWorld, size: { w: 0, h: 0, d: 0 } };
+        cache.set(id, proxy);
+      }
+      proxy.matrixWorld = object3d.matrixWorld;
+      return proxy;
+    };
+    const pick = (x: number, y: number): EntityId | null => {
+      const { objects, openings } = session.getState().document;
       proxies.length = 0;
       for (const [id, object3d] of registry.entries()) {
         const object = objects[id as ObjectId];
-        if (!object || object.hidden || object.locked) continue;
-        let proxy = cache.get(id as ObjectId);
-        if (!proxy) {
-          proxy = {
-            id: id as ObjectId,
-            matrixWorld: object3d.matrixWorld,
-            size: { w: 0, h: 0, d: 0 },
-          };
-          cache.set(id as ObjectId, proxy);
+        const opening = object ? undefined : openings[id as OpeningId];
+        if (object && !object.hidden && !object.locked) {
+          const proxy = proxyOf(id, object3d);
+          proxy.size = objectSize(catalog, object.catalogId);
+          proxies.push(proxy);
+        } else if (opening && shown(object3d)) {
+          // Doors and windows of a faded wall are hidden: clicks go through them.
+          const proxy = proxyOf(id, object3d);
+          openingSize(opening, proxy.size);
+          proxies.push(proxy);
         }
-        proxy.matrixWorld = object3d.matrixWorld;
-        proxy.size = objectSize(catalog, object.catalogId);
-        proxies.push(proxy);
       }
       return pickEntity(rayAt(x, y), proxies)?.id ?? null;
     };
@@ -102,7 +112,7 @@ export function Picking() {
       },
       drag: {
         start: (id, x, y) => {
-          if (!mover.begin(id, rayAt(x, y))) return false;
+          if (!mover.begin(id as ObjectId, rayAt(x, y))) return false;
           // Dragging an object selects it, so the outline follows it.
           if (!session.getState().selection.includes(id)) session.select([id], 'replace');
           return true;
@@ -138,7 +148,7 @@ export function Picking() {
           );
           return grabbed ? id : null;
         },
-        start: (id, x, y) => rotator.begin(id, rayAt(x, y)),
+        start: (id, x, y) => rotator.begin(id as ObjectId, rayAt(x, y)),
         move: (x, y, free) => rotator.update(rayAt(x, y), free),
         end: () => {
           rotator.end();
@@ -154,6 +164,26 @@ export function Picking() {
 /** Outlines slightly larger than the object so they do not z-fight with its faces. */
 const INFLATE = 1.02;
 const sizeMatrix = new Matrix4();
+const scratch = { w: 0, h: 0, d: 0 };
+
+/** The box a door or window is picked and outlined with: its hole, through the wall and frame. */
+function openingSize(
+  opening: { width: number; height: number } | undefined,
+  out: { w: number; h: number; d: number },
+) {
+  out.w = opening?.width ?? 0;
+  out.h = opening?.height ?? 0;
+  out.d = WALL_THICKNESS + 2 * FRAME_PROUD;
+  return out;
+}
+
+/** Drawn: it and every ancestor are visible (an opening of a faded wall is not). */
+function shown(object: Object3D): boolean {
+  for (let node: Object3D | null = object; node; node = node.parent) {
+    if (!node.visible) return false;
+  }
+  return true;
+}
 
 /**
  * Hover outline (accent at 60 %) and selection box (accent): two shared line objects moved onto
@@ -201,21 +231,22 @@ export function SelectionOutline() {
 
   useFrame(() => {
     const { hover: hovered, selection: selected, document } = session.getState();
-    const selectedId = (selected[0] ?? null) as ObjectId | null;
+    const selectedId = selected[0] ?? null;
     // Red while the dragged pose is not legal (the drop would be refused).
     const drag = transient.drag();
     lines.selection.material.color.copy(drag && !drag.valid ? lines.danger : lines.accent);
     place(lines.selection, selectedId);
-    place(lines.hover, hovered === selectedId ? null : (hovered as ObjectId | null));
+    place(lines.hover, hovered === selectedId ? null : hovered);
 
-    function place(line: LineSegments, id: ObjectId | null) {
-      const object = id ? document.objects[id] : undefined;
+    function place(line: LineSegments, id: EntityId | null) {
+      const object = id ? document.objects[id as ObjectId] : undefined;
+      const opening = id ? document.openings[id as OpeningId] : undefined;
       const target = id ? registry.get(id) : undefined;
-      if (!object || !target || object.hidden) {
+      if (!target || (object ? object.hidden : !opening || !shown(target))) {
         line.visible = false;
         return;
       }
-      const size = objectSize(catalog, object.catalogId);
+      const size = object ? objectSize(catalog, object.catalogId) : openingSize(opening, scratch);
       target.updateWorldMatrix(true, false);
       line.matrix
         .copy(target.matrixWorld)

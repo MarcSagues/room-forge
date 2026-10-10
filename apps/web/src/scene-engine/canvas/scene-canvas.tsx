@@ -3,7 +3,7 @@
 import { addAfterEffect, Canvas, useThree } from '@react-three/fiber';
 import {
   type EditorSession,
-  type ObjectId,
+  type EntityId,
   type RoomId,
   WALL_IDS,
   type WallId,
@@ -18,6 +18,7 @@ import { createPlacementApi, type PlacementApi } from '../interaction/placement-
 import { createTransientStore } from '../interaction/transient-store';
 import { MaterialsProvider } from '../materials/materials-context';
 import { createEntityRegistry, type EntityRegistry } from '../objects/entity-registry';
+import { ModelsProvider } from '../resources/models-context';
 import { roomObjectName } from '../room/room-mesh';
 import { watchContext } from './context-events';
 import { connectInvalidate } from './invalidate-bridge';
@@ -54,7 +55,7 @@ export interface SceneHandle {
    * `local` picks another point, in the object's own frame (its front is +z), e.g. the knob of
    * the rotation handle.
    */
-  project(id: ObjectId, local?: readonly [number, number, number]): { x: number; y: number } | null;
+  project(id: EntityId, local?: readonly [number, number, number]): { x: number; y: number } | null;
   /** Renderer counters (frame, draw calls, triangles, programs...). */
   renderInfo(): RenderInfo;
   /** Run a direct three.js mutation and request a frame. */
@@ -120,7 +121,9 @@ export function SceneCanvas(props: SceneCanvasProps) {
           <ReadyReporter onReady={onReady} camera={cameraRef} registry={registry} />
           {showStats && <StatsWriter target={statsRef} />}
           <MaterialsProvider>
-            <SceneContent registry={registry} />
+            <ModelsProvider>
+              <SceneContent registry={registry} />
+            </ModelsProvider>
           </MaterialsProvider>
         </SceneSessionProvider>
       </Canvas>

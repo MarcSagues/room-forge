@@ -10,7 +10,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { catalogEntries, stubCatalog } from '@/asset-library';
+import { appCatalog, catalogEntries } from '@/asset-library';
 import { createShortcutRegistry, type ErrorLog, editorShortcuts } from '@/editor';
 import {
   type Autosave,
@@ -51,7 +51,7 @@ import { useProjectLock } from './use-project-lock';
 
 const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? 'dev';
 
-/** What the catalog panel lists: the stub manifest until the real catalog arrives (P4-06). */
+/** What the catalog panel lists: the manifest's models, then the stub boxes (P4-06 brings filters). */
 const CATALOG_ITEMS: readonly CatalogPanelItem[] = catalogEntries().map((entry) => ({
   id: entry.id,
   name: entry.name.en,
@@ -288,7 +288,7 @@ export function Workspace(props: {
         sharedView={viewer ? <SharedViewBanner name={name} onCopy={viewer.onCopy} /> : undefined}
         properties={
           <>
-            <SelectionSummary session={session} catalog={stubCatalog} live={live} />
+            <SelectionSummary session={session} catalog={appCatalog} live={live} />
             <RoomSizePanel session={session} />
             <RoomMaterialsPanel session={session} />
           </>
@@ -298,7 +298,7 @@ export function Workspace(props: {
           <>
             <SceneCanvas
               session={session}
-              catalog={stubCatalog}
+              catalog={appCatalog}
               onReady={(handle) => {
                 scene.current = handle;
               }}

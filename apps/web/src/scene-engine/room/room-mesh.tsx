@@ -5,23 +5,26 @@ import {
   type DeepReadonly,
   type MaterialRef,
   type Opening,
+  type OpeningId,
   type Room,
   type RoomId,
   WALL_IDS,
   type WallId,
 } from '@roomforge/core';
-import { memo, type RefObject, useEffect, useMemo, useRef } from 'react';
+import { memo, type RefObject, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { type Group, type MeshStandardMaterial, Vector3 } from 'three';
 import { useShallow } from 'zustand/react/shallow';
 import { prefersReducedMotion } from '../camera/reduced-motion';
 import { useSceneSession } from '../canvas/scene-context';
 import { useSessionState } from '../canvas/use-session-state';
 import { useMaterial } from '../materials/use-material';
+import { useRegisterEntity } from '../objects/entity-registry';
 import { useMeshGeometry } from './buffer-geometry';
 import type { MeshData, Vec3 } from './mesh-data';
-import { buildRoomGeometry } from './room-geometry';
+import { buildRoomGeometry, WALL_THICKNESS, type WallPlacement } from './room-geometry';
 import { RoomGrid } from './room-grid';
 import { approach, WALL_TRANSITION_MS, wallHeightScale, wallTargetOpacity } from './wall-display';
+import { WallOpeningsLayer } from './wall-openings';
 
 /** Object names the E2E hook reads (`SceneHandle.roomDisplay`). */
 export const roomObjectName = {
@@ -46,6 +49,7 @@ export function RoomMesh({ roomId }: { roomId: RoomId }) {
 }
 
 type WallMaterials = Partial<Record<WallId, MeshStandardMaterial | null>>;
+type WallGroups = Partial<Record<WallId, Group | null>>;
 
 function RoomModel({
   room,
@@ -62,19 +66,33 @@ function RoomModel({
   );
   const walls = useRef<Group>(null);
   const materials = useRef<WallMaterials>({});
+  const openingGroups = useRef<WallGroups>({});
   // Stable ref callbacks, so the memoised walls do not re-render with the room.
-  const materialRefs = useMemo(
+  const refs = useMemo(
     () =>
       Object.fromEntries(
         WALL_IDS.map((wall) => [
           wall,
-          (material: MeshStandardMaterial | null) => {
-            materials.current[wall] = material;
+          {
+            material: (material: MeshStandardMaterial | null) => {
+              materials.current[wall] = material;
+            },
+            openings: (group: Group | null) => {
+              openingGroups.current[wall] = group;
+            },
           },
         ]),
-      ) as Record<WallId, (material: MeshStandardMaterial | null) => void>,
+      ) as Record<WallId, WallRefs>,
     [],
   );
+  const byWall = useMemo(() => {
+    const result = { north: [], east: [], south: [], west: [] } as Record<
+      WallId,
+      DeepReadonly<Opening>[]
+    >;
+    for (const opening of openings) result[opening.wall].push(opening);
+    return result;
+  }, [openings]);
   const { width, depth } = geometry;
   return (
     <group position={[room.origin[0], 0, room.origin[1]]}>
@@ -87,27 +105,94 @@ function RoomModel({
       />
       <group ref={walls} name={roomObjectName.walls(room.id)}>
         {WALL_IDS.map((wall) => (
-          <Surface
+          <WallView
             key={wall}
             name={roomObjectName.wall(room.id, wall)}
-            mesh={geometry.walls[wall].mesh}
-            position={geometry.walls[wall].position}
-            rotationY={geometry.walls[wall].rotationY}
+            placement={geometry.walls[wall]}
             material={room.walls[wall].material}
-            // Always transparent, so fading never changes the shader program (no recompiles), and
-            // each wall has a material of its own: they fade one by one.
-            wall
-            materialRef={materialRefs[wall]}
+            openings={byWall[wall]}
+            shift={wall === 'north' || wall === 'south' ? WALL_THICKNESS : 0}
+            refs={refs[wall]}
           />
         ))}
       </group>
-      <WallFader walls={walls} materials={materials} roomHeight={room.height} />
+      <WallFader
+        walls={walls}
+        materials={materials}
+        openings={openingGroups}
+        roomHeight={room.height}
+      />
       <RoomGrid width={width} depth={depth} />
     </group>
   );
 }
 
+interface WallRefs {
+  material: (material: MeshStandardMaterial | null) => void;
+  openings: (group: Group | null) => void;
+}
+
+/**
+ * One wall in its frame: the solid with its holes, and the doors and windows that fill them
+ * (instanced, see `WallOpeningsLayer`). Each opening also gets an empty anchor in the entity
+ * registry, at the bottom centre of its hole, so picking, outlines and controllers find it like
+ * an object.
+ */
+const WallView = memo(function WallView(props: {
+  name: string;
+  placement: WallPlacement;
+  material: DeepReadonly<MaterialRef>;
+  openings: readonly DeepReadonly<Opening>[];
+  /** Where the interior starts along this wall's frame (N/S frames cover the corners). */
+  shift: number;
+  refs: WallRefs;
+}) {
+  const { placement, openings, shift, refs } = props;
+  const layer = useMemo(() => new WallOpeningsLayer(), []);
+  useEffect(() => () => layer.dispose(), [layer]);
+  useEffect(() => {
+    refs.openings(layer.group);
+    return () => refs.openings(null);
+  }, [layer, refs]);
+  useLayoutEffect(() => {
+    layer.begin();
+    for (const o of openings) layer.add(o, shift + o.offset + o.width / 2, o.sill, WALL_THICKNESS);
+    layer.commit();
+  }, [layer, openings, shift]);
+  return (
+    <group position={placement.position} rotation-y={placement.rotationY}>
+      <Surface
+        name={props.name}
+        mesh={placement.mesh}
+        material={props.material}
+        // Always transparent, so fading never changes the shader program (no recompiles), and
+        // each wall has a material of its own: they fade one by one.
+        wall
+        materialRef={refs.material}
+      />
+      <primitive object={layer.group}>
+        {openings.map((o) => (
+          <OpeningAnchor
+            key={o.id}
+            id={o.id}
+            x={shift + o.offset + o.width / 2}
+            y={o.sill}
+            z={-WALL_THICKNESS / 2}
+          />
+        ))}
+      </primitive>
+    </group>
+  );
+});
+
+function OpeningAnchor(props: { id: OpeningId; x: number; y: number; z: number }) {
+  const register = useRegisterEntity(props.id);
+  return <group ref={register} position={[props.x, props.y, props.z]} />;
+}
+
 const view = new Vector3();
+/** Wall opacity under which its doors and windows are hidden (and cannot be picked). */
+const OPENINGS_HIDDEN_BELOW = 0.5;
 /** Longest step a transition takes in one frame: after an idle period it still animates. */
 const MAX_STEP_MS = 50;
 
@@ -119,9 +204,10 @@ const MAX_STEP_MS = 50;
 function WallFader(props: {
   walls: RefObject<Group | null>;
   materials: RefObject<WallMaterials>;
+  openings: RefObject<WallGroups>;
   roomHeight: number;
 }) {
-  const { walls, materials, roomHeight } = props;
+  const { walls, materials, openings, roomHeight } = props;
   const session = useSceneSession();
   const invalidate = useThree((state) => state.invalidate);
   const duration = useMemo(() => (prefersReducedMotion() ? 0 : WALL_TRANSITION_MS), []);
@@ -150,6 +236,9 @@ function WallFader(props: {
       const target = wallTargetOpacity(mode, wall, view.x, view.z);
       material.opacity = approach(material.opacity, target, step, ease);
       if (material.opacity !== target) moving = true;
+      // Doors and windows of a faded wall would float in the air: they go with it.
+      const fittings = openings.current[wall];
+      if (fittings) fittings.visible = material.opacity > OPENINGS_HIDDEN_BELOW;
     }
     const group = walls.current;
     if (group) {
