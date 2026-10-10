@@ -10,6 +10,7 @@ import fc from 'fast-check';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createMemoryProjectRepository } from './memory-repository';
 import {
+  datedFileName,
   downloadFile,
   exportFileName,
   exportFileOf,
@@ -61,6 +62,12 @@ describe('exportFileName', () => {
     );
     expect(exportFileName('Office', new Date(2026, 0, 5, 0, 1))).toBe(
       'office-2026-01-05.roomforge.json',
+    );
+  });
+
+  it('shares its slug-date shape with other exports (an image)', () => {
+    expect(datedFileName('Mi habitación', new Date(2026, 9, 10), 'png')).toBe(
+      'mi-habitacion-2026-10-10.png',
     );
   });
 });

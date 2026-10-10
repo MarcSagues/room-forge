@@ -35,10 +35,15 @@ export function slugify(name: string): string {
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
-/** `slug-YYYY-MM-DD.roomforge.json`, the date being the one on the exporting person's calendar. */
-export function exportFileName(name: string, at: Date): string {
+/** `slug-YYYY-MM-DD.<extension>`, the date being the one on the exporting person's calendar. */
+export function datedFileName(name: string, at: Date, extension: string): string {
   const date = `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}`;
-  return `${slugify(name)}-${date}.roomforge.json`;
+  return `${slugify(name)}-${date}.${extension}`;
+}
+
+/** `slug-YYYY-MM-DD.roomforge.json`. */
+export function exportFileName(name: string, at: Date): string {
+  return datedFileName(name, at, 'roomforge.json');
 }
 
 export interface ExportOptions {
@@ -110,10 +115,15 @@ export const REVOKE_AFTER_MS = 10_000;
 
 /** Hands a file to the browser as a download (a temporary link that is clicked and removed). */
 export function downloadFile(file: ExportedFile): void {
-  const url = URL.createObjectURL(new Blob([file.text], { type: 'application/json' }));
+  downloadBlob(new Blob([file.text], { type: 'application/json' }), file.filename);
+}
+
+/** Hands any blob (an exported image, say) to the browser as a download named `filename`. */
+export function downloadBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = file.filename;
+  link.download = filename;
   link.rel = 'noopener';
   link.hidden = true;
   document.body.append(link);
