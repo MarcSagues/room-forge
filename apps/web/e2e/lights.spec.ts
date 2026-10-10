@@ -142,6 +142,7 @@ test('twenty luminaires share eight point lights; orbiting a little does not res
 }) => {
   await openEditor(page);
   await settle(page);
+  const empty = await info(page);
   const strips = Array.from({ length: 20 }, (_, i): [string, string, number, number] => [
     `strip${i}`,
     'led.strip.1m',
@@ -149,6 +150,11 @@ test('twenty luminaires share eight point lights; orbiting a little does not res
     0.5 + Math.floor(i / 5) * 0.6,
   ]);
   await add(page, strips);
+  // The strip's model (two parts) and the placeholder box: the glow shader is compiled by then.
+  await page.waitForFunction(({ base }) => (window.__RF__?.info()?.geometries ?? 0) >= base + 3, {
+    base: empty.geometries,
+  });
+  await settle(page);
   const before = await lights(page);
   expect(before.lit).toHaveLength(8);
   const programs = (await info(page)).programs;
