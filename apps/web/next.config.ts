@@ -13,6 +13,8 @@ const config: NextConfig = {
   pageExtensions: isProduction ? ['tsx', 'ts'] : ['tsx', 'ts', 'dev.tsx'],
   // @roomforge/core ships TypeScript sources (ADR-0001); Next compiles them.
   transpilePackages: ['@roomforge/core'],
+  // Source maps only on request, to see what each chunk is made of (tools/checks/bundle-breakdown.mjs).
+  productionBrowserSourceMaps: process.env.BUNDLE_SOURCEMAPS === '1',
 };
 
 export default config;

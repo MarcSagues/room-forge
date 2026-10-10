@@ -1,5 +1,5 @@
 import type { Patch } from 'immer';
-import type { z } from 'zod';
+import type { z } from 'zod/mini';
 import {
   type DeepReadonly,
   documentStructureIssues,
@@ -84,7 +84,7 @@ export function checkInvariants(
 
 function fieldViolations(doc: Doc, scope: InvariantScope | undefined): InvariantViolation[] {
   const violations: InvariantViolation[] = [];
-  const validate = (schema: z.ZodType, value: unknown, base: (string | number)[]) => {
+  const validate = (schema: z.ZodMiniType, value: unknown, base: (string | number)[]) => {
     const result = schema.safeParse(value);
     if (result.success) return;
     for (const issue of result.error.issues) {
