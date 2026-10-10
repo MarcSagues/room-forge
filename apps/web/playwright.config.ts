@@ -39,6 +39,9 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: isCI,
   retries: isCI ? 1 : 0,
+  // CI runners draw WebGL on the CPU (SwiftShader) with every worker busy: a dialog closing or a
+  // frame settling can take longer than the 5 s default there, which made specs flake.
+  expect: { timeout: isCI ? 10_000 : 5_000 },
   reporter: isCI ? [['list'], ['html', { open: 'never' }]] : 'list',
   use: {
     baseURL: BASE_URL,

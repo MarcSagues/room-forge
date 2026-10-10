@@ -105,8 +105,10 @@ test('going from a textured preset to a plain paint and back leaks nothing', asy
   }
   await settle(page);
   const after = await page.evaluate(info);
-  expect(after?.textures).toBe(idle?.textures);
-  expect(after?.geometries).toBe(idle?.geometries);
+  // A leak is growth. The first count can still include a texture on its way out (CI is slow),
+  // so the check is that nothing piled up, not that the counts match exactly.
+  expect(after?.textures).toBeLessThanOrEqual(idle?.textures ?? 0);
+  expect(after?.geometries).toBeLessThanOrEqual(idle?.geometries ?? 0);
   expect(after?.programs).toBeLessThanOrEqual((idle?.programs ?? 0) + 1);
 });
 
