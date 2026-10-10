@@ -17,6 +17,7 @@ import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } f
 import { Button } from '@/ui/components/button';
 import { Input } from '@/ui/components/input';
 import { translate } from '@/ui/i18n';
+import { SettingsButton, type StorageInfo } from '@/ui/settings/settings-dialog';
 import { repositoryErrorMessage } from './error-message';
 import { ImportDialog, type ImportFlow } from './import-dialog';
 import { matchesQuery, uniqueName } from './names';
@@ -42,6 +43,8 @@ export interface ProjectsScreenProps {
   undoMs?: number;
   /** Import and export of project files; without it the screen offers neither. */
   files?: ProjectFiles;
+  /** What the settings show about storage; without it there is no Settings button. */
+  readStorage?: () => Promise<StorageInfo>;
 }
 
 const defaultHref = (id: ProjectId) => `/editor/?project=${encodeURIComponent(id)}`;
@@ -68,6 +71,7 @@ export function ProjectsScreen({
   openHref = defaultHref,
   undoMs = UNDO_MS,
   files,
+  readStorage,
 }: ProjectsScreenProps) {
   const makeId = useMemo(() => generateId ?? createNanoIdGen(), [generateId]);
   const [loaded, setLoaded] = useState<Loaded>({ status: 'loading' });
@@ -335,7 +339,8 @@ export function ProjectsScreen({
     <main className="mx-auto flex min-h-dvh max-w-5xl flex-col gap-6 px-6 py-10">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-semibold text-3xl tracking-tight">{t('projects.title')}</h1>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {readStorage ? <SettingsButton readStorage={readStorage} /> : null}
           {files ? (
             <>
               <Button variant="outline" onClick={() => fileInput.current?.click()}>
