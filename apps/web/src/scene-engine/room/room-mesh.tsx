@@ -11,15 +11,24 @@ import {
   WALL_IDS,
   type WallId,
 } from '@roomforge/core';
-import { memo, type RefObject, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
-import { type Group, type MeshStandardMaterial, Vector3 } from 'three';
+import {
+  memo,
+  type RefObject,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+} from 'react';
+import { type Group, type Mesh, type MeshStandardMaterial, Vector3 } from 'three';
 import { useShallow } from 'zustand/react/shallow';
 import { prefersReducedMotion } from '../camera/reduced-motion';
-import { useSceneSession } from '../canvas/scene-context';
+import { useSceneSession, useTransientStore } from '../canvas/scene-context';
 import { useSessionState } from '../canvas/use-session-state';
 import { useMaterial } from '../materials/use-material';
 import { useRegisterEntity } from '../objects/entity-registry';
 import { useMeshGeometry } from './buffer-geometry';
+import { LiveWall } from './live-wall';
 import type { MeshData, Vec3 } from './mesh-data';
 import { buildRoomGeometry, WALL_THICKNESS, type WallPlacement } from './room-geometry';
 import { RoomGrid } from './room-grid';
@@ -107,6 +116,10 @@ function RoomModel({
         {WALL_IDS.map((wall) => (
           <WallView
             key={wall}
+            roomId={room.id}
+            wall={wall}
+            length={wall === 'north' || wall === 'south' ? width + 2 * WALL_THICKNESS : depth}
+            height={room.height}
             name={roomObjectName.wall(room.id, wall)}
             placement={geometry.walls[wall]}
             material={room.walls[wall].material}
@@ -139,6 +152,11 @@ interface WallRefs {
  * an object.
  */
 const WallView = memo(function WallView(props: {
+  roomId: RoomId;
+  wall: WallId;
+  /** Length of the wall frame and height of the room. */
+  length: number;
+  height: number;
   name: string;
   placement: WallPlacement;
   material: DeepReadonly<MaterialRef>;
@@ -147,18 +165,47 @@ const WallView = memo(function WallView(props: {
   shift: number;
   refs: WallRefs;
 }) {
-  const { placement, openings, shift, refs } = props;
+  const { roomId, wall, length, height, placement, openings, shift, refs } = props;
+  const session = useSceneSession();
+  const transient = useTransientStore();
   const layer = useMemo(() => new WallOpeningsLayer(), []);
+  const live = useMemo(
+    () =>
+      new LiveWall({ session, transient, layer, roomId, wall, shift, thickness: WALL_THICKNESS }),
+    [session, transient, layer, roomId, wall, shift],
+  );
   useEffect(() => () => layer.dispose(), [layer]);
+  useEffect(() => () => live.dispose(), [live]);
   useEffect(() => {
     refs.openings(layer.group);
     return () => refs.openings(null);
   }, [layer, refs]);
+  // A dragged opening redraws the wall from the transient store, without React.
+  useEffect(() => transient.subscribe(() => live.sync()), [transient, live]);
   useLayoutEffect(() => {
+    live.length = length;
+    live.height = height;
+    if (live.drawing) {
+      live.sync();
+      return;
+    }
     layer.begin();
     for (const o of openings) layer.add(o, shift + o.offset + o.width / 2, o.sill, WALL_THICKNESS);
     layer.commit();
-  }, [layer, openings, shift]);
+  }, [layer, live, openings, shift, length, height]);
+  const onMaterial = useCallback(
+    (material: MeshStandardMaterial | null) => {
+      refs.material(material);
+      live.setMaterial(material);
+    },
+    [refs, live],
+  );
+  const onSurface = useCallback(
+    (mesh: Mesh | null) => {
+      live.surface = mesh;
+    },
+    [live],
+  );
   return (
     <group position={placement.position} rotation-y={placement.rotationY}>
       <Surface
@@ -168,8 +215,10 @@ const WallView = memo(function WallView(props: {
         // Always transparent, so fading never changes the shader program (no recompiles), and
         // each wall has a material of its own: they fade one by one.
         wall
-        materialRef={refs.material}
+        materialRef={onMaterial}
+        meshRef={onSurface}
       />
+      <primitive object={live.mesh} />
       <primitive object={layer.group}>
         {openings.map((o) => (
           <OpeningAnchor
@@ -264,6 +313,7 @@ const Surface = memo(function Surface(props: {
   /** A wall: see-through and with a material of its own, so that it can fade by itself. */
   wall?: boolean;
   materialRef?: (material: MeshStandardMaterial | null) => void;
+  meshRef?: (mesh: Mesh | null) => void;
 }) {
   const {
     mesh,
@@ -282,6 +332,7 @@ const Surface = memo(function Surface(props: {
   }, [material, materialRef]);
   return (
     <mesh
+      ref={props.meshRef ?? null}
       name={props.name ?? ''}
       geometry={geometry}
       position={position}
