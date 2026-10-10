@@ -156,6 +156,7 @@ Las actualizaciones de `three`/`@react-three/*`/`react` se tratan como **riesgo*
 | `CLOUDFLARE_ACCOUNT_ID` | idem | Propietario | P1-08 |
 | `NEXT_PUBLIC_E2E` | Solo en jobs E2E | CI | P1-07 |
 | `NEXT_PUBLIC_APP_VERSION` | Build (commit SHA/tag) | CI | P1-04 |
+| `NEXT_PUBLIC_ANALYTICS_ENDPOINT` | Build de producción, **opcional**: ruta del mismo origen (`/api/event`) o URL https que recibe `{"event":…}` ([ADR-0011](ADR/0011-respectful-analytics.md)). Sin ella no se envía ninguna analítica. Con una URL de otro origen, `write-headers.mjs` añade ese origen a `connect-src` | Propietario, tras elegir la herramienta y actualizar la política de privacidad | P8-01 / P8-03 |
 
 Reglas: **nunca** secretos en el repositorio; rotación si se exponen; los agentes de IA no leen ni escriben secretos.
 
