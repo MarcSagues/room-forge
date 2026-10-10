@@ -198,6 +198,31 @@ export const en = {
   'history.nothingToUndo': 'Nothing to undo',
   'history.nothingToRedo': 'Nothing to redo',
   'shortcuts.open': 'Keyboard shortcuts',
+  'tutorial.open': 'Take the tour',
+  'tutorial.close': 'Close the tour',
+  'tutorial.progress': 'Step {step} of {total}',
+  'tutorial.next': 'Next',
+  'tutorial.back': 'Back',
+  'tutorial.done': 'Done',
+  'tutorial.skip': 'Skip the tour',
+  'tutorial.place.title': 'Add furniture',
+  'tutorial.place.body':
+    'Drag an item from the catalog into the room, or focus it and press Enter to place it in the middle of the view.',
+  'tutorial.move.title': 'Move and turn',
+  'tutorial.move.body':
+    'Drag an object to move it: near a wall it turns its back to it. Press R to turn the selection, Shift+R to turn it the other way.',
+  'tutorial.view.title': 'View and snap',
+  'tutorial.view.body':
+    'Snap keeps objects on a grid (G turns it on or off). Switch between perspective and top view, and lower the walls to see inside.',
+  'tutorial.colour.title': 'Colours and materials',
+  'tutorial.colour.body':
+    'Select an object, or the floor and walls, and change its material and colour here.',
+  'tutorial.light.title': 'Light it up',
+  'tutorial.light.body':
+    'Lamps, LED strips, light bars and panels give real coloured light. The templates show them glowing at night.',
+  'tutorial.keep.title': 'Save, export, share',
+  'tutorial.keep.body':
+    'Your work saves itself in this browser. Export a copy, or share a read-only link.',
   'shortcuts.title': 'Keyboard shortcuts',
   'shortcuts.description': 'These shortcuts work anywhere except while typing in a field.',
   'shortcuts.or': 'or',

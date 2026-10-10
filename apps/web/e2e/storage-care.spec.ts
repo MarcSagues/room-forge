@@ -4,6 +4,8 @@ import { expect, type Page, test } from '@playwright/test';
 test.use({ storageState: { cookies: [], origins: [] } });
 
 async function openEditor(page: Page) {
+  // Only the toasts are under test: the first-run tour has its own spec.
+  await page.addInitScript(() => localStorage.setItem('roomforge.tutorialSeen', '1'));
   await page.goto('/editor/');
   await page.waitForFunction(
     () => (window.__RF__?.info()?.frame ?? 0) >= 1 && window.__RF__?.camera.snapshot() != null,
