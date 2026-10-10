@@ -54,4 +54,34 @@ describe('ExportMenu', () => {
     await user.click(await screen.findByRole('menuitem', { name: 'Project (.roomforge.json)' }));
     expect(screen.queryByRole('menuitem')).toBeNull();
   });
+
+  it('opens the image export dialog when the app wires one in', async () => {
+    const user = userEvent.setup();
+    const load = vi.fn(async () => ({
+      fileName: () => 'office-2026-10-10.png',
+      plan: () => ({ width: 800, height: 600, clamped: false }),
+      export: async () => ({ ok: true as const, filename: 'office-2026-10-10.png' }),
+    }));
+    render(
+      <ProjectStatusProvider name="Office" save="saved" onExport={() => {}} imageExport={load}>
+        <ExportMenu />
+      </ProjectStatusProvider>,
+    );
+    await user.click(screen.getByRole('button', { name: 'Export' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Image (.png)…' }));
+    expect(await screen.findByRole('dialog', { name: 'Export image' })).toBeInTheDocument();
+    expect(load).toHaveBeenCalledTimes(1);
+  });
+
+  it('has no image entry without an exporter', async () => {
+    const user = userEvent.setup();
+    render(
+      <ProjectStatusProvider name="Office" save="saved" onExport={() => {}}>
+        <ExportMenu />
+      </ProjectStatusProvider>,
+    );
+    await user.click(screen.getByRole('button', { name: 'Export' }));
+    await screen.findByRole('menuitem', { name: 'Project (.roomforge.json)' });
+    expect(screen.queryByRole('menuitem', { name: 'Image (.png)…' })).toBeNull();
+  });
 });

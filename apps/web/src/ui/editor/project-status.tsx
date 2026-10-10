@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, type ReactNode, useContext, useMemo } from 'react';
+import type { ImageExporterLoader } from './image-export';
 import type { SaveIndicator } from './save-status';
 
 /** What the top bar shows about the project that is open. */
@@ -14,6 +15,8 @@ export interface ProjectStatus {
   onRename?: ((name: string) => Promise<void>) | undefined;
   /** Copies a link to a read-only copy of the project; without it Share is the placeholder. */
   onShare?: (() => Promise<ShareOutcome>) | undefined;
+  /** Exports an image of the view; adds "Image (.png)" to the Export menu. */
+  imageExport?: ImageExporterLoader | undefined;
 }
 
 /** What became of a request to share: the button tells the person. */
@@ -27,6 +30,7 @@ const DEFAULT: ProjectStatus = {
   onExport: undefined,
   onRename: undefined,
   onShare: undefined,
+  imageExport: undefined,
 };
 
 const ProjectStatusContext = createContext<ProjectStatus>(DEFAULT);
@@ -36,10 +40,10 @@ const ProjectStatusContext = createContext<ProjectStatus>(DEFAULT);
  * shell's layouts. Without a provider the bar shows the placeholders it always had.
  */
 export function ProjectStatusProvider(props: ProjectStatus & { children: ReactNode }) {
-  const { name, save, onExport, onRename, onShare, children } = props;
+  const { name, save, onExport, onRename, onShare, imageExport, children } = props;
   const value = useMemo(
-    () => ({ name, save, onExport, onRename, onShare }),
-    [name, save, onExport, onRename, onShare],
+    () => ({ name, save, onExport, onRename, onShare, imageExport }),
+    [name, save, onExport, onRename, onShare, imageExport],
   );
   return <ProjectStatusContext.Provider value={value}>{children}</ProjectStatusContext.Provider>;
 }

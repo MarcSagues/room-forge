@@ -124,6 +124,7 @@ export const es: Record<MessageKey, string> = {
   'shell.saveFailed': 'Sin guardar',
   'shell.projectsLink': 'Todos los proyectos',
   'shell.exportProject': 'Proyecto (.roomforge.json)',
+  'shell.exportImage': 'Imagen (.png)…',
   'save.failedTitle': 'Tus últimos cambios no se han guardado.',
   'save.failed.quota':
     'El navegador se ha quedado sin espacio. Libera espacio o exporta una copia.',
