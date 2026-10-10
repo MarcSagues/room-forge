@@ -8,6 +8,8 @@ import { siteMessages } from './site-messages';
  * The landing page (P8-01). Plain HTML from a server component: no three.js and no client code
  * beyond what every page loads, so it stays inside the `/` bundle budget. The FAQ uses
  * `<details>`, which is keyboard accessible without any script.
+ * Links to the editor do not prefetch it: its JavaScript (three.js) is heavy, and a visitor
+ * reading the page may never open it.
  */
 export function Landing({ locale }: { locale: Locale }) {
   const t = siteMessages[locale];
@@ -25,7 +27,7 @@ export function Landing({ locale }: { locale: Locale }) {
           <p className="text-2xl text-fg leading-snug">{t.hero.lead}</p>
           <p className="text-base text-fg-muted">{t.hero.body}</p>
           <div className="flex flex-wrap gap-3">
-            <Link href="/editor/" className={buttonVariants({ size: 'lg' })}>
+            <Link href="/editor/" prefetch={false} className={buttonVariants({ size: 'lg' })}>
               {t.hero.primary}
             </Link>
             <Link href="/projects/" className={buttonVariants({ size: 'lg', variant: 'outline' })}>
@@ -90,7 +92,7 @@ export function Landing({ locale }: { locale: Locale }) {
           {t.closing.title}
         </h2>
         <p className="text-fg-muted">{t.closing.body}</p>
-        <Link href="/editor/" className={buttonVariants({ size: 'lg' })}>
+        <Link href="/editor/" prefetch={false} className={buttonVariants({ size: 'lg' })}>
           {t.closing.cta}
         </Link>
       </section>
