@@ -42,7 +42,7 @@ export function ProjectUnavailable(props: {
         <p className="text-fg-muted text-sm">{t('project.unreadable')}</p>
       ) : null}
       <div className="flex gap-2">
-        <Link href="/projects/" className={buttonVariants()}>
+        <Link href="/projects/" prefetch={false} className={buttonVariants()}>
           {t('project.back')}
         </Link>
         {reason.kind === 'storage' && onRetry ? (
