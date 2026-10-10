@@ -1,4 +1,4 @@
-import type { ObjectId, WallId } from '@roomforge/core';
+import type { ObjectId, OpeningId, RoomId, WallId } from '@roomforge/core';
 
 /** What the gesture does: move the object over the floor, or turn it with the rotation handle. */
 export type DragKind = 'move' | 'rotate';
@@ -36,6 +36,25 @@ export interface GhostState {
   color: string | null;
 }
 
+/** A door or window being slid along its wall, or dragged in from the catalog. */
+export interface OpeningDragState {
+  /** The opening being slid, or null for a new one being placed. */
+  id: OpeningId | null;
+  roomId: RoomId;
+  wall: WallId;
+  kind: 'door' | 'window';
+  variant: string;
+  /** Where its hole starts along the wall, in metres (DOMAIN_MODEL `Opening.offset`). */
+  offset: number;
+  width: number;
+  height: number;
+  sill: number;
+  /** False when it does not fit there (the drop would be refused). */
+  valid: boolean;
+  /** False while a new opening is not over a wall: nothing is drawn. */
+  visible: boolean;
+}
+
 /**
  * Per-frame interaction state that must not go through React or the document (ARCHITECTURE §4.2):
  * the drag controller writes it at most once per frame, readers (outline, camera rig, a future
@@ -51,6 +70,10 @@ export interface TransientStore {
   ghost(): Readonly<GhostState> | null;
   publishGhost(state: Readonly<GhostState>): void;
   clearGhost(): void;
+  /** The opening being dragged, or null. Do not keep the object: it is reused. */
+  opening(): Readonly<OpeningDragState> | null;
+  publishOpening(state: Readonly<OpeningDragState>): void;
+  clearOpening(): void;
   subscribe(listener: () => void): () => void;
 }
 
@@ -76,8 +99,22 @@ export function createTransientStore(): TransientStore {
     wall: null,
     color: null,
   };
+  const sharedOpening: OpeningDragState = {
+    id: null,
+    roomId: '' as RoomId,
+    wall: 'north',
+    kind: 'door',
+    variant: '',
+    offset: 0,
+    width: 0,
+    height: 0,
+    sill: 0,
+    valid: true,
+    visible: false,
+  };
   let active = false;
   let ghostActive = false;
+  let openingActive = false;
   // Replaced (not mutated) on subscribe and unsubscribe, so notifying is a plain indexed loop.
   let listeners: readonly (() => void)[] = [];
   const notify = () => {
@@ -120,6 +157,27 @@ export function createTransientStore(): TransientStore {
     clearGhost() {
       if (!ghostActive) return;
       ghostActive = false;
+      notify();
+    },
+    opening: () => (openingActive ? sharedOpening : null),
+    publishOpening(state) {
+      sharedOpening.id = state.id;
+      sharedOpening.roomId = state.roomId;
+      sharedOpening.wall = state.wall;
+      sharedOpening.kind = state.kind;
+      sharedOpening.variant = state.variant;
+      sharedOpening.offset = state.offset;
+      sharedOpening.width = state.width;
+      sharedOpening.height = state.height;
+      sharedOpening.sill = state.sill;
+      sharedOpening.valid = state.valid;
+      sharedOpening.visible = state.visible;
+      openingActive = true;
+      notify();
+    },
+    clearOpening() {
+      if (!openingActive) return;
+      openingActive = false;
       notify();
     },
     subscribe(listener) {
