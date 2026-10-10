@@ -52,6 +52,15 @@ describe('RoomSchema', () => {
     expect(RoomSchema.safeParse(buildRoom({ origin: [Infinity, 0] })).success).toBe(false);
   });
 
+  it('says what is wrong in English, as classic zod did (zod/mini has no locale of its own)', () => {
+    expect(errorsOf(RoomSchema.safeParse(buildRoom({ height: 4.01 })))).toEqual([
+      'Too big: expected number to be <=4',
+    ]);
+    expect(errorsOf(RoomSchema.safeParse({ ...buildRoom(), floor: undefined }))).toEqual([
+      'Invalid input: expected object, received undefined',
+    ]);
+  });
+
   it('rejects names longer than the limit', () => {
     const name = 'x'.repeat(LIMITS.maxNameLength + 1);
     const result = RoomSchema.safeParse(buildRoom({ name }));

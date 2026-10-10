@@ -49,11 +49,12 @@ function setup(isMac = false) {
 }
 
 describe('ShortcutHelp', () => {
-  it('opens with ? and lists exactly the registered shortcuts, translated, by section', () => {
+  it('opens with ? and lists exactly the registered shortcuts, translated, by section', async () => {
     const { registry, press } = setup();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     press('?', { shiftKey: true });
-    const dialog = screen.getByRole('dialog', { name: 'Keyboard shortcuts' });
+    // The dialog's code loads on first opening (P7-04).
+    const dialog = await screen.findByRole('dialog', { name: 'Keyboard shortcuts' });
     const rows = within(dialog).getAllByRole('listitem');
     // Every registered shortcut, including the one that opened this dialog.
     expect(rows).toHaveLength(registry.list().length);
@@ -65,10 +66,10 @@ describe('ShortcutHelp', () => {
     expect(within(dialog).getByText('Show the keyboard shortcuts')).toBeInTheDocument();
   });
 
-  it('writes Ctrl and Shift on Windows and Linux, with "or" between alternatives', () => {
+  it('writes Ctrl and Shift on Windows and Linux, with "or" between alternatives', async () => {
     const { press } = setup(false);
     press('?');
-    const redo = screen.getByText('Redo').closest('li') as HTMLElement;
+    const redo = (await screen.findByText('Redo')).closest('li') as HTMLElement;
     expect(within(redo).getAllByText('Ctrl', { selector: 'kbd' })).toHaveLength(2); // Ctrl+Shift+Z, Ctrl+Y
     expect(within(redo).getByText('Shift', { selector: 'kbd' })).toBeInTheDocument();
     expect(within(redo).getAllByText('Z', { selector: 'kbd' })).toHaveLength(1);
@@ -76,10 +77,10 @@ describe('ShortcutHelp', () => {
     expect(redo).toHaveTextContent('or');
   });
 
-  it('writes ⇧ and ⌘ on macOS', () => {
+  it('writes ⇧ and ⌘ on macOS', async () => {
     const { press } = setup(true);
     press('?');
-    const redo = screen.getByText('Redo').closest('li') as HTMLElement;
+    const redo = (await screen.findByText('Redo')).closest('li') as HTMLElement;
     expect(within(redo).getByText('⇧', { selector: 'kbd' })).toBeInTheDocument();
     expect(within(redo).getByText('⌘', { selector: 'kbd' })).toBeInTheDocument();
     expect(within(redo).queryByText('Ctrl', { selector: 'kbd' })).not.toBeInTheDocument();
@@ -88,7 +89,7 @@ describe('ShortcutHelp', () => {
   it('opens from its button and closes with Escape', async () => {
     setup();
     await userEvent.click(screen.getByRole('button', { name: 'Keyboard shortcuts' }));
-    expect(screen.getByRole('dialog', { name: 'Keyboard shortcuts' })).toBeInTheDocument();
+    expect(await screen.findByRole('dialog', { name: 'Keyboard shortcuts' })).toBeInTheDocument();
     await userEvent.keyboard('{Escape}');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
@@ -97,7 +98,7 @@ describe('ShortcutHelp', () => {
     const { registry, press } = setup();
     const fit = registry.list().find((shortcut) => shortcut.id === 'view.fit');
     press('?');
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
     // A key pressed inside the dialog is the dialog's.
     const closeButton = within(screen.getByRole('dialog')).getAllByRole('button')[0] as HTMLElement;
     closeButton.focus();

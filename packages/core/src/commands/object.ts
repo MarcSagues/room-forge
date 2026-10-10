@@ -1,5 +1,5 @@
 import { current, type Draft } from 'immer';
-import { z } from 'zod';
+import { z } from 'zod/mini';
 import {
   LIMITS,
   type ObjectId,
@@ -29,7 +29,7 @@ const limitReached = (): CommandError => ({
   message: `A design can hold at most ${LIMITS.maxObjects} objects`,
 });
 
-function describeIssues(error: z.ZodError): string {
+function describeIssues(error: z.core.$ZodError): string {
   return error.issues
     .map((issue) =>
       issue.path.length ? `${issue.path.join('.')}: ${issue.message}` : issue.message,
@@ -38,7 +38,7 @@ function describeIssues(error: z.ZodError): string {
 }
 
 const finite = z.number();
-const scaleSchema = PlacedObjectSchema.shape.transform.shape.scale.unwrap();
+const scaleSchema = PlacedObjectSchema.shape.transform.shape.scale.def.innerType;
 
 /**
  * Floor objects (catalog default surface `floor`, no parent) are kept inside their room: the
@@ -216,11 +216,11 @@ export interface ObjectProps {
 }
 
 const PropsSchema = z.object({
-  name: PlacedObjectSchema.shape.name.unwrap().nullable().optional(),
-  locked: z.boolean().optional(),
-  hidden: z.boolean().optional(),
-  scale: scaleSchema.nullable().optional(),
-  params: PlacedObjectSchema.shape.params.unwrap().optional(),
+  name: z.optional(z.nullable(PlacedObjectSchema.shape.name.def.innerType)),
+  locked: z.optional(z.boolean()),
+  hidden: z.optional(z.boolean()),
+  scale: z.optional(z.nullable(scaleSchema)),
+  params: z.optional(PlacedObjectSchema.shape.params.def.innerType),
 });
 
 /** `object/setProps`: the same props on every given object. Coalesces per objects and keys. */
