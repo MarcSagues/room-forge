@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_LOCALE, LOCALES, loadLocale, translate } from './index';
 import { en } from './messages';
 import { es } from './messages-es';
+import { imageMessages, translateImage } from './messages-image';
 
 const placeholders = (s: string) => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
 
@@ -34,5 +35,24 @@ describe('translate', () => {
   it('fills placeholders and leaves unknown ones untouched', () => {
     expect(translate('en', 'editor.corePackage', { name: '@x/y' })).toBe('Core package: @x/y');
     expect(translate('en', 'editor.corePackage')).toBe('Core package: {name}');
+  });
+});
+
+describe('image export messages (loaded with their dialog)', () => {
+  it('has every key in both locales, non-empty and with the same placeholders', () => {
+    const { en: english, es: spanish } = imageMessages;
+    expect(Object.keys(spanish).sort()).toEqual(Object.keys(english).sort());
+    for (const key of Object.keys(english) as Array<keyof typeof english>) {
+      expect(english[key].trim(), `en.${key}`).not.toBe('');
+      expect(spanish[key].trim(), `es.${key}`).not.toBe('');
+      expect(placeholders(spanish[key]), `placeholders of ${key}`).toEqual(
+        placeholders(english[key]),
+      );
+    }
+  });
+
+  it('fills placeholders like translate', () => {
+    expect(translateImage('en', 'image.file', { file: 'a.png' })).toBe('File: a.png');
+    expect(translateImage('es', 'image.file', { file: 'a.png' })).toBe('Archivo: a.png');
   });
 });
