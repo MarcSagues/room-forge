@@ -7,8 +7,10 @@ import {
   solvePlacement,
 } from '@roomforge/core';
 import { buildDocument, createFixtureCatalog } from '@roomforge/core/testing';
-import { Object3D, Ray, Vector3 } from 'three';
+import { Object3D, PerspectiveCamera, Ray, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
+import { createLightPool } from '../lighting/light-pool';
+import { createLightPoolDriver } from '../lighting/light-pool-driver';
 import { createEntityRegistry } from '../objects/entity-registry';
 import { MoveController } from './move-controller';
 import { PlaceController } from './place-controller';
@@ -312,5 +314,52 @@ describe('hot path: no allocations per step', () => {
         SLOW,
       );
     }
+  });
+  describe('LightPoolDriver.watch (every rendered frame)', () => {
+    function setup() {
+      const catalog = createFixtureCatalog();
+      const session = createEditorSession({ initialDocument: buildDocument(), catalog });
+      const size = { point: 8, spot: 2 };
+      const driver = createLightPoolDriver({
+        session,
+        catalog,
+        pool: createLightPool(size),
+        size,
+        invalidate: () => {},
+      });
+      const camera = new PerspectiveCamera();
+      camera.position.set(2, 1.6, 5);
+      camera.lookAt(2, 0.5, 1.5);
+      driver.watch(camera);
+      return { driver, camera };
+    }
+
+    it(
+      'while the camera drifts less than the reallocation step',
+      async () => {
+        const { driver, camera } = setup();
+        const drift = sweep(500, -0.2, 0.2);
+        expectQuiet(
+          await largeBytesPerCall((i) => {
+            camera.position.x = 2 + (drift[i % drift.length] as number);
+            driver.watch(camera);
+          }),
+        );
+        driver.dispose();
+      },
+      SLOW,
+    );
+
+    it(
+      'while a reallocation is already waiting for the camera to settle',
+      async () => {
+        const { driver, camera } = setup();
+        camera.position.set(-3, 1.6, 5);
+        driver.watch(camera); // schedules one
+        expectQuiet(await largeBytesPerCall(() => driver.watch(camera)));
+        driver.dispose();
+      },
+      SLOW,
+    );
   });
 });

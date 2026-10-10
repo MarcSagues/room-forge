@@ -1,21 +1,34 @@
 'use client';
 
+import type { LightQuality } from '@roomforge/core';
+import type { RefObject } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { DragGuides } from '../interaction/drag-guides';
 import { PlacementGhost } from '../interaction/placement-ghost';
 import { RotationHandle } from '../interaction/rotation-handle';
 import { ObjectKeys, Picking, SelectionOutline } from '../interaction/selection';
+import type { LightPoolDriver } from '../lighting/light-pool-driver';
+import { LightPool } from '../lighting/light-pool-view';
 import { type EntityRegistry, EntityRegistryProvider } from '../objects/entity-registry';
 import { ObjectList } from '../objects/object-views';
 import { RoomMesh } from '../room/room-mesh';
 import { useSessionState } from './use-session-state';
 
 /** Everything drawn inside the canvas: lights, every room and every object of the document. */
-export function SceneContent({ registry }: { registry?: EntityRegistry }) {
+export function SceneContent({
+  registry,
+  quality = 'medium',
+  lightPool,
+}: {
+  registry?: EntityRegistry;
+  quality?: LightQuality;
+  lightPool?: RefObject<LightPoolDriver | null>;
+}) {
   const roomIds = useSessionState(useShallow((state) => state.document.roomOrder));
   return (
     <>
       <PlaceholderLights />
+      <LightPool quality={quality} {...(lightPool ? { driverRef: lightPool } : {})} />
       <EntityRegistryProvider {...(registry ? { registry } : {})}>
         {/* Rooms register their openings, so they share the registry with the objects. */}
         {roomIds.map((id) => (

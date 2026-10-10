@@ -20,8 +20,10 @@ export {
 } from './effects';
 export {
   collectLuminaires,
+  glowColor,
   type Luminaire,
   lightStateOf,
+  NO_GLOW,
   type PoolLightType,
   poolLightType,
 } from './luminaires';
