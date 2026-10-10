@@ -305,6 +305,35 @@ describe('MaterialFactory: materials of their own (walls fade one by one)', () =
   });
 });
 
+describe('MaterialFactory: glowing materials (luminaires)', () => {
+  it('glows in its own colour, untouched by tone mapping, and is shared like any other', () => {
+    const factory = createMaterialFactory();
+    const leases = Array.from({ length: 6 }, () =>
+      factory.acquire(look('paint.satin', { tint: '#ff3d9a' }), { emissive: true }),
+    );
+    const [first] = leases;
+    if (!first) throw new Error('no lease');
+    const { material } = first;
+    expect(new Set(leases.map((lease) => lease.material)).size).toBe(1);
+    expect(material.emissive.getHex()).toBe(material.color.getHex());
+    expect(material.emissive.getHex()).not.toBe(0);
+    expect(material.toneMapped).toBe(false);
+    const matte = factory.acquire(look('paint.satin', { tint: '#ff3d9a' })).material;
+    expect(matte).not.toBe(material);
+    expect(matte.emissive.getHex()).toBe(0);
+    expect(matte.toneMapped).toBe(true);
+  });
+
+  it('keeps glowing in the new colour when its look changes', () => {
+    const factory = createMaterialFactory();
+    const lease = factory.acquire(look('paint.satin', { tint: '#ff0000' }), { emissive: true });
+    expect(lease.update(look('paint.satin', { tint: '#00ff00' }))).toBe(false);
+    expect(lease.material.emissive.getHex()).toBe(lease.material.color.getHex());
+    expect(lease.material.toneMapped).toBe(false);
+    expect(factory.stats().created).toBe(1);
+  });
+});
+
 describe('MaterialFactory: stopping', () => {
   it('dispose frees everything, and what leases are left do nothing', () => {
     const factory = createMaterialFactory();

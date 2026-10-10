@@ -7,6 +7,7 @@
  */
 export const CORE_PACKAGE_NAME = '@roomforge/core' as const;
 
+export * from './catalog';
 export * from './commands';
 export * from './domain';
 export * from './geometry';

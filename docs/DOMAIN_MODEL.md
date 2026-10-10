@@ -223,7 +223,7 @@ interface CatalogItem {
     snapToWall?: boolean;
   };
   supports?: Array<{ y: number; rect: { x: number; z: number; w: number; d: number } }>; // superficies de apoyo (escritorios)
-  slots?: Array<{ id: string; label: { en: string; es: string }; default: MaterialRef }>;
+  slots?: Array<{ id: string; label: { en: string; es: string }; default: MaterialRef; emissive?: true }>; // emissive: la parte que da luz (solo luminarias, al menos una)
   light?: { kind: 'strip' | 'bar' | 'panel' | 'point' | 'spot' | 'neon'; cost: 0 | 1 | 2; defaultColor: HexColor };
   source:
     | { kind: 'glb'; file: string; thumb: string; stats: { tris: number; bytes: number } }
@@ -260,6 +260,7 @@ Diferencias con los tipos de §3 decididas al implementar:
 - Los IDs aceptan 1–32 caracteres URL-safe (`[A-Za-z0-9_-]`; los generados tienen 10) y **no** pueden ser `__proto__`, `constructor` ni `prototype`, porque son claves de objetos del documento (lo detectó el test de propiedades).
 - `Vec2`/`Vec3` son tuplas mutables en el tipo; la inmutabilidad la garantiza Immer, no el tipo.
 - Los campos opcionales son *exactos*: se omiten, nunca valen `undefined` (`exactOptionalPropertyTypes`).
+- Manifiesto del catálogo (P4-02, `CatalogManifestSchema` en `core/catalog`): `source` es `{ kind: 'glb', file, triangles, bytes }` (sin miniatura hasta P4-03; los paramétricos llegan con P4-05); `license` añade `origin` (procedencia en palabras) y `attribution` (texto de `docs/ATTRIBUTION.md`), y `sourceUrl` es obligatoria salvo para `LicenseRef-RoomForge-Proprietary`. Las ranuras guardan el color por defecto como `default.tint` sobre `paint.satin`. `placement` solo tiene `surfaces` de momento.
 - Las puertas deben tener `sill = 0`.
 
 ## 6. Versionado y migraciones

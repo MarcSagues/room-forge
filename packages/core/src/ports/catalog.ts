@@ -6,6 +6,8 @@ export type PlacementSurface = 'floor' | 'wall' | 'ceiling' | 'tabletop';
 export interface MaterialSlot {
   readonly id: string;
   readonly default: MaterialRef;
+  /** The part of a luminaire that glows (its light source); only items with `light` have one. */
+  readonly emissive?: true;
 }
 
 /** What an item that gives light is: its kind, its weight in the light budget, its colour. */

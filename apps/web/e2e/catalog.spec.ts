@@ -52,6 +52,8 @@ const catalogItem = (page: Page, name: RegExp | string) =>
   page.getByRole('list', { name: 'Catalog items' }).getByRole('button', { name });
 
 async function center(locator: ReturnType<typeof catalogItem>) {
+  // The list is longer than the panel: bring the item into view, as a user would scroll to it.
+  await locator.scrollIntoViewIfNeeded();
   const box = await locator.boundingBox();
   if (!box) throw new Error('item is not visible');
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
@@ -79,12 +81,15 @@ test.beforeEach(async ({ page }) => {
   await openEditor(page);
 });
 
-test('the panel lists the five stub items and filters them as you type', async ({ page }) => {
+test('the panel lists the fifteen models and the five stub items, and filters them as you type', async ({
+  page,
+}) => {
   const list = page.getByRole('list', { name: 'Catalog items' });
-  await expect(list.getByRole('listitem')).toHaveCount(5);
+  await expect(list.getByRole('listitem')).toHaveCount(20);
+  await expect(catalogItem(page, /Office desk 140/)).toContainText('140 × 70 cm');
   await expect(catalogItem(page, /Desk/)).toContainText('140 × 70 cm');
 
-  await page.getByRole('searchbox', { name: 'Search the catalog' }).fill('chair');
+  await page.getByRole('searchbox', { name: 'Search the catalog' }).fill('office chair');
   await expect(list.getByRole('listitem')).toHaveCount(1);
   await expect(catalogItem(page, /Office chair/)).toBeVisible();
 

@@ -24,7 +24,9 @@
     "test:watch": "vitest",
     "test:coverage": "PERF_BUDGETS=off vitest run --coverage",
     "check:supply-chain": "node tools/checks/supply-chain.mjs",
-    "licenses:report": "node tools/checks/supply-chain.mjs --write-report"
+    "licenses:report": "node tools/checks/supply-chain.mjs --write-report",
+    "catalog:build": "node tools/catalog/build-models.mjs",
+    "catalog:validate": "node tools/catalog/build-models.mjs --check && vitest run apps/web/src/asset-library/manifest"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
