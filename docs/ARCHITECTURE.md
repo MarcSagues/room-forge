@@ -441,6 +441,7 @@ flowchart LR
 - `core` solo conoce la interfaz `CatalogProvider.getItem(id)`; los tests de `core` usan un catálogo de fixtures.
 - Carga **perezosa** por item; precarga solo de los 6 más usados; *placeholder* (caja con las dimensiones reales) mientras carga o si falla.
 - Cada item registra licencia (SPDX), autor y fuente → `ATTRIBUTION.md` generado y comprobado en CI.
+- **Implementado (P4-02):** schema zod y validador puro en `packages/core/src/catalog` (ids únicos, archivos existentes con los triángulos/bytes declarados, presupuestos por categoría —por defecto ≤ 20 000 triángulos y ≤ 300 kB, ADR-0007— y licencias permitidas: `CC0-1.0`, `CC-BY-4.0`, `LicenseRef-RoomForge-Proprietary`). Manifiesto en `apps/web/src/asset-library/manifest/catalog.json`, modelos en `apps/web/public/assets/models/<catalogId>.glb` y `docs/ATTRIBUTION.md`: los tres los genera `pnpm catalog:build` (`tools/catalog/build-models.mjs`, desde el código de `tools/catalog/models.mjs`). `pnpm catalog:validate` y `pnpm check` (`tools/checks/catalog-models.test.mjs` + `asset-library/manifest/manifest.test.ts`) fallan si algo no coincide. `modelCatalog` (`asset-library`) es el `CatalogProvider` real: por id, categoría y etiqueta.
 
 ## 8. Persistencia
 

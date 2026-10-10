@@ -13,7 +13,7 @@ await mkdir(resolve(output, 'models'), { recursive: true });
 await mkdir(resolve(output, 'vendor'), { recursive: true });
 
 // Load the project's existing three dependency without adding one to the spike.
-const source = await readFile(resolve(here, 'models.mjs'), 'utf8');
+const source = await readFile(resolve(here, '../../catalog/models.mjs'), 'utf8');
 const nodeSource = source
   .replaceAll(
     "'three'",
@@ -85,7 +85,7 @@ await writeFile(
   resolve(output, 'manifest.json'),
   `${JSON.stringify({ issue: 29, entries }, null, 2)}\n`,
 );
-await copyFile(resolve(here, 'models.mjs'), resolve(output, 'models.js'));
+await copyFile(resolve(here, '../../catalog/models.mjs'), resolve(output, 'models.js'));
 await copyFile(resolve(here, 'preview.html'), resolve(output, 'index.html'));
 for (const file of ['three.module.js', 'three.core.js'])
   await copyFile(resolve(threeRoot, 'build', file), resolve(output, 'vendor', file));

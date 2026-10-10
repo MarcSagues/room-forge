@@ -24,6 +24,9 @@ Es una carpeta generada e ignorada por Git. `build.mjs` usa la versión de three
 ya instalada en `apps/web`; no añade dependencias. `verify.mjs` usa el Chromium
 de Playwright del proyecto y el servidor local del comando anterior.
 
+El generador vive ahora en `tools/catalog/models.mjs`: es la fuente de los modelos del
+catálogo de producto (`pnpm catalog:build`); este visor lo sigue usando tal cual.
+
 Las geometrías se reutilizan por variante; cada instancia tiene materiales
 independientes. La caché queda acotada a las nueve variantes y se libera al cerrar
 la vista. Los colores se recuerdan por variante durante la sesión; guardar proyectos
