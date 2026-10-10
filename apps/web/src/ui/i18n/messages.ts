@@ -149,6 +149,31 @@ export const en = {
     'You can look at it here, but changes are not allowed. Take over to edit it here; the other tab becomes read-only.',
   'lock.takeOver': 'Take over',
   'lock.takingOver': 'Taking over…',
+  'share.making': 'Making the link…',
+  'share.copied': 'Link copied. Anyone with it can look at this room, read-only.',
+  'share.copiedLong':
+    'Link copied ({size} KB). It is long: some apps may cut it, so a project file may travel better.',
+  'share.tooLarge':
+    'This room is too big for a link. Export the project file and send that instead.',
+  'share.unsupported':
+    'This browser cannot make share links. Export the project file and send that instead.',
+  'share.copyFailed': 'The link could not be copied. Try again.',
+  'share.export': 'Export project file',
+  'viewer.opening': 'Opening the shared room…',
+  'viewer.title': 'A shared room, read-only',
+  'viewer.body': 'You are looking at “{name}”. Changes here are not saved.',
+  'viewer.copy': 'Make a copy to edit',
+  'viewer.copying': 'Making a copy…',
+  'viewer.unavailableTitle': 'This link cannot be opened',
+  'viewer.error.empty': 'The link has no room in it. Ask for the link again.',
+  'viewer.error.broken':
+    'The link is damaged or incomplete. Ask for it again, and make sure it is copied whole.',
+  'viewer.error.tooLarge': 'The link holds more than a room can, so it was not opened.',
+  'viewer.error.newer':
+    'This link was made by a newer version of RoomForge. Reload the page to update, then open it again.',
+  'viewer.error.unsupported':
+    'This browser cannot open RoomForge links. Try a recent version of Chrome, Edge, Firefox or Safari.',
+  'viewer.toProjects': 'Go to your projects',
   'settings.open': 'Settings',
   'settings.title': 'Settings',
   'settings.storage': 'Storage',
