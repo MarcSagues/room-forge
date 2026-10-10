@@ -2,12 +2,7 @@
 
 import { ChevronDownIcon } from 'lucide-react';
 import { Button } from '@/ui/components/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/ui/components/dropdown-menu';
+import { DeferredDropdownMenu } from '@/ui/components/deferred-dropdown-menu';
 import { translate } from '@/ui/i18n';
 import { useProjectStatus } from './project-status';
 
@@ -28,16 +23,21 @@ export function ExportMenu() {
     );
   }
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+    <DeferredDropdownMenu
+      trigger={
         <Button variant="outline" size="sm">
           {t('shell.export')}
           <ChevronDownIcon aria-hidden="true" />
         </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onSelect={() => onExport()}>{t('shell.exportProject')}</DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+      }
+    >
+      {({ DropdownMenuContent, DropdownMenuItem }, content) => (
+        <DropdownMenuContent align="end" {...content}>
+          <DropdownMenuItem onSelect={() => onExport()}>
+            {t('shell.exportProject')}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      )}
+    </DeferredDropdownMenu>
   );
 }

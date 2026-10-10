@@ -1,4 +1,4 @@
-import type { z } from 'zod';
+import { z } from 'zod/mini';
 import {
   LightingSchema,
   type LightState,
@@ -16,7 +16,7 @@ const notFound = (id: string): CommandError => ({
   message: `No object "${id}"`,
 });
 
-function describeIssues(error: z.ZodError): string {
+function describeIssues(error: z.core.$ZodError): string {
   return error.issues
     .map((issue) =>
       issue.path.length ? `${issue.path.join('.')}: ${issue.message}` : issue.message,
@@ -24,7 +24,7 @@ function describeIssues(error: z.ZodError): string {
     .join('; ');
 }
 
-const PatchSchema = LightStateSchema.partial();
+const PatchSchema = z.partial(LightStateSchema);
 
 /** A copy that shares nothing with `state` (core has no structuredClone). */
 const cloneLight = (state: LightState): LightState => JSON.parse(JSON.stringify(state));
