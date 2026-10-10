@@ -238,7 +238,7 @@ export function Workspace(props: {
     const document = session.getState().document as SceneDocument;
     const link = await createShareLink(
       { name: nameRef.current, document },
-      { origin: window.location.origin, catalog: stubCatalog },
+      { origin: window.location.origin, catalog: appCatalog },
     );
     if (!link.ok) return { kind: link.reason };
     try {

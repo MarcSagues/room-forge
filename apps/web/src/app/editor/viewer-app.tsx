@@ -2,7 +2,7 @@
 
 import type { SceneDocument } from '@roomforge/core';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { stubCatalog } from '@/asset-library';
+import { appCatalog } from '@/asset-library';
 import type { ErrorLog } from '@/editor';
 import { type Autosave, openProjectRepository } from '@/persistence';
 import { SharedLinkUnavailable, translate } from '@/ui';
@@ -22,7 +22,7 @@ export default function ViewerApp({ errorLog }: { errorLog?: ErrorLog }) {
   useEffect(() => {
     let cancelled = false;
     started.current ??= bootViewer(window.location.hash, {
-      catalog: stubCatalog,
+      catalog: appCatalog,
       untitledName: translate('en', 'projects.untitled'),
     });
     started.current.then((result) => {
