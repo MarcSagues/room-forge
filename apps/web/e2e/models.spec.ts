@@ -75,7 +75,7 @@ const counters = ({
   geometries,
   textures,
   programs,
-}: Record<string, number>) => ({
+}: Record<'calls' | 'triangles' | 'geometries' | 'textures' | 'programs', number>) => ({
   calls,
   triangles,
   geometries,
@@ -128,6 +128,19 @@ test('a model placed from the catalog panel loads lazily, is shared, and is free
   const after = await info(page);
   expect(after.geometries).toBe(one.geometries - 3);
   expect(after.triangles).toBe(empty.triangles);
+
+  // Coming and going again and again leaves nothing behind.
+  for (let i = 0; i < 5; i += 1) {
+    await add(page, [[`again${i}`, 'chair.gaming.racing', 2, 2]]);
+    await page.waitForFunction(
+      (base) => (window.__RF__?.info()?.triangles ?? 0) > base + 4000,
+      empty.triangles,
+    );
+    await settle(page);
+    expect((await info(page)).geometries).toBe(one.geometries);
+    await remove(page, [`again${i}`]);
+    expect((await info(page)).geometries).toBe(after.geometries);
+  }
 });
 
 test('a model that cannot be downloaded leaves its placeholder; renderer.info before and after', async ({

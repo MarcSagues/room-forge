@@ -52,6 +52,8 @@ const catalogItem = (page: Page, name: RegExp | string) =>
   page.getByRole('list', { name: 'Catalog items' }).getByRole('button', { name });
 
 async function center(locator: ReturnType<typeof catalogItem>) {
+  // The list is longer than the panel: bring the item into view, as a user would scroll to it.
+  await locator.scrollIntoViewIfNeeded();
   const box = await locator.boundingBox();
   if (!box) throw new Error('item is not visible');
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 };

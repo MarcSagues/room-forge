@@ -19,7 +19,7 @@ Patrón obligatorio para dibujar entidades del documento en el canvas (P2-09, AD
 2. Los selectores que devuelven arrays u objetos nuevos van con `useShallow`.
 3. Las vistas por entidad van envueltas en `memo` y reciben solo el `id` como prop.
 4. Ocultar es `visible={false}`, no desmontar (regla 7 de AGENTS.md).
-5. Geometrías y materiales compartidos (`placeholderResources()` hasta que llegue el catálogo), con `dispose={null}`.
+5. Geometrías y materiales compartidos, con `dispose={null}`: `placeholderResources()` para las cajas y, para los items con modelo, `ModelBody` (geometrías del registro de modelos, materiales de `MaterialFactory`).
 
 ## Registro de refs
 
