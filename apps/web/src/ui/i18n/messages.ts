@@ -4,9 +4,6 @@
  */
 export const en = {
   'app.name': 'RoomForge',
-  'home.tagline': 'Design rooms, offices and gaming setups in 3D.',
-  'home.openEditor': 'Open the editor',
-  'home.projects': 'My projects',
   'projects.title': 'Projects',
   'projects.new': 'New project',
   'newRoom.open': 'Custom room size…',

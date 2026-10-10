@@ -3,9 +3,6 @@ import type { MessageKey } from './messages';
 /** Spanish, loaded on demand (`loadLocale('es')`): it stays out of every page's initial JS. */
 export const es: Record<MessageKey, string> = {
   'app.name': 'RoomForge',
-  'home.tagline': 'Diseña habitaciones, despachos y setups gaming en 3D.',
-  'home.openEditor': 'Abrir el editor',
-  'home.projects': 'Mis proyectos',
   'projects.title': 'Proyectos',
   'projects.new': 'Nuevo proyecto',
   'newRoom.open': 'Tamaño de sala a medida…',
