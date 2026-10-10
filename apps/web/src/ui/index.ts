@@ -2,6 +2,18 @@
 export { CatalogPanel, type CatalogPanelItem, type CatalogPlacement } from './catalog';
 export { Button, buttonVariants } from './components/button';
 export { UiKit } from './dev/ui-kit';
+export type {
+  ImageBackground,
+  ImageExporter,
+  ImageExporterLoader,
+  ImageExportFailure,
+  ImageExportOptions,
+  ImageExportPlan,
+  ImageExportResult,
+  ImageExportStage,
+  ImageQuality,
+  ImageScale,
+} from './editor/image-export';
 export {
   ProjectStatusProvider,
   type ShareOutcome,
