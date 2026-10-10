@@ -1,4 +1,4 @@
-import type { z } from 'zod';
+import type { z } from 'zod/mini';
 import {
   LIMITS,
   type MaterialRef,
@@ -14,7 +14,7 @@ const notFound = (id: string): CommandError => ({
   message: `No object "${id}"`,
 });
 
-function describeIssues(error: z.ZodError): string {
+function describeIssues(error: z.core.$ZodError): string {
   return error.issues
     .map((issue) =>
       issue.path.length ? `${issue.path.join('.')}: ${issue.message}` : issue.message,
