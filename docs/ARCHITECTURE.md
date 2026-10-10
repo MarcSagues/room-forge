@@ -348,6 +348,7 @@ flowchart LR
 ### 6.4 Next.js + R3F
 
 - El editor es **client-only** (`'use client'` + `dynamic(..., { ssr: false })`); la landing no carga three.
+- Los enlaces del editor y del visor a otras rutas (`/`, `/projects/`) llevan `prefetch={false}`: si no, Next descarga el JS de la pantalla de proyectos mientras el editor arranca (≈ 19 kB gz que compiten con three por la red). Navegar desde el editor es raro y la ruta destino es ligera.
 - `next.config`: `output: 'export'`, `images: { unoptimized: true }`, `trailingSlash: true`.
 - El código de `scene-engine` no importa nada de `next/*`.
 - React Strict Mode: R3F v9 avisa de efectos duplicados en desarrollo; los controladores se escriben idempotentes (cleanup simétrico).

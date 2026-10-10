@@ -121,6 +121,7 @@ Los números viven en un único fichero versionado, **`quality-budgets.json`** e
 - Un límite que no se midió **falla** (una comprobación que dejó de medir no puede pasar en silencio).
 - **Informe:** el spec escribe una tabla por ruta con sus chunks (los 15 mayores) y los contadores de la escena en el *resumen del job* de GitHub Actions y en el artefacto `budgets` (`budgets.md` y `budgets.json`), para ver tendencias entre PR.
 - **Las puertas se prueban a sí mismas:** `budgets.test.mjs` incluye los casos que deben fallar (una ruta que crece 100 kB, una llamada de dibujo de más), y `coverage-gate.test.mjs` ejecuta el `vitest.config.mts` real con umbrales imposibles (`QUALITY_BUDGETS_FILE`) y comprueba que la ejecución falla, y que pasa con umbrales que se cumplen.
+- **De qué está hecho un chunk:** `BUNDLE_SOURCEMAPS=1 pnpm --filter @roomforge/web build:e2e`, el spec de presupuestos sobre ese build y `node tools/checks/bundle-breakdown.mjs --route=/editor/` (con `--files` para ver ficheros en vez de paquetes) reparten los bytes de cada chunk entre sus fuentes según los *source maps*. Sin dependencias; es la herramienta para decidir qué diferir antes de tocar código (P7-04).
 - La medición de bundle y escena usa el build E2E (con el gancho `window.__RF__`), unos kB mayor que el de producción; es la misma referencia en cada ejecución.
 
 Los FPS **no** se usan como puerta de CI (el renderizado por software no es representativo); se miden en hardware real por issue de rendimiento.
