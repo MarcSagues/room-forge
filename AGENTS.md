@@ -31,6 +31,8 @@ pnpm test:watch                  # ✔ vitest en modo watch
 pnpm test:coverage               # ✔ informe v8 (html + lcov en ./coverage; umbrales informativos hasta P7-03)
 pnpm e2e                         # ✔ build E2E (NEXT_PUBLIC_E2E=1) + playwright (Chromium, WebGL por SwiftShader)
 pnpm start:static                # ✔ sirve apps/web/out en 127.0.0.1:4173
+pnpm catalog:build               # ✔ regenera modelos propios, manifiesto y docs/ATTRIBUTION.md
+pnpm catalog:validate            # ✔ manifiesto: schema, archivos, presupuestos, licencias
 node tools/planning/github-import.mjs validate   # valida docs/issues (disponible ya)
 ```
 

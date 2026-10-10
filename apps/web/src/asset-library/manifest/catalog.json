@@ -1,0 +1,635 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "id": "desk.office.140",
+      "name": {
+        "en": "Office desk 140",
+        "es": "Escritorio de oficina 140"
+      },
+      "category": "desk",
+      "tags": ["desk", "office"],
+      "size": {
+        "w": 1.4,
+        "h": 0.74,
+        "d": 0.7
+      },
+      "placement": {
+        "surfaces": ["floor"]
+      },
+      "slots": [
+        {
+          "id": "top",
+          "label": {
+            "en": "Desktop",
+            "es": "Tablero"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#c6a47d",
+            "roughness": 0.65,
+            "metalness": 0
+          }
+        },
+        {
+          "id": "frame",
+          "label": {
+            "en": "Frame",
+            "es": "Estructura"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#252c39",
+            "roughness": 0.65,
+            "metalness": 0.45
+          }
+        },
+        {
+          "id": "accent",
+          "label": {
+            "en": "Accents",
+            "es": "Detalles"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#75d5c9",
+            "roughness": 0.65,
+            "metalness": 0
+          }
+        }
+      ],
+      "source": {
+        "kind": "glb",
+        "file": "models/desk.office.140.glb",
+        "triangles": 3300,
+        "bytes": 98108
+      },
+      "license": {
+        "spdx": "LicenseRef-RoomForge-Proprietary",
+        "author": "RoomForge",
+        "origin": "Geometría procedural original (tools/catalog/models.mjs); sin assets de terceros",
+        "attribution": "Modelo original de RoomForge. Todos los derechos reservados."
+      }
+    },
+    {
+      "id": "desk.gaming.160",
+      "name": {
+        "en": "Gaming desk 160",
+        "es": "Escritorio gaming 160"
+      },
+      "category": "desk",
+      "tags": ["desk", "gaming"],
+      "size": {
+        "w": 1.6,
+        "h": 0.75,
+        "d": 0.75
+      },
+      "placement": {
+        "surfaces": ["floor"]
+      },
+      "slots": [
+        {
+          "id": "top",
+          "label": {
+            "en": "Desktop",
+            "es": "Tablero"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#c6a47d",
+            "roughness": 0.65,
+            "metalness": 0
+          }
+        },
+        {
+          "id": "frame",
+          "label": {
+            "en": "Frame",
+            "es": "Estructura"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#252c39",
+            "roughness": 0.65,
+            "metalness": 0.45
+          }
+        },
+        {
+          "id": "accent",
+          "label": {
+            "en": "Accents",
+            "es": "Detalles"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#75d5c9",
+            "roughness": 0.65,
+            "metalness": 0
+          }
+        }
+      ],
+      "source": {
+        "kind": "glb",
+        "file": "models/desk.gaming.160.glb",
+        "triangles": 2480,
+        "bytes": 75604
+      },
+      "license": {
+        "spdx": "LicenseRef-RoomForge-Proprietary",
+        "author": "RoomForge",
+        "origin": "Geometría procedural original (tools/catalog/models.mjs); sin assets de terceros",
+        "attribution": "Modelo original de RoomForge. Todos los derechos reservados."
+      }
+    },
+    {
+      "id": "desk.studio.160",
+      "name": {
+        "en": "Studio desk 160",
+        "es": "Escritorio de estudio 160"
+      },
+      "category": "desk",
+      "tags": ["desk", "studio"],
+      "size": {
+        "w": 1.6,
+        "h": 0.75,
+        "d": 0.75
+      },
+      "placement": {
+        "surfaces": ["floor"]
+      },
+      "slots": [
+        {
+          "id": "top",
+          "label": {
+            "en": "Desktop",
+            "es": "Tablero"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#c6a47d",
+            "roughness": 0.65,
+            "metalness": 0
+          }
+        },
+        {
+          "id": "frame",
+          "label": {
+            "en": "Frame",
+            "es": "Estructura"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#252c39",
+            "roughness": 0.65,
+            "metalness": 0.45
+          }
+        },
+        {
+          "id": "accent",
+          "label": {
+            "en": "Accents",
+            "es": "Detalles"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#75d5c9",
+            "roughness": 0.65,
+            "metalness": 0
+          }
+        }
+      ],
+      "source": {
+        "kind": "glb",
+        "file": "models/desk.studio.160.glb",
+        "triangles": 2560,
+        "bytes": 78896
+      },
+      "license": {
+        "spdx": "LicenseRef-RoomForge-Proprietary",
+        "author": "RoomForge",
+        "origin": "Geometría procedural original (tools/catalog/models.mjs); sin assets de terceros",
+        "attribution": "Modelo original de RoomForge. Todos los derechos reservados."
+      }
+    },
+    {
+      "id": "chair.gaming.racing",
+      "name": {
+        "en": "Racing gaming chair",
+        "es": "Silla gaming deportiva"
+      },
+      "category": "seating",
+      "tags": ["chair", "gaming", "racing"],
+      "size": {
+        "w": 0.68,
+        "h": 1.3,
+        "d": 0.7
+      },
+      "placement": {
+        "surfaces": ["floor"]
+      },
+      "slots": [
+        {
+          "id": "upholstery",
+          "label": {
+            "en": "Upholstery",
+            "es": "Tapizado"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#333e52",
+            "roughness": 0.65,
+            "metalness": 0
+          }
+        },
+        {
+          "id": "frame",
+          "label": {
+            "en": "Frame",
+            "es": "Estructura"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#202734",
+            "roughness": 0.65,
+            "metalness": 0.45
+          }
+        },
+        {
+          "id": "accent",
+          "label": {
+            "en": "Trim and accents",
+            "es": "Costuras y detalles"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#75d5c9",
+            "roughness": 0.65,
+            "metalness": 0
+          }
+        }
+      ],
+      "source": {
+        "kind": "glb",
+        "file": "models/chair.gaming.racing.glb",
+        "triangles": 4736,
+        "bytes": 145792
+      },
+      "license": {
+        "spdx": "LicenseRef-RoomForge-Proprietary",
+        "author": "RoomForge",
+        "origin": "Geometría procedural original (tools/catalog/models.mjs); sin assets de terceros",
+        "attribution": "Modelo original de RoomForge. Todos los derechos reservados."
+      }
+    },
+    {
+      "id": "chair.gaming.ergonomic",
+      "name": {
+        "en": "Ergonomic gaming chair",
+        "es": "Silla gaming ergonómica"
+      },
+      "category": "seating",
+      "tags": ["chair", "gaming", "ergonomic"],
+      "size": {
+        "w": 0.68,
+        "h": 1.3,
+        "d": 0.7
+      },
+      "placement": {
+        "surfaces": ["floor"]
+      },
+      "slots": [
+        {
+          "id": "upholstery",
+          "label": {
+            "en": "Upholstery",
+            "es": "Tapizado"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#333e52",
+            "roughness": 0.65,
+            "metalness": 0
+          }
+        },
+        {
+          "id": "frame",
+          "label": {
+            "en": "Frame",
+            "es": "Estructura"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#202734",
+            "roughness": 0.65,
+            "metalness": 0.45
+          }
+        },
+        {
+          "id": "accent",
+          "label": {
+            "en": "Trim and accents",
+            "es": "Costuras y detalles"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#75d5c9",
+            "roughness": 0.65,
+            "metalness": 0
+          }
+        }
+      ],
+      "source": {
+        "kind": "glb",
+        "file": "models/chair.gaming.ergonomic.glb",
+        "triangles": 6276,
+        "bytes": 190404
+      },
+      "license": {
+        "spdx": "LicenseRef-RoomForge-Proprietary",
+        "author": "RoomForge",
+        "origin": "Geometría procedural original (tools/catalog/models.mjs); sin assets de terceros",
+        "attribution": "Modelo original de RoomForge. Todos los derechos reservados."
+      }
+    },
+    {
+      "id": "chair.gaming.padded",
+      "name": {
+        "en": "Padded gaming chair",
+        "es": "Silla gaming acolchada"
+      },
+      "category": "seating",
+      "tags": ["chair", "gaming", "padded"],
+      "size": {
+        "w": 0.68,
+        "h": 1.3,
+        "d": 0.7
+      },
+      "placement": {
+        "surfaces": ["floor"]
+      },
+      "slots": [
+        {
+          "id": "upholstery",
+          "label": {
+            "en": "Upholstery",
+            "es": "Tapizado"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#333e52",
+            "roughness": 0.65,
+            "metalness": 0
+          }
+        },
+        {
+          "id": "frame",
+          "label": {
+            "en": "Frame",
+            "es": "Estructura"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#202734",
+            "roughness": 0.65,
+            "metalness": 0.45
+          }
+        },
+        {
+          "id": "accent",
+          "label": {
+            "en": "Trim and accents",
+            "es": "Costuras y detalles"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#75d5c9",
+            "roughness": 0.65,
+            "metalness": 0
+          }
+        }
+      ],
+      "source": {
+        "kind": "glb",
+        "file": "models/chair.gaming.padded.glb",
+        "triangles": 4436,
+        "bytes": 137216
+      },
+      "license": {
+        "spdx": "LicenseRef-RoomForge-Proprietary",
+        "author": "RoomForge",
+        "origin": "Geometría procedural original (tools/catalog/models.mjs); sin assets de terceros",
+        "attribution": "Modelo original de RoomForge. Todos los derechos reservados."
+      }
+    },
+    {
+      "id": "monitor.27.flat",
+      "name": {
+        "en": "Flat monitor 27 inch",
+        "es": "Monitor plano 27 pulgadas"
+      },
+      "category": "computing",
+      "tags": ["monitor", "flat"],
+      "size": {
+        "w": 0.61,
+        "h": 0.45,
+        "d": 0.2
+      },
+      "placement": {
+        "surfaces": ["floor"]
+      },
+      "slots": [
+        {
+          "id": "body",
+          "label": {
+            "en": "Housing",
+            "es": "Carcasa"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#252c39",
+            "roughness": 0.65,
+            "metalness": 0
+          }
+        },
+        {
+          "id": "stand",
+          "label": {
+            "en": "Stand",
+            "es": "Soporte"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#596677",
+            "roughness": 0.65,
+            "metalness": 0.45
+          }
+        },
+        {
+          "id": "screen",
+          "label": {
+            "en": "Screen",
+            "es": "Pantalla"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#467b93",
+            "roughness": 0.35,
+            "metalness": 0
+          }
+        }
+      ],
+      "source": {
+        "kind": "glb",
+        "file": "models/monitor.27.flat.glb",
+        "triangles": 1320,
+        "bytes": 43180
+      },
+      "license": {
+        "spdx": "LicenseRef-RoomForge-Proprietary",
+        "author": "RoomForge",
+        "origin": "Geometría procedural original (tools/catalog/models.mjs); sin assets de terceros",
+        "attribution": "Modelo original de RoomForge. Todos los derechos reservados."
+      }
+    },
+    {
+      "id": "monitor.ultrawide.34.curved",
+      "name": {
+        "en": "Curved monitor 34 inch",
+        "es": "Monitor curvo 34 pulgadas"
+      },
+      "category": "computing",
+      "tags": ["monitor", "ultrawide", "curved"],
+      "size": {
+        "w": 0.81,
+        "h": 0.45,
+        "d": 0.25
+      },
+      "placement": {
+        "surfaces": ["floor"]
+      },
+      "slots": [
+        {
+          "id": "body",
+          "label": {
+            "en": "Housing",
+            "es": "Carcasa"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#252c39",
+            "roughness": 0.65,
+            "metalness": 0
+          }
+        },
+        {
+          "id": "stand",
+          "label": {
+            "en": "Stand",
+            "es": "Soporte"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#596677",
+            "roughness": 0.65,
+            "metalness": 0.45
+          }
+        },
+        {
+          "id": "screen",
+          "label": {
+            "en": "Screen",
+            "es": "Pantalla"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#467b93",
+            "roughness": 0.35,
+            "metalness": 0
+          }
+        }
+      ],
+      "source": {
+        "kind": "glb",
+        "file": "models/monitor.ultrawide.34.curved.glb",
+        "triangles": 1260,
+        "bytes": 43948
+      },
+      "license": {
+        "spdx": "LicenseRef-RoomForge-Proprietary",
+        "author": "RoomForge",
+        "origin": "Geometría procedural original (tools/catalog/models.mjs); sin assets de terceros",
+        "attribution": "Modelo original de RoomForge. Todos los derechos reservados."
+      }
+    },
+    {
+      "id": "monitor.27.arm",
+      "name": {
+        "en": "Monitor on arm 27 inch",
+        "es": "Monitor con brazo 27 pulgadas"
+      },
+      "category": "computing",
+      "tags": ["monitor", "arm"],
+      "size": {
+        "w": 0.61,
+        "h": 0.45,
+        "d": 0.2
+      },
+      "placement": {
+        "surfaces": ["floor"]
+      },
+      "slots": [
+        {
+          "id": "body",
+          "label": {
+            "en": "Housing",
+            "es": "Carcasa"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#252c39",
+            "roughness": 0.65,
+            "metalness": 0
+          }
+        },
+        {
+          "id": "stand",
+          "label": {
+            "en": "Stand",
+            "es": "Soporte"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#596677",
+            "roughness": 0.65,
+            "metalness": 0.45
+          }
+        },
+        {
+          "id": "screen",
+          "label": {
+            "en": "Screen",
+            "es": "Pantalla"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#467b93",
+            "roughness": 0.35,
+            "metalness": 0
+          }
+        }
+      ],
+      "source": {
+        "kind": "glb",
+        "file": "models/monitor.27.arm.glb",
+        "triangles": 1328,
+        "bytes": 43484
+      },
+      "license": {
+        "spdx": "LicenseRef-RoomForge-Proprietary",
+        "author": "RoomForge",
+        "origin": "Geometría procedural original (tools/catalog/models.mjs); sin assets de terceros",
+        "attribution": "Modelo original de RoomForge. Todos los derechos reservados."
+      }
+    }
+  ]
+}
