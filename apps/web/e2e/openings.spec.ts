@@ -105,3 +105,70 @@ test('clicking an opening selects it; Delete removes it and undo brings it back'
   await page.keyboard.press('Control+z');
   await expect.poll(() => openingIds(page)).toContain('window');
 });
+
+/** Screen point of a spot `along` metres from the middle of an opening, along its wall. */
+async function alongOpening(page: Page, id: string, along: number) {
+  const point = await page.evaluate(
+    ({ target, along }) => {
+      const hook = window.__RF__;
+      const opening = hook?.session.getState().document.openings[target as never];
+      if (!hook || !opening) return null;
+      return hook.project(target as never, [along, opening.height / 2, 0]);
+    },
+    { target: id, along },
+  );
+  if (!point) throw new Error(`${id} is not on screen`);
+  return point;
+}
+
+const offsetOf = (page: Page, id: string) =>
+  page.evaluate(
+    (target) =>
+      window.__RF__?.session.getState().document.openings[target as never]?.offset ?? null,
+    id,
+  );
+
+test('sliding a window along its wall moves the hole live and records one undo entry', async ({
+  page,
+}) => {
+  const wall = await solidWall(page);
+  await addOpening(page, 'window', 'window.standard', wall, 0.5);
+  const from = await alongOpening(page, 'window', 0);
+  const to = await alongOpening(page, 'window', 1);
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down();
+  const steps = 10;
+  for (let i = 1; i <= steps; i += 1) {
+    await page.mouse.move(
+      from.x + ((to.x - from.x) * i) / steps,
+      from.y + ((to.y - from.y) * i) / steps,
+    );
+  }
+  // Mid-drag the document has not changed: the wall shows the hole from the transient pose.
+  expect(await offsetOf(page, 'window')).toBe(0.5);
+  await page.mouse.up();
+  await expect.poll(() => offsetOf(page, 'window')).toBeCloseTo(1.5, 1);
+  expect(await selection(page)).toEqual(['window']);
+
+  await page.keyboard.press('Control+z');
+  await expect.poll(() => offsetOf(page, 'window')).toBe(0.5);
+  // The same undo did not remove the window: the slide was a single entry.
+  expect(await openingIds(page)).toContain('window');
+});
+
+test('Esc during a slide puts the opening back and records nothing', async ({ page }) => {
+  const wall = await solidWall(page);
+  await addOpening(page, 'window', 'window.standard', wall, 0.5);
+  const from = await alongOpening(page, 'window', 0);
+  const to = await alongOpening(page, 'window', 1);
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down();
+  await page.mouse.move((from.x + to.x) / 2, (from.y + to.y) / 2, { steps: 5 });
+  await page.mouse.move(to.x, to.y, { steps: 5 });
+  await page.keyboard.press('Escape');
+  await page.mouse.up();
+  expect(await offsetOf(page, 'window')).toBe(0.5);
+  await page.keyboard.press('Control+z');
+  // The only entry was adding the window.
+  await expect.poll(() => openingIds(page)).not.toContain('window');
+});

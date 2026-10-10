@@ -1,16 +1,23 @@
 import inspector from 'node:inspector';
 import {
+  addOpening,
   createEditorSession,
   type ObjectId,
+  type OpeningId,
   type PlacementInput,
   type PlacementResult,
+  type RoomId,
   solvePlacement,
 } from '@roomforge/core';
 import { buildDocument, createFixtureCatalog } from '@roomforge/core/testing';
 import { Object3D, Ray, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { createEntityRegistry } from '../objects/entity-registry';
+import { LiveWall } from '../room/live-wall';
+import { WALL_THICKNESS } from '../room/room-geometry';
+import { WallOpeningsLayer } from '../room/wall-openings';
 import { MoveController } from './move-controller';
+import { OpeningController } from './opening-controller';
 import { PlaceController } from './place-controller';
 import { RotateController } from './rotate-controller';
 import { hitsHandle } from './rotate-handle';
@@ -308,6 +315,65 @@ describe('hot path: no allocations per step', () => {
             await largeBytesPerCall((i) => controller.update(path[i % path.length] as Ray, free)),
           );
           controller.cancel();
+        },
+        SLOW,
+      );
+    }
+  });
+  describe('sliding an opening (OpeningController.update + the live wall it redraws)', () => {
+    // Window-1 (0.9 wide) on the north wall of the 4 × 3 fixture room, plus a window at 2.5 so
+    // the sweep goes through valid and overlapping positions and into both corners.
+    const atNorth = (x: number) => new Ray(new Vector3(x, 1.5, 2), new Vector3(0, 0, -1));
+    const path = sweep(600, -1, 5).map(atNorth);
+
+    for (const free of [false, true]) {
+      it(
+        `${free ? 'with Alt' : 'with snapping'}`,
+        async () => {
+          const session = createEditorSession({
+            initialDocument: buildDocument(),
+            catalog: createFixtureCatalog(),
+          });
+          const roomId = 'room-1' as RoomId;
+          session.execute(
+            addOpening({
+              id: 'w2',
+              roomId,
+              wall: 'north',
+              variant: 'window.standard',
+              offset: 2.5,
+            }),
+          );
+          const registry = createEntityRegistry();
+          registry.register('window-1' as OpeningId, new Object3D());
+          const transient = createTransientStore();
+          const layer = new WallOpeningsLayer();
+          const live = new LiveWall({
+            session,
+            transient,
+            layer,
+            roomId,
+            wall: 'north',
+            shift: WALL_THICKNESS,
+            thickness: WALL_THICKNESS,
+          });
+          live.length = 4 + 2 * WALL_THICKNESS;
+          live.height = 2.6;
+          live.surface = new Object3D();
+          transient.subscribe(() => live.sync());
+          const controller = new OpeningController({
+            session,
+            registry,
+            transient,
+            invalidate: () => {},
+          });
+          controller.begin('window-1' as OpeningId, atNorth(0.9));
+          expectQuiet(
+            await largeBytesPerCall((i) => controller.update(path[i % path.length] as Ray, free)),
+          );
+          controller.cancel();
+          live.dispose();
+          layer.dispose();
         },
         SLOW,
       );
