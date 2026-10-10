@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { areaFacing, boundingBox, near, triangles } from './geometry-test-utils';
 import { triangleCount } from './mesh-data';
-import { buildWallMesh, type WallHole } from './wall-mesh';
+import { buildWallMesh, type WallHole, WallMeshWriter } from './wall-mesh';
 
 const L = 4;
 const H = 2.6;
@@ -109,5 +109,31 @@ describe('buildWallMesh at the room limits', () => {
     const mesh = buildWallMesh(length, height, T);
     expect(boundingBox(mesh)).toEqual({ min: [0, 0, -T], max: [length, height, 0] });
     expect(triangleCount(mesh)).toBe(12);
+  });
+});
+
+describe('WallMeshWriter reused in place (the live wall of a drag)', () => {
+  it('writes the same mesh as a fresh build, whatever it wrote before', () => {
+    const writer = new WallMeshWriter(7);
+    writer.write(L, H, T, [DOOR, WINDOW]);
+    writer.write(L, H, T, [WINDOW], 1);
+    expect(writer.toMeshData()).toEqual(buildWallMesh(L, H, T, [WINDOW]));
+    // Only the first `holeCount` holes count.
+    writer.write(L, H, T, [DOOR, WINDOW], 1);
+    expect(writer.toMeshData()).toEqual(buildWallMesh(L, H, T, [DOOR]));
+  });
+
+  it('has room for seven holes', () => {
+    const holes: WallHole[] = Array.from({ length: 7 }, (_, i) => ({
+      u0: 0.2 + i * 0.55,
+      u1: 0.6 + i * 0.55,
+      v0: i % 2 === 0 ? 0 : 0.9,
+      v1: 2,
+    }));
+    const writer = new WallMeshWriter(7);
+    writer.write(4.2, H, T, holes);
+    expect(writer.indexCount).toBeLessThanOrEqual(writer.indices.length);
+    const area = 4.2 * H - holes.reduce((sum, h) => sum + (h.u1 - h.u0) * (h.v1 - h.v0), 0);
+    expect(areaFacing(writer.toMeshData(), [0, 0, 1], { axis: 2, value: 0 })).toBeCloseTo(area, 4);
   });
 });

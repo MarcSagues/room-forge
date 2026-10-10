@@ -1,5 +1,6 @@
+import type { RoomId } from '@roomforge/core';
 import { describe, expect, it, vi } from 'vitest';
-import { createTransientStore, type GhostState } from './transient-store';
+import { createTransientStore, type GhostState, type OpeningDragState } from './transient-store';
 
 const ghost: GhostState = {
   x: 1,
@@ -40,5 +41,39 @@ describe('transient store: placement ghost', () => {
     stop();
     store.publishGhost(ghost);
     expect(listener).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('transient store: an opening being dragged', () => {
+  const opening: OpeningDragState = {
+    id: null,
+    roomId: 'room-1' as RoomId,
+    wall: 'north',
+    kind: 'window',
+    variant: 'window.standard',
+    offset: 1,
+    width: 1,
+    height: 1.2,
+    sill: 0.9,
+    valid: true,
+    visible: true,
+  };
+
+  it('is empty until published, reuses one object and notifies on clear once', () => {
+    const store = createTransientStore();
+    const listener = vi.fn();
+    store.subscribe(listener);
+    expect(store.opening()).toBeNull();
+    store.publishOpening(opening);
+    const first = store.opening();
+    expect(first).toMatchObject(opening);
+    store.publishOpening({ ...opening, offset: 2, valid: false });
+    expect(store.opening()).toBe(first);
+    expect(store.opening()).toMatchObject({ offset: 2, valid: false });
+    expect(store.drag()).toBeNull();
+    store.clearOpening();
+    store.clearOpening();
+    expect(store.opening()).toBeNull();
+    expect(listener).toHaveBeenCalledTimes(3);
   });
 });

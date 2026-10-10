@@ -10,7 +10,7 @@ import {
 import { openingResources } from './opening-resources';
 
 /** Openings a wall can show at once: the limit (I4) plus one being dragged in. */
-const MAX_OPENINGS = 7;
+export const MAX_OPENINGS = 7;
 const CAPACITY = MAX_OPENINGS * MAX_OPENING_PARTS;
 
 /**

@@ -78,10 +78,7 @@ export function BottomBar({ session }: { session?: EditorSession | undefined }) 
 }
 
 function SessionControls({ session }: { session: EditorSession }) {
-  const { snap, view, wallMode } = useStore(
-    session.store,
-    useShallow((state) => ({ snap: state.snap, view: state.view, wallMode: state.wallMode })),
-  );
+  const snap = useStore(session.store, (state) => state.snap);
   return (
     <>
       <fieldset className="flex items-center gap-1">
@@ -118,55 +115,66 @@ function SessionControls({ session }: { session: EditorSession }) {
         />
       </fieldset>
       <Separator orientation="vertical" className="mx-1 h-5" />
-      <fieldset className="flex items-center gap-1">
-        <legend className="sr-only">{t('bar.view')}</legend>
-        <ShortcutTooltip label={t('bar.perspective')} shortcutId="view.perspective">
-          <Button
-            variant={view === 'perspective' ? 'secondary' : 'ghost'}
-            size="sm"
-            aria-pressed={view === 'perspective'}
-            onClick={() => session.setView('perspective')}
-          >
-            <BoxIcon />
-            {t('bar.perspective')}
-          </Button>
-        </ShortcutTooltip>
-        <ShortcutTooltip label={t('bar.top')} shortcutId="view.top">
-          <Button
-            variant={view === 'top' ? 'secondary' : 'ghost'}
-            size="sm"
-            aria-pressed={view === 'top'}
-            onClick={() => session.setView('top')}
-          >
-            <SquareIcon />
-            {t('bar.top')}
-          </Button>
-        </ShortcutTooltip>
-        <DropdownMenu>
-          <ShortcutTooltip label={t('bar.wallsMenu')} shortcutId="view.walls">
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm">
-                {t('bar.walls', { mode: wallName(wallMode) })}
-                <ChevronDownIcon aria-hidden="true" />
-              </Button>
-            </DropdownMenuTrigger>
-          </ShortcutTooltip>
-          <DropdownMenuContent align="start" side="top">
-            <DropdownMenuLabel>{t('bar.wallsMenu')}</DropdownMenuLabel>
-            <DropdownMenuRadioGroup
-              value={wallMode}
-              onValueChange={(mode) => session.setWallMode(mode as WallMode)}
-            >
-              {WALL_MODES.map((mode) => (
-                <DropdownMenuRadioItem key={mode} value={mode}>
-                  {wallName(mode)}
-                </DropdownMenuRadioItem>
-              ))}
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </fieldset>
+      <ViewControls session={session} />
     </>
+  );
+}
+
+/** Perspective or top view, and how walls show: all a viewer of a shared room may change too. */
+export function ViewControls({ session }: { session: EditorSession }) {
+  const { view, wallMode } = useStore(
+    session.store,
+    useShallow((state) => ({ view: state.view, wallMode: state.wallMode })),
+  );
+  return (
+    <fieldset className="flex items-center gap-1">
+      <legend className="sr-only">{t('bar.view')}</legend>
+      <ShortcutTooltip label={t('bar.perspective')} shortcutId="view.perspective">
+        <Button
+          variant={view === 'perspective' ? 'secondary' : 'ghost'}
+          size="sm"
+          aria-pressed={view === 'perspective'}
+          onClick={() => session.setView('perspective')}
+        >
+          <BoxIcon />
+          {t('bar.perspective')}
+        </Button>
+      </ShortcutTooltip>
+      <ShortcutTooltip label={t('bar.top')} shortcutId="view.top">
+        <Button
+          variant={view === 'top' ? 'secondary' : 'ghost'}
+          size="sm"
+          aria-pressed={view === 'top'}
+          onClick={() => session.setView('top')}
+        >
+          <SquareIcon />
+          {t('bar.top')}
+        </Button>
+      </ShortcutTooltip>
+      <DropdownMenu>
+        <ShortcutTooltip label={t('bar.wallsMenu')} shortcutId="view.walls">
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm">
+              {t('bar.walls', { mode: wallName(wallMode) })}
+              <ChevronDownIcon aria-hidden="true" />
+            </Button>
+          </DropdownMenuTrigger>
+        </ShortcutTooltip>
+        <DropdownMenuContent align="start" side="top">
+          <DropdownMenuLabel>{t('bar.wallsMenu')}</DropdownMenuLabel>
+          <DropdownMenuRadioGroup
+            value={wallMode}
+            onValueChange={(mode) => session.setWallMode(mode as WallMode)}
+          >
+            {WALL_MODES.map((mode) => (
+              <DropdownMenuRadioItem key={mode} value={mode}>
+                {wallName(mode)}
+              </DropdownMenuRadioItem>
+            ))}
+          </DropdownMenuRadioGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </fieldset>
   );
 }
 
