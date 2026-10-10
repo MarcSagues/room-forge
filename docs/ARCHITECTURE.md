@@ -374,6 +374,7 @@ flowchart LR
 - **Memoización:** el constructor cachea suelo/techo por `(ancho, fondo[, alto])` y cada pared por `(largo, alto, grosor, huecos)` en cachés acotadas (48 entradas). Cambiar solo el alto no reconstruye el suelo; cambiar un hueco solo reconstruye su pared. Los contadores `stats.builds` lo hacen comprobable.
 - **Recursos GPU:** `useDisposable` libera la geometría al cambiar la entrada o desmontar (R3F solo libera lo que crea él). Prueba E2E: 12 redimensionados seguidos no aumentan `renderer.info.memory.geometries`.
 - **Presupuesto de referencia:** sala por defecto sin aperturas = 8 *draw calls*, 52 triángulos, 8 geometrías (4 paredes + suelo + techo + 2 mallas de rejilla).
+- **Puertas y ventanas (P3-12):** `writeOpeningParts` (puro) describe marco, hoja(s) y vidrio(s) de las 4 variantes como cajas en el marco de la apertura (origen en el centro inferior del hueco). `WallOpeningsLayer` los dibuja por pared con un `InstancedMesh` por material (marco, hoja, vidrio) sobre una caja unidad y materiales compartidos (`openingResources`): como mucho 3 *draw calls* por pared y recolocar solo reescribe matrices. Cada apertura tiene un ancla vacía en el `EntityRegistry` (centro inferior del hueco, mitad del grosor), así picking, contorno de selección y controladores la tratan como a un objeto. En modo corte, los herrajes de una pared atenuada (opacidad < 0,5) se ocultan con `visible` y no se pueden seleccionar; en modo abajo se escalan con la pared. Supr elimina también aperturas seleccionadas.
 
 ### 6.8 Cámara (`scene-engine/camera`, P2-08)
 

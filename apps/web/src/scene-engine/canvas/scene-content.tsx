@@ -16,10 +16,11 @@ export function SceneContent({ registry }: { registry?: EntityRegistry }) {
   return (
     <>
       <PlaceholderLights />
-      {roomIds.map((id) => (
-        <RoomMesh key={id} roomId={id} />
-      ))}
       <EntityRegistryProvider {...(registry ? { registry } : {})}>
+        {/* Rooms register their openings, so they share the registry with the objects. */}
+        {roomIds.map((id) => (
+          <RoomMesh key={id} roomId={id} />
+        ))}
         <ObjectList />
         <SelectionOutline />
         <DragGuides />

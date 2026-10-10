@@ -3,7 +3,7 @@
 import { addAfterEffect, Canvas, useThree } from '@react-three/fiber';
 import {
   type EditorSession,
-  type ObjectId,
+  type EntityId,
   type RoomId,
   WALL_IDS,
   type WallId,
@@ -54,7 +54,7 @@ export interface SceneHandle {
    * `local` picks another point, in the object's own frame (its front is +z), e.g. the knob of
    * the rotation handle.
    */
-  project(id: ObjectId, local?: readonly [number, number, number]): { x: number; y: number } | null;
+  project(id: EntityId, local?: readonly [number, number, number]): { x: number; y: number } | null;
   /** Renderer counters (frame, draw calls, triangles, programs...). */
   renderInfo(): RenderInfo;
   /** Run a direct three.js mutation and request a frame. */

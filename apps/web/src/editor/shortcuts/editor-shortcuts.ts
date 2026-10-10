@@ -3,7 +3,9 @@ import {
   type EditorSession,
   nextWallMode,
   type ObjectId,
+  type OpeningId,
   removeObjects,
+  removeOpenings,
 } from '@roomforge/core';
 import type { ShortcutDef } from './registry';
 
@@ -75,7 +77,12 @@ export function editorShortcuts({ session, fit }: EditorShortcutDeps): ShortcutD
       description: 'shortcut.delete',
       enabled: hasSelection,
       handler: () => {
-        session.execute(removeObjects(selected()));
+        // Doors and windows are selected like objects but removed by their own command.
+        const { selection, document } = session.getState();
+        const openings = selection.filter((id) => Object.hasOwn(document.openings, id));
+        const objects = selection.filter((id) => !openings.includes(id));
+        if (openings.length > 0) session.execute(removeOpenings(openings as OpeningId[]));
+        if (objects.length > 0) session.execute(removeObjects(objects as ObjectId[]));
       },
     },
     {

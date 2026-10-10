@@ -1,4 +1,4 @@
-import type { ObjectId } from '@roomforge/core';
+import type { EntityId } from '@roomforge/core';
 
 /** A press that moved less than this (px) between down and up is a click, not a drag. */
 export const CLICK_SLOP_PX = 4;
@@ -8,7 +8,7 @@ export interface DragHandlers {
    * The pointer was pressed on `id` and moved past the click slop. `ndcX/Y` is where it was
    * pressed. Return false to refuse (e.g. a stacked or locked object): the press is then ignored.
    */
-  start(id: ObjectId, ndcX: number, ndcY: number): boolean;
+  start(id: EntityId, ndcX: number, ndcY: number): boolean;
   /** At most once per animation frame. `free` = Alt held (no snapping). */
   move(ndcX: number, ndcY: number, free: boolean): void;
   end(): void;
@@ -24,18 +24,18 @@ export interface DragHandlers {
 /** The rotation handle: pressing on it starts turning at once, with no click slop. */
 export interface HandleHandlers extends DragHandlers {
   /** The object whose handle is under normalised device coordinates, or null. */
-  hit(ndcX: number, ndcY: number): ObjectId | null;
+  hit(ndcX: number, ndcY: number): EntityId | null;
 }
 
 export interface PickingDeps {
   /** The canvas element: pointer events are listened to here. */
   element: HTMLElement;
   /** Object under normalised device coordinates (-1..1, y up), or null. */
-  pick(ndcX: number, ndcY: number): ObjectId | null;
+  pick(ndcX: number, ndcY: number): EntityId | null;
   /** Called only when the hovered object changes. */
-  onHover(id: ObjectId | null): void;
+  onHover(id: EntityId | null): void;
   /** A left click without drag: the picked object (null on empty space) and whether Shift was held. */
-  onClick(id: ObjectId | null, additive: boolean): void;
+  onClick(id: EntityId | null, additive: boolean): void;
   /** Dragging an object with the left button (optional). */
   drag?: DragHandlers;
   /** Turning an object with its rotation handle (optional). */
@@ -60,11 +60,11 @@ export function attachPicking(deps: PickingDeps): () => void {
   let pointerY = 0;
   let alt = false;
   let scheduled: number | null = null;
-  let hovered: ObjectId | null = null;
+  let hovered: EntityId | null = null;
   let downX = 0;
   let downY = 0;
   let pressing = false;
-  let pressedOn: ObjectId | null = null;
+  let pressedOn: EntityId | null = null;
   let dragging = false;
   /** Who gets the move/end/cancel of the gesture in progress: the drag or the rotation handle. */
   let active: DragHandlers | undefined;
@@ -89,7 +89,7 @@ export function attachPicking(deps: PickingDeps): () => void {
   const pickAt = (clientX: number, clientY: number) =>
     toNdc(clientX, clientY, ndc) ? deps.pick(ndc.x, ndc.y) : null;
 
-  const setHovered = (id: ObjectId | null) => {
+  const setHovered = (id: EntityId | null) => {
     if (id === hovered) return;
     hovered = id;
     deps.onHover(id);

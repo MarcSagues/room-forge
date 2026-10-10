@@ -1,4 +1,4 @@
-import type { ObjectId } from '@roomforge/core';
+import type { EntityId } from '@roomforge/core';
 import { Box3, Matrix4, type Ray, Vector3 } from 'three';
 
 /**
@@ -7,14 +7,14 @@ import { Box3, Matrix4, type Ray, Vector3 } from 'three';
  * at the centre of its footprint, on the floor); `matrixWorld` places it in the scene.
  */
 export interface PickProxy {
-  id: ObjectId;
+  id: EntityId;
   matrixWorld: Matrix4;
   /** Object size in metres (`w × h × d`), before the object's own scale. */
   size: { w: number; h: number; d: number };
 }
 
 export interface PickHit {
-  id: ObjectId;
+  id: EntityId;
   distance: number;
 }
 
