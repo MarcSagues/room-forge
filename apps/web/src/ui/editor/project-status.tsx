@@ -12,13 +12,21 @@ export interface ProjectStatus {
   onExport?: (() => void) | undefined;
   /** Renames the open project; rejects with the storage error. Without it the name is a link. */
   onRename?: ((name: string) => Promise<void>) | undefined;
+  /** Copies a link to a read-only copy of the project; without it Share is the placeholder. */
+  onShare?: (() => Promise<ShareOutcome>) | undefined;
 }
+
+/** What became of a request to share: the button tells the person. */
+export type ShareOutcome =
+  | { kind: 'copied'; length: number; long: boolean }
+  | { kind: 'too-large' | 'unsupported' | 'copy-failed' };
 
 const DEFAULT: ProjectStatus = {
   name: undefined,
   save: 'saved',
   onExport: undefined,
   onRename: undefined,
+  onShare: undefined,
 };
 
 const ProjectStatusContext = createContext<ProjectStatus>(DEFAULT);
@@ -28,10 +36,10 @@ const ProjectStatusContext = createContext<ProjectStatus>(DEFAULT);
  * shell's layouts. Without a provider the bar shows the placeholders it always had.
  */
 export function ProjectStatusProvider(props: ProjectStatus & { children: ReactNode }) {
-  const { name, save, onExport, onRename, children } = props;
+  const { name, save, onExport, onRename, onShare, children } = props;
   const value = useMemo(
-    () => ({ name, save, onExport, onRename }),
-    [name, save, onExport, onRename],
+    () => ({ name, save, onExport, onRename, onShare }),
+    [name, save, onExport, onRename, onShare],
   );
   return <ProjectStatusContext.Provider value={value}>{children}</ProjectStatusContext.Provider>;
 }

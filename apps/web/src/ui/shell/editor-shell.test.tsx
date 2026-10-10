@@ -1,3 +1,4 @@
+import { createEditorSession, createStarterDocument } from '@roomforge/core';
 import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -165,5 +166,25 @@ describe('EditorShell — viewer (< 768 px)', () => {
     expect(screen.queryByRole('banner')).not.toBeInTheDocument();
     expect(screen.queryByRole('complementary', { hidden: true })).not.toBeInTheDocument();
     expect(screen.queryByRole('contentinfo')).not.toBeInTheDocument();
+  });
+});
+
+describe('EditorShell — shared link viewer', () => {
+  it('shows the banner, the viewport and the view controls at any width, without editing chrome', async () => {
+    setViewportWidth(1400);
+    const session = createEditorSession({
+      initialDocument: createStarterDocument(),
+      catalog: { getItem: () => undefined },
+    });
+    render(<EditorShell session={session} sharedView={<p>Shared banner</p>} />);
+    expect(screen.getByText('Shared banner')).toBeInTheDocument();
+    expect(screen.getByRole('main', { name: 'Viewport' })).toBeInTheDocument();
+    expect(screen.queryByRole('banner')).not.toBeInTheDocument();
+    expect(screen.queryByRole('complementary', { hidden: true })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /undo/i })).not.toBeInTheDocument();
+    expect(screen.queryByText('Open RoomForge on a computer to edit.')).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Top' }));
+    expect(session.getState().view).toBe('top');
   });
 });

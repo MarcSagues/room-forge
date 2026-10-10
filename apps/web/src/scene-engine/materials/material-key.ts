@@ -5,9 +5,13 @@ const thousandths = (value: number) => Math.round(value * 1000) / 1000;
 /**
  * What two materials must have in common to be the same one: the preset that is really drawn (an
  * unknown preset draws the default, so all of them share it), the tint, the surface values and
- * whether it is see-through. Everything else about a material follows from these.
+ * whether it is see-through or glows. Everything else about a material follows from these.
  */
-export function materialKey(material: ResolvedMaterial, transparent: boolean): string {
+export function materialKey(
+  material: ResolvedMaterial,
+  transparent: boolean,
+  emissive = false,
+): string {
   const preset = material.known ? material.presetId : DEFAULT_MATERIAL_PRESET_ID;
   const tint = material.tint ? material.tint.toLowerCase() : '-';
   const kind = transparent ? 'transparent' : 'opaque';
@@ -17,5 +21,6 @@ export function materialKey(material: ResolvedMaterial, transparent: boolean): s
     thousandths(material.roughness),
     thousandths(material.metalness),
     kind,
+    ...(emissive ? ['emissive'] : []),
   ].join('|');
 }

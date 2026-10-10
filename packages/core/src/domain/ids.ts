@@ -1,6 +1,6 @@
 import '../zod-config';
 import { nanoid } from 'nanoid';
-import { z } from 'zod';
+import { z } from 'zod/mini';
 
 /** Length of generated ids: short so that share links stay small (DOMAIN_MODEL §1). */
 export const ID_LENGTH = 10;
@@ -9,10 +9,10 @@ export const ID_LENGTH = 10;
 const RESERVED_IDS = new Set(['__proto__', 'constructor', 'prototype']);
 
 /** URL-safe ids; longer than generated ones so test ids (`room-1`) and older formats still parse. */
-export const IdSchema = z
-  .string()
-  .regex(/^[A-Za-z0-9_-]{1,32}$/, 'Expected an id of 1 to 32 URL-safe characters')
-  .refine((id) => !RESERVED_IDS.has(id), 'This id is reserved');
+export const IdSchema = z.string().check(
+  z.regex(/^[A-Za-z0-9_-]{1,32}$/, 'Expected an id of 1 to 32 URL-safe characters'),
+  z.refine((id) => !RESERVED_IDS.has(id), 'This id is reserved'),
+);
 
 export const ProjectIdSchema = IdSchema.brand<'ProjectId'>();
 export const RoomIdSchema = IdSchema.brand<'RoomId'>();

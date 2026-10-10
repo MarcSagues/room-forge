@@ -12,3 +12,17 @@ export {
   type Result,
   serializeProject,
 } from './project-file';
+export {
+  compactForShare,
+  decodeShareFragment,
+  encodeShareFragment,
+  fromBase64Url,
+  type InflateResult,
+  SHARE_LIMITS,
+  SHARE_LINK_VERSION,
+  type ShareCodec,
+  type ShareEncoding,
+  type ShareError,
+  type ShareErrorCode,
+  toBase64Url,
+} from './share-link';

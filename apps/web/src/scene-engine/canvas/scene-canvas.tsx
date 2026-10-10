@@ -19,6 +19,7 @@ import { createPlacementApi, type PlacementApi } from '../interaction/placement-
 import { createTransientStore } from '../interaction/transient-store';
 import { MaterialsProvider } from '../materials/materials-context';
 import { createEntityRegistry, type EntityRegistry } from '../objects/entity-registry';
+import { ModelsProvider } from '../resources/models-context';
 import { roomObjectName } from '../room/room-mesh';
 import { watchContext } from './context-events';
 import { connectInvalidate } from './invalidate-bridge';
@@ -123,7 +124,9 @@ export function SceneCanvas(props: SceneCanvasProps) {
           <ReadyReporter onReady={onReady} camera={cameraRef} registry={registry} />
           {showStats && <StatsWriter target={statsRef} />}
           <MaterialsProvider>
-            <SceneContent registry={registry} />
+            <ModelsProvider>
+              <SceneContent registry={registry} />
+            </ModelsProvider>
           </MaterialsProvider>
         </SceneSessionProvider>
       </Canvas>

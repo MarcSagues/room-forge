@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>RoomForge · Muestras 3D</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#edf0f1;color:#202c36;font:15px system-ui,sans-serif}header{padding:24px 34px;display:flex;justify-content:space-between;align-items:center;background:#fff;border-bottom:1px solid #dde2e5}h1{font-size:22px;margin:6px 0}p{margin:8px 0;line-height:1.6}.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#557870}main{display:grid;grid-template-columns:1fr 320px;min-height:calc(100vh - 122px)}#stage{position:relative;min-height:590px}canvas{display:block;width:100%;height:100%;touch-action:none}.caption{position:absolute;left:30px;bottom:24px;pointer-events:none;background:#ffffffdf;padding:14px 20px;border-radius:12px}aside{padding:26px;background:#fff;border-left:1px solid #dde2e5}h2{font-size:18px;margin:0 0 18px}label{display:block;font-size:13px;margin:18px 0 7px}select,button{width:100%;padding:11px;border:1px solid #cbd5d9;border-radius:8px;background:#fff;color:#233b39;font:inherit}button{cursor:pointer}button:hover{background:#e5f5ef}input[type=color]{width:42px;height:34px;padding:2px;border:1px solid #cbd5d9;border-radius:6px;cursor:pointer}.swatch{display:flex;justify-content:space-between;align-items:center;margin:15px 0}.swatch label{margin:0}hr{border:0;border-top:1px solid #e4e8ea;margin:24px 0}.small{font-size:12px;color:#64747c}.pill{padding:6px 10px;background:#eef5f2;border-radius:30px;font-size:12px}a{color:#186b58}.metric{font-variant-numeric:tabular-nums}#error{color:#a42222}@media(max-width:760px){main{grid-template-columns:1fr}aside{border-left:0}#stage{min-height:440px}header{padding:18px}header .pill{display:none}}
+  </style>
+  <script type="importmap">{"imports":{"three":"./vendor/three.module.js","three/addons/controls/OrbitControls.js":"./vendor/OrbitControls.js","three/addons/geometries/RoundedBoxGeometry.js":"./vendor/RoundedBoxGeometry.js","three/addons/utils/BufferGeometryUtils.js":"./vendor/BufferGeometryUtils.js","three/addons/exporters/GLTFExporter.js":"./vendor/GLTFExporter.js"}}</script>
+</head>
+<body>
+  <header><div><div class="eyebrow">RoomForge / estudio de objetos</div><h1 id="title">Formas que hacen tu espacio</h1><p id="subtitle" class="small">Tres familias · nueve variantes · colores independientes</p></div><span class="pill" id="badge">Muestra P4-01</span></header>
+  <main><section id="stage" aria-label="Vista 3D interactiva"><div class="caption"><strong id="model-name"></strong><p id="dimensions" class="small"></p><span id="hint" class="small">Arrastra para girar · rueda para acercar</span></div></section>
+  <aside><h2 id="panel-title">Diseña los detalles</h2><label for="language" id="language-label">Idioma</label><select id="language"><option value="es">Español</option><option value="en">English</option></select><label id="family-label" for="family">Objeto</label><select id="family"></select><label id="variant-label" for="variant">Variante</label><select id="variant"></select><div id="colors"></div><button id="reset" type="button">Restaurar colores</button><hr><label id="lighting-label" for="lighting">Ambiente</label><select id="lighting"></select><p id="metrics" class="small metric"></p><button id="download" type="button">Descargar modelo GLB</button><p id="download-note" class="small"></p><hr><p id="note" class="small"></p><p id="error" role="alert"></p></aside></main>
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+    import { createModel, disposeGeometryCache, disposeModelMaterials, setSlotColor, slots, variants } from './models.js';
+
+    const words = {
+      es: { title:'Formas que hacen tu espacio', subtitle:'Tres familias · nueve variantes · colores independientes', badge:'Muestra P4-01', panel:'Diseña los detalles', language:'Idioma', family:'Objeto', variant:'Variante', lighting:'Ambiente', day:'Día', night:'Noche', desk:'Escritorio', chair:'Silla gaming', monitor:'Monitor', reset:'Restaurar colores', hint:'Arrastra para girar · rueda para acercar', download:'Descargar modelo GLB', downloadNote:'El archivo incluye tus colores. Los cambios de esta muestra se recuerdan mientras permanezca abierta.', note:'Modelos propios a escala real. El color se aplica por pieza y por variante. Esta muestra permite evaluar el diseño antes de integrarlo en el editor.', triangles:'triángulos', calls:'llamadas de dibujo', unavailable:'La vista 3D no está disponible en este navegador.', exportError:'No se ha podido descargar el modelo.' },
+      en: { title:'Shapes that make your space', subtitle:'Three families · nine variants · independent colors', badge:'P4-01 preview', panel:'Design the details', language:'Language', family:'Object', variant:'Variant', lighting:'Lighting', day:'Day', night:'Night', desk:'Desk', chair:'Gaming chair', monitor:'Monitor', reset:'Reset colors', hint:'Drag to orbit · scroll to zoom', download:'Download GLB model', downloadNote:'The file includes your colors. Preview changes are remembered while this page stays open.', note:'Original models at real scale. Colors apply independently to each part and variant. Review this sample before integration into the editor.', triangles:'triangles', calls:'draw calls', unavailable:'The 3D view is unavailable in this browser.', exportError:'Could not download the model.' },
+    };
+    const element = (id) => document.getElementById(id);
+    let language = 'es';
+    let model;
+    let scheduled = false;
+    const savedColors = new Map();
+    const stage = element('stage');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(36, 1, 0.01, 40);
+    let renderer;
+    try { renderer = new THREE.WebGLRenderer({ antialias:true }); } catch { element('error').textContent = words[language].unavailable; throw new Error('WebGL unavailable'); }
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    stage.prepend(renderer.domElement);
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = false;
+    controls.maxPolarAngle = Math.PI / 2 - 0.03;
+    controls.minDistance = 0.45;
+    controls.maxDistance = 8;
+    const ambient = new THREE.HemisphereLight('#e6f4ff', '#8d9a99', 2.5);
+    const sun = new THREE.DirectionalLight('#fff1dc', 3.5);
+    sun.position.set(-3, 5, -4);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(1024, 1024);
+    sun.shadow.camera.left = -3;
+    sun.shadow.camera.right = 3;
+    sun.shadow.camera.top = 3;
+    sun.shadow.camera.bottom = -3;
+    sun.shadow.normalBias = 0.03;
+    const fill = new THREE.DirectionalLight('#68c6ce', 1.1);
+    fill.position.set(3, 2, 3);
+    scene.add(ambient, sun, fill);
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), new THREE.MeshStandardMaterial({ color:'#d9e2df', roughness:0.95 }));
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = -0.001;
+    floor.receiveShadow = true;
+    scene.add(floor);
+    function invalidate() {
+      if (scheduled) return;
+      scheduled = true;
+      requestAnimationFrame(() => {
+        scheduled = false;
+        renderer.render(scene, camera);
+        element('metrics').textContent = `${renderer.info.render.triangles.toLocaleString(language)} ${words[language].triangles} · ${renderer.info.render.calls} ${words[language].calls}`;
+      });
+    }
+    controls.addEventListener('change', invalidate);
+    const observer = new ResizeObserver(() => {
+      const width = stage.clientWidth;
+      const height = stage.clientHeight;
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height);
+      invalidate();
+    });
+    observer.observe(stage);
+    function updateColors() {
+      const variant = variants.find((entry) => entry.id === model.name);
+      element('colors').replaceChildren();
+      for (const slot of slots[variant.family]) {
+        const row = document.createElement('div');
+        row.className = 'swatch';
+        const label = document.createElement('label');
+        label.htmlFor = `color-${slot.id}`;
+        label.textContent = slot.label[language];
+        const input = document.createElement('input');
+        input.type = 'color';
+        input.id = label.htmlFor;
+        input.value = savedColors.get(`${model.name}:${slot.id}`) ?? slot.color;
+        setSlotColor(model, slot.id, input.value);
+        input.addEventListener('input', () => {
+          savedColors.set(`${model.name}:${slot.id}`, input.value);
+          setSlotColor(model, slot.id, input.value);
+          invalidate();
+        });
+        row.append(label, input);
+        element('colors').append(row);
+      }
+    }
+    function showModel() {
+      const definition = variants.find((entry) => entry.id === element('variant').value);
+      if (model) { scene.remove(model); disposeModelMaterials(model); }
+      model = createModel(definition.id);
+      scene.add(model);
+      const [w, h, d] = definition.size;
+      const distance = Math.max(w, h, d) * 2.15;
+      controls.target.set(0, h * 0.48, 0);
+      camera.position.set(distance * 0.75, h * 0.48 + distance * 0.48, -distance);
+      controls.update();
+      element('model-name').textContent = definition.name[language];
+      element('dimensions').textContent = `${definition.size.map((value) => Math.round(value * 100)).join(' × ')} cm`;
+      
+      updateColors();
+      invalidate();
+    }
+    function updateVariants() {
+      const previous = element('variant').value;
+      element('variant').replaceChildren(...variants.filter((entry) => entry.family === element('family').value).map((entry) => new Option(entry.name[language], entry.id)));
+      if (variants.some((entry) => entry.family === element('family').value && entry.id === previous)) element('variant').value = previous;
+      showModel();
+    }
+    function applyLighting() {
+      const night = element('lighting').value === 'night';
+      scene.background = new THREE.Color(night ? '#182331' : '#edf0f1');
+      ambient.intensity = night ? 0.55 : 2.5;
+      sun.intensity = night ? 0.3 : 3.5;
+      fill.intensity = night ? 2.4 : 1.1;
+      renderer.toneMappingExposure = night ? 1.25 : 1;
+      invalidate();
+    }
+    function translate() {
+      document.documentElement.lang = language;
+      for (const [id, key] of Object.entries({title:'title',subtitle:'subtitle',badge:'badge','panel-title':'panel','language-label':'language','family-label':'family','variant-label':'variant','lighting-label':'lighting',reset:'reset',hint:'hint',download:'download','download-note':'downloadNote',note:'note'})) element(id).textContent = words[language][key];
+      const family = element('family').value || 'desk';
+      const lighting = element('lighting').value || 'day';
+      element('family').replaceChildren(...['desk','chair','monitor'].map((key) => new Option(words[language][key], key)));
+      element('family').value = family;
+      element('lighting').replaceChildren(...['day','night'].map((key) => new Option(words[language][key], key)));
+      element('lighting').value = lighting;
+      updateVariants();
+      applyLighting();
+    }
+    element('language').addEventListener('change', () => { language = element('language').value; translate(); });
+    element('family').addEventListener('change', updateVariants);
+    element('variant').addEventListener('change', showModel);
+    element('lighting').addEventListener('change', applyLighting);
+    element('reset').addEventListener('click', () => {
+      for (const slot of slots[variants.find((entry) => entry.id === model.name).family]) savedColors.delete(`${model.name}:${slot.id}`);
+      updateColors();
+      invalidate();
+    });
+    element('download').addEventListener('click', async () => {
+      const button = element('download');
+      button.disabled = true;
+      element('error').textContent = '';
+      try {
+        const filename = `${model.name}.glb`;
+        const binary = await new GLTFExporter().parseAsync(model, { binary:true });
+        const url = URL.createObjectURL(new Blob([binary], { type:'model/gltf-binary' }));
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } catch { element('error').textContent = words[language].exportError; }
+      finally { button.disabled = false; }
+    });
+    window.addEventListener('pagehide', () => {
+      observer.disconnect(); controls.dispose(); disposeModelMaterials(model); disposeGeometryCache(); floor.geometry.dispose(); floor.material.dispose(); renderer.dispose();
+    }, { once:true });
+    translate();
+    // A narrow read-only diagnostic surface for the spike's visual measurements.
+    window.__MODEL_SPIKE__ = { renderer, scene, camera, get model() { return model; } };
+  </script>
+</body>
+</html>

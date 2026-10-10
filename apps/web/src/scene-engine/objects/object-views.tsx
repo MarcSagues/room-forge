@@ -6,6 +6,7 @@ import { useSceneCatalog } from '../canvas/scene-context';
 import { useSessionState } from '../canvas/use-session-state';
 import { useChildIds, useEntity, useEntityIds } from './entity-hooks';
 import { useRegisterEntity } from './entity-registry';
+import { ModelBody } from './model-body';
 import { objectSize, placeholderMaterial, placeholderResources } from './placeholder-resources';
 import { countRender } from './render-count';
 
@@ -56,6 +57,7 @@ export const ObjectView = memo(function ObjectView({ id }: { id: ObjectId }) {
   const { geometry } = placeholderResources();
   const material = placeholderMaterial(catalog.colorOf?.(catalogId));
   const size = objectSize(catalog, catalogId);
+  const modelUrl = catalog.modelUrlOf?.(catalogId);
   return (
     <group
       ref={register}
@@ -65,12 +67,22 @@ export const ObjectView = memo(function ObjectView({ id }: { id: ObjectId }) {
       scale={transform.scale ?? 1}
       visible={hidden !== true}
     >
-      <mesh
-        geometry={geometry}
-        material={material}
-        scale={[size.w, size.h, size.d]}
-        dispose={null}
-      />
+      {modelUrl ? (
+        <ModelBody
+          id={id}
+          catalogId={catalogId}
+          url={modelUrl}
+          size={size}
+          placeholder={{ geometry, material }}
+        />
+      ) : (
+        <mesh
+          geometry={geometry}
+          material={material}
+          scale={[size.w, size.h, size.d]}
+          dispose={null}
+        />
+      )}
       <ChildObjects parentId={id} />
     </group>
   );
