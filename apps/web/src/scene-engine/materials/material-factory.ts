@@ -20,6 +20,11 @@ export interface AcquireOptions {
    * opacity while its neighbour fades another). The textures are still shared.
    */
   shared?: boolean;
+  /**
+   * Glows in its own colour (the light part of a luminaire, ADR-0006): emissive and outside tone
+   * mapping, so it reads as a light even in day mode. Part of what makes two materials the same.
+   */
+  emissive?: boolean;
 }
 
 /** One user's hold on a material. */
@@ -62,6 +67,7 @@ interface Entry {
   key: string | null;
   readonly material: MeshStandardMaterial;
   readonly transparent: boolean;
+  readonly emissive: boolean;
   pattern: MaterialPattern | null;
   readonly leases: Set<Lease>;
 }
@@ -97,6 +103,7 @@ export function createMaterialFactory(options: MaterialFactoryOptions = {}): Mat
     colour.set(look.color);
     if (look.tint) colour.multiply(tint.set(look.tint));
     material.color.copy(colour);
+    if (entry.emissive) material.emissive.copy(colour);
     material.roughness = look.roughness;
     material.metalness = look.metalness;
     if (look.pattern === entry.pattern) return false;
@@ -108,11 +115,17 @@ export function createMaterialFactory(options: MaterialFactoryOptions = {}): Mat
     return true;
   }
 
-  function make(look: ResolvedMaterial, transparent: boolean, key: string | null): Entry {
+  function make(
+    look: ResolvedMaterial,
+    transparent: boolean,
+    emissive: boolean,
+    key: string | null,
+  ): Entry {
     const entry: Entry = {
       key,
-      material: new MeshStandardMaterial({ transparent }),
+      material: new MeshStandardMaterial({ transparent, toneMapped: !emissive }),
       transparent,
+      emissive,
       pattern: null,
       leases: new Set(),
     };
@@ -142,16 +155,19 @@ export function createMaterialFactory(options: MaterialFactoryOptions = {}): Mat
     if (entry.leases.size === 0) free(entry);
   }
 
-  function find(look: ResolvedMaterial, transparent: boolean): Entry {
-    const key = materialKey(look, transparent);
-    return shared.get(key) ?? make(look, transparent, key);
+  function find(look: ResolvedMaterial, transparent: boolean, emissive: boolean): Entry {
+    const key = materialKey(look, transparent, emissive);
+    return shared.get(key) ?? make(look, transparent, emissive, key);
   }
 
   return {
     acquire(look, acquireOptions = {}) {
       const transparent = acquireOptions.transparent ?? false;
+      const emissive = acquireOptions.emissive ?? false;
       const entry =
-        acquireOptions.shared === false ? make(look, transparent, null) : find(look, transparent);
+        acquireOptions.shared === false
+          ? make(look, transparent, emissive, null)
+          : find(look, transparent, emissive);
       const lease: Lease = {
         entry,
         active: true,
@@ -166,7 +182,7 @@ export function createMaterialFactory(options: MaterialFactoryOptions = {}): Mat
             options.onMutate?.();
             return false;
           }
-          const key = materialKey(next, current.transparent);
+          const key = materialKey(next, current.transparent, current.emissive);
           if (key === current.key) return false;
           if (current.leases.size === 1) {
             const existing = shared.get(key);
@@ -185,7 +201,7 @@ export function createMaterialFactory(options: MaterialFactoryOptions = {}): Mat
           }
           // Others hold this material: it must not change under them.
           leave(this);
-          join(this, find(next, current.transparent));
+          join(this, find(next, current.transparent, current.emissive));
           return true;
         },
         release() {

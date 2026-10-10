@@ -81,11 +81,11 @@ test.beforeEach(async ({ page }) => {
   await openEditor(page);
 });
 
-test('the panel lists the nine models and the five stub items, and filters them as you type', async ({
+test('the panel lists the fifteen models and the five stub items, and filters them as you type', async ({
   page,
 }) => {
   const list = page.getByRole('list', { name: 'Catalog items' });
-  await expect(list.getByRole('listitem')).toHaveCount(14);
+  await expect(list.getByRole('listitem')).toHaveCount(20);
   await expect(catalogItem(page, /Office desk 140/)).toContainText('140 × 70 cm');
   await expect(catalogItem(page, /Desk/)).toContainText('140 × 70 cm');
 

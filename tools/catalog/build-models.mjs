@@ -35,11 +35,31 @@ const CATALOG = {
     'Monitor curvo 34 pulgadas',
   ],
   'monitor-arm': ['monitor.27.arm', 'Monitor on arm 27 inch', 'Monitor con brazo 27 pulgadas'],
+  'led-strip': ['led.strip.1m', 'LED strip 1 m', 'Tira LED 1 m'],
+  'light-bars': ['light.bars.pair', 'Light bar pair', 'Par de barras de luz'],
+  'hex-panels': ['panel.hex.cluster', 'Hexagon light panels', 'Paneles de luz hexagonales'],
+  'lamp-floor': ['lamp.floor.cone', 'Cone floor lamp', 'Lámpara de pie cónica'],
+  'lamp-desk': ['lamp.desk.arm', 'Articulated desk lamp', 'Flexo articulado'],
+  'neon-wave': ['neon.sign.wave', 'Neon wave sign', 'Letrero de neón en onda'],
 };
 const CATEGORY = { desk: 'desk', chair: 'seating', monitor: 'computing' };
 
+/**
+ * Luminaires (P4-10): the kind of light and its weight in the light budget (ADR-0006, P2-11); the
+ * default colour is the one of the model's glowing slot. Then where they may go: the floor first,
+ * which is all the editor places on until surface placement (P3-13).
+ */
+const LIGHTS = {
+  'led-strip': ['strip', 2, ['floor', 'wall', 'tabletop']],
+  'light-bars': ['bar', 1, ['floor', 'tabletop']],
+  'hex-panels': ['panel', 2, ['floor', 'wall']],
+  'lamp-floor': ['point', 1, ['floor']],
+  'lamp-desk': ['spot', 1, ['floor', 'tabletop']],
+  'neon-wave': ['neon', 1, ['floor', 'wall']],
+};
+
 /** Open surfaces seen from both sides: their faces are doubled, since app materials are one-sided. */
-const DOUBLE_SIDED = { 'monitor-wide': ['body'] };
+const DOUBLE_SIDED = { 'monitor-wide': ['body'], 'lamp-floor': ['shade'], 'lamp-desk': ['shade'] };
 
 const LICENSE = {
   spdx: 'LicenseRef-RoomForge-Proprietary',
@@ -106,8 +126,11 @@ export async function buildModels() {
     if (!row) throw new Error(`${variant.id}: no catalog id`);
     const [id, en, es] = row;
     // Tags are the words of the id: desk.office.140 → desk, office.
-    const tags = id.split('.').filter((part) => !/^\d+$/.test(part));
-    const meta = { id, name: { en, es }, category: CATEGORY[variant.family], tags };
+    const tags = id.split('.').filter((part) => !/^\d+[a-z]?$/.test(part));
+    const light = LIGHTS[variant.id];
+    if (light && !tags.includes('light')) tags.push('light');
+    const category = light ? 'lighting' : CATEGORY[variant.family];
+    const meta = { id, name: { en, es }, category, tags };
     const model = generator.createModel(variant.id);
     for (const mesh of model.children) {
       // The generator faces -Z; the editor and glTF put an item's front towards +Z.
@@ -137,7 +160,7 @@ export async function buildModels() {
       category: meta.category,
       tags: meta.tags,
       size: { w, h, d },
-      placement: { surfaces: ['floor'] },
+      placement: { surfaces: light?.[2] ?? ['floor'] },
       slots: generator.slots[variant.family].map((slot) => {
         const material = materials.get(slot.id);
         return {
@@ -149,7 +172,15 @@ export async function buildModels() {
             roughness: round(material.roughness),
             metalness: round(material.metalness),
           },
+          ...(slot.emissive ? { emissive: true } : {}),
         };
+      }),
+      ...(light && {
+        light: {
+          kind: light[0],
+          cost: light[1],
+          defaultColor: generator.slots[variant.family].find((slot) => slot.emissive).color,
+        },
       }),
       source: { kind: 'glb', file, triangles, bytes: bytes.length },
       license: LICENSE,

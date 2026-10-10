@@ -176,3 +176,33 @@ test('a model that cannot be downloaded leaves its placeholder; renderer.info be
   console.log(JSON.stringify({ placeholders, models }));
   expect(models.geometries - placeholders.geometries).toBe(12); // 3 slots × 4 models
 });
+
+test('the six luminaires load and glow with shared materials; renderer.info', async ({
+  page,
+}, testInfo) => {
+  await openEditor(page);
+  await settle(page);
+  const empty = counters(await info(page));
+  await add(page, [
+    ['strip', 'led.strip.1m', 1, 1],
+    ['bars', 'light.bars.pair', 2, 1],
+    ['hex', 'panel.hex.cluster', 3, 1],
+    ['floor', 'lamp.floor.cone', 1, 3],
+    ['desk', 'lamp.desk.arm', 2, 3],
+    ['neon', 'neon.sign.wave', 3, 3],
+  ]);
+  await page.waitForFunction(({ base }) => (window.__RF__?.info()?.geometries ?? 0) >= base + 15, {
+    base: empty.geometries,
+  });
+  await settle(page);
+  const lit = counters(await info(page));
+  await testInfo.attach('renderer-info-luminaires.json', {
+    body: JSON.stringify({ empty, lit }, null, 2),
+    contentType: 'application/json',
+  });
+  console.log(JSON.stringify({ empty, lit }));
+  // 2 + 2 + 2 + 3 + 3 + 2 slots, plus the shared placeholder box the empty room did not have.
+  expect(lit.geometries - empty.geometries).toBe(15);
+  // The placeholder shader, and one glowing shader (not tone mapped) for all six luminaires.
+  expect(lit.programs - empty.programs).toBeLessThanOrEqual(2);
+});

@@ -32,6 +32,7 @@ export type CatalogIssueCode =
   | 'schema'
   | 'duplicate-id'
   | 'duplicate-slot'
+  | 'light-slot'
   | 'missing-file'
   | 'stats-mismatch'
   | 'over-budget'
@@ -80,6 +81,9 @@ function checkItems(
 
     const slotIds = item.slots.map((slot) => slot.id);
     if (new Set(slotIds).size !== slotIds.length) report('duplicate-slot', 'two slots share an id');
+    const glows = item.slots.some((slot) => slot.emissive);
+    if (item.light && !glows) report('light-slot', 'a luminaire needs an emissive slot');
+    if (!item.light && glows) report('light-slot', 'only a luminaire has an emissive slot');
 
     const { file, triangles, bytes } = item.source;
     const actual = files(file);

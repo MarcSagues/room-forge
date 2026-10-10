@@ -43,6 +43,25 @@ describe('modelParts', () => {
   });
 });
 
+describe('the LED strip model (P4-10)', () => {
+  it('is one section all along x, so stretching it from 0.5 to 3 m keeps the section exact', async () => {
+    const parts = await parseModelParts(glb('models/led.strip.1m.glb'));
+    for (const length of [0.5, 1, 3]) {
+      for (const part of parts) {
+        const geometry = part.geometry.clone().scale(length, 1, 1);
+        const xs = new Set<number>();
+        const position = geometry.getAttribute('position');
+        for (let i = 0; i < position.count; i += 1) xs.add(Math.round(position.getX(i) * 1e4));
+        // Every vertex sits on one of the two ends: no end cap or bevel to be distorted.
+        expect([...xs].sort((a, b) => a - b)).toEqual([-length * 5000, length * 5000]);
+        geometry.computeBoundingBox();
+        expect(geometry.boundingBox?.max.y).toBeLessThanOrEqual(0.0161);
+        geometry.dispose();
+      }
+    }
+  });
+});
+
 describe('parseModelParts', () => {
   it.each(manifest.items.map((item) => [item.id, item]))(
     'reads %s: one part per colour slot, with the triangles of the manifest',
