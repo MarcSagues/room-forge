@@ -12,6 +12,7 @@ import {
   RingGeometry,
   Vector3,
 } from 'three';
+import { markOverlay } from '../canvas/overlay';
 import { useSceneCatalog, useSceneSession, useTransientStore } from '../canvas/scene-context';
 import { useEntityRegistry } from '../objects/entity-registry';
 import { objectSize } from '../objects/placeholder-resources';
@@ -66,7 +67,7 @@ export function RotationHandle() {
           depthWrite: false,
         }),
       );
-    const group = new Group();
+    const group = markOverlay(new Group());
     const ringMesh = make(ring, 0.8);
     const knobMesh = make(knob, 1);
     ringMesh.position.y = LIFT;

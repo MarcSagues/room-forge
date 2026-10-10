@@ -3,6 +3,7 @@
 import { useFrame } from '@react-three/fiber';
 import { useEffect, useMemo } from 'react';
 import { BufferGeometry, DoubleSide, Float32BufferAttribute, Mesh, MeshBasicMaterial } from 'three';
+import { markOverlay } from '../canvas/overlay';
 import { useSceneSession, useTransientStore } from '../canvas/scene-context';
 import { tokenColor } from './token-color';
 import { type GuidePose, wallGuidePose } from './wall-guide';
@@ -57,7 +58,7 @@ export function DragGuides() {
     const guide = new Mesh(dashGeometry(), material);
     guide.visible = false;
     guide.position.y = LIFT;
-    return guide;
+    return markOverlay(guide);
   }, []);
 
   useEffect(() => () => line.material.dispose(), [line]);

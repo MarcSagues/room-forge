@@ -12,6 +12,7 @@ import { type RefObject, useEffect, useMemo, useRef } from 'react';
 import { type Material, type Mesh, NeutralToneMapping, type Object3D, Vector3 } from 'three';
 import type { CameraHandle, CameraSnapshot } from '../camera/camera-director';
 import { CameraRig } from '../camera/camera-rig';
+import type { SceneImageApi } from '../capture/image-api';
 import { type LiveTransform, liveTransformOf } from '../interaction/live-transform';
 import { PlaceController } from '../interaction/place-controller';
 import { createPlacementApi, type PlacementApi } from '../interaction/placement-api';
@@ -66,6 +67,8 @@ export interface SceneHandle {
   placement: PlacementApi;
   /** The pose of the object being dragged, for readouts outside the canvas. */
   live: LiveTransform;
+  /** Off-screen pictures of the scene, without the editor overlays (PNG export). */
+  image(): Promise<SceneImageApi>;
 }
 
 export interface SceneCanvasProps {
@@ -200,6 +203,17 @@ function ReadyReporter(props: {
       invalidate: () => invalidate(),
       placement,
       live: liveTransformOf(transient),
+      // Loaded the first time an image is exported: the editor starts without it.
+      image: () =>
+        import('../capture/scene-image').then(({ createSceneImageApi }) =>
+          createSceneImageApi({
+            gl,
+            scene,
+            camera: () => get().camera,
+            size: () => get().size,
+            invalidate,
+          }),
+        ),
       // The rig mounts after this handle may be built, so every call looks it up when it happens.
       camera: {
         fit: () => camera.current?.fit(),

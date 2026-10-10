@@ -3,6 +3,7 @@
 import { useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
 import { Color, Group, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial } from 'three';
+import { markOverlay } from '../canvas/overlay';
 import { useTransientStore } from '../canvas/scene-context';
 import { placeholderResources } from '../objects/placeholder-resources';
 import { outlineGeometry } from './outline-geometry';
@@ -33,7 +34,7 @@ export function PlacementGhost() {
     const edges = new LineSegments(outlineGeometry(), edgeMaterial);
     fill.renderOrder = 5;
     edges.renderOrder = 10;
-    const group = new Group();
+    const group = markOverlay(new Group());
     group.add(fill, edges);
     group.visible = false;
     // The item's colour, parsed again only when it changes.
