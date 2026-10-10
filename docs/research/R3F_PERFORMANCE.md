@@ -42,9 +42,9 @@ Limitaciones: la página oficial de pitfalls **no** cubre `dispose`, selectores 
 - Montar y desmontar recompila materiales y re-procesa geometría; mantener montado y alternar `visible`.
 - **Aplicación:** techo, paredes (modos), rejilla y gizmos se alternan por `visible`/opacidad. Día/noche no remonta nada.
 
-### 2.7 Número de luces y recompilación de shaders — *Práctica (verificar en spike P5-05)*
+### 2.7 Número de luces y recompilación de shaders — *Práctica, confirmada en el spike P2-11 ([LIGHT_COST_P2_11](LIGHT_COST_P2_11.md))*
 - En three.js el programa del shader depende del número y tipo de luces; añadir/quitar luces fuerza recompilar los materiales afectados (tirón visible).
-- **Aplicación:** **pool fijo de luces** reservado al inicio por nivel de calidad (p. ej. 4/8/12) y reasignado (posición/color/intensidad). Las luminarias que no caben se representan solo con emisivo + bloom.
+- **Aplicación:** **pool fijo de luces** reservado al inicio por nivel de calidad (p. ej. 4/8/12) y reasignado (posición/color/intensidad). Las luminarias que no caben se representan solo con emisivo + bloom. P2-11 añade: apagar con `intensity = 0` (ocultar con `visible = false` también recompila) y reservar el cupo por tipo (Point/Spot).
 
 ### 2.8 Calidad adaptativa — *Fuente*
 - `PerformanceMonitor` (onIncline/onDecline con límites y *flipflops*), `dpr` adaptativo, `performance.regress()` durante interacción con cámara (la app debe leer `performance.current`).

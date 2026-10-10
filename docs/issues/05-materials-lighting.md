@@ -156,7 +156,7 @@ Comandos `light/set` (on, color, intensidad, efecto), `light/setAll` (apagar/enc
 - **Depende de:** P5-04, P4-10, P2-11
 
 ### Descripción
-`LightPool` que reserva N luces three.js (según calidad), un `LightAllocator` puro que decide qué luminarias obtienen luz real (importancia = intensidad × cercanía a cámara/objetos seleccionados − coste), y visuales emisivos para todas. Tiras LED aproximadas con varias luces puntuales/`RectAreaLight` según spike.
+`LightPool` que reserva N luces three.js (según calidad), un `LightAllocator` puro que decide qué luminarias obtienen luz real (importancia = intensidad × cercanía a cámara/objetos seleccionados − coste), y visuales emisivos para todas. Según el spike P2-11 ([LIGHT_COST_P2_11](../research/LIGHT_COST_P2_11.md)): pool por tipo **Baja 4 Point · Media 8 Point + 2 Spot · Alta 12 Point + 4 Spot**; tiras LED, barras y paneles con `PointLight` (una en el centro, dos si la tira supera 1,5 m y sobra pool) + emisivo; `SpotLight` solo para focos/flexos; **sin `RectAreaLight`** en el MVP (3,5–5× el coste de una puntual y 0,5–1,3 s de compilación).
 
 ### Contexto
 [ADR-0006](../ADR/0006-r3f-rendering-strategy.md) y [R3F_PERFORMANCE §2.7](../research/R3F_PERFORMANCE.md). Parte de las conclusiones del spike **P2-11** (coste de `PointLight` vs `RectAreaLight` vs `SpotLight` y confirmación de que el pool evita recompilaciones); aquí se **implementa** de forma definitiva y se revalida con luminarias reales.
@@ -165,6 +165,7 @@ Comandos `light/set` (on, color, intensidad, efecto), `light/setAll` (apagar/enc
 - Pool reservado al montar y por cambio de calidad (puede recompilar una vez); reasignación sin recompilar.
 - Histéresis para evitar parpadeo al cambiar la asignación.
 - Luces sin sombra por defecto.
+- Las luces libres del pool se apagan con `intensity = 0`: `visible = false`, añadir/quitar, cambiar de tipo o `castShadow` recompilan (P2-11).
 - Documentar resultados del spike en el PR (tabla de coste).
 
 ### Criterios de aceptación
