@@ -439,7 +439,8 @@ describe('ProjectsScreen: a room of the size you choose', () => {
 });
 
 describe('ProjectsScreen: start from a template', () => {
-  const templateCatalog = createFixtureCatalog();
+  const fixture = createFixtureCatalog();
+  const templateCatalog = async () => fixture;
 
   it('offers no template choice without a catalog to build them with', async () => {
     setup([summary('a', 'Office')]);
@@ -451,7 +452,7 @@ describe('ProjectsScreen: start from a template', () => {
     const { createDocument, repository } = setup([summary('a', 'Office')], { templateCatalog });
     await screen.findByRole('list', { name: 'Your projects' });
     await userEvent.click(screen.getByRole('button', { name: 'From a template…' }));
-    await userEvent.click(screen.getByRole('radio', { name: 'Home office' }));
+    await userEvent.click(await screen.findByRole('radio', { name: 'Home office' }));
     await userEvent.click(screen.getByRole('button', { name: 'Create project' }));
 
     await waitFor(() => expect(repository.save).toHaveBeenCalledTimes(1));
@@ -469,6 +470,7 @@ describe('ProjectsScreen: start from a template', () => {
     for (let round = 0; round < 2; round += 1) {
       const [open] = screen.getAllByRole('button', { name: 'From a template…' });
       await userEvent.click(open as HTMLElement);
+      await screen.findAllByRole('radio');
       await userEvent.click(screen.getByRole('button', { name: 'Create project' }));
       await waitFor(() => expect(repository.save).toHaveBeenCalledTimes(round + 1));
     }

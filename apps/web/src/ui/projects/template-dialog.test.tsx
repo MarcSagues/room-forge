@@ -16,16 +16,24 @@ const catalog = createFixtureCatalog([
   },
 ]);
 
-function setup() {
+async function setup() {
   const onCreate = vi.fn();
   const onOpenChange = vi.fn();
-  render(<TemplateDialog open onOpenChange={onOpenChange} catalog={catalog} onCreate={onCreate} />);
+  render(
+    <TemplateDialog
+      open
+      onOpenChange={onOpenChange}
+      loadCatalog={async () => catalog}
+      onCreate={onCreate}
+    />,
+  );
+  await screen.findAllByRole('radio');
   return { onCreate, onOpenChange };
 }
 
 describe('TemplateDialog', () => {
-  it('offers every template as a radio with its description, the gaming setup first chosen', () => {
-    setup();
+  it('offers every template as a radio with its description, the gaming setup first chosen', async () => {
+    await setup();
     expect(screen.getByRole('dialog', { name: 'Start from a template' })).toBeInTheDocument();
     const radios = screen.getAllByRole('radio');
     expect(radios).toHaveLength(TEMPLATE_IDS.length);
@@ -36,10 +44,13 @@ describe('TemplateDialog', () => {
   });
 
   it('creates the template chosen, and Cancel creates nothing', async () => {
-    const { onCreate, onOpenChange } = setup();
+    const { onCreate, onOpenChange } = await setup();
     await userEvent.click(screen.getByRole('radio', { name: 'Streaming corner' }));
     await userEvent.click(screen.getByRole('button', { name: 'Create project' }));
-    expect(onCreate).toHaveBeenCalledWith('streaming');
+    expect(onCreate).toHaveBeenCalledWith(
+      'streaming',
+      expect.objectContaining({ roomOrder: [expect.any(String)] }),
+    );
 
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(onOpenChange).toHaveBeenCalledWith(false);
@@ -47,11 +58,31 @@ describe('TemplateDialog', () => {
   });
 
   it('moves between templates with the arrow keys, as a radio group does', async () => {
-    setup();
+    await setup();
     screen.getByRole('radio', { name: 'Gaming setup' }).focus();
     await userEvent.keyboard('{ArrowDown}');
     expect(screen.getByRole('radio', { name: 'Home office' })).toBeChecked();
   });
+});
+
+it('says it is loading until the catalog is in', async () => {
+  let resolve: (value: typeof catalog) => void = () => {};
+  render(
+    <TemplateDialog
+      open
+      onOpenChange={() => {}}
+      loadCatalog={() =>
+        new Promise((done) => {
+          resolve = done;
+        })
+      }
+      onCreate={() => {}}
+    />,
+  );
+  expect(screen.getByRole('dialog', { name: 'Start from a template' })).toBeInTheDocument();
+  expect(screen.getByRole('status')).toHaveTextContent('Loading…');
+  resolve(catalog);
+  expect(await screen.findByRole('radio', { name: 'Gaming setup' })).toBeChecked();
 });
 
 describe('TemplatePlan', () => {

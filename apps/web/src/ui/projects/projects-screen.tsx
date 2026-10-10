@@ -3,7 +3,6 @@
 import {
   type CatalogProvider,
   createNanoIdGen,
-  createTemplateDocument,
   type IdGen,
   type ImportError,
   LIMITS,
@@ -16,6 +15,7 @@ import {
   type TemplateId,
 } from '@roomforge/core';
 import { PlusIcon, UploadIcon } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/ui/components/button';
 import { Input } from '@/ui/components/input';
@@ -27,7 +27,14 @@ import { matchesQuery, uniqueName } from './names';
 import { NewRoomDialog } from './new-room-dialog';
 import { ProjectCard } from './project-card';
 import type { ProjectFiles } from './project-files';
-import { TEMPLATE_TEXTS, TemplateDialog } from './template-dialog';
+import { TEMPLATE_TEXTS } from './template-texts';
+
+// The template picker (its plans and the catalog) loads when first opened: the projects page, which
+// the home page prefetches, starts without it.
+const TemplateDialog = dynamic(
+  () => import('./template-dialog').then((module) => module.TemplateDialog),
+  { ssr: false },
+);
 
 const t = (key: Parameters<typeof translate>[1], vars?: Record<string, string | number>) =>
   translate('en', key, vars);
@@ -49,8 +56,8 @@ export interface ProjectsScreenProps {
   files?: ProjectFiles;
   /** What the settings show about storage; without it there is no Settings button. */
   readStorage?: () => Promise<StorageInfo>;
-  /** The catalog the starter templates are built with; without it there is no template choice. */
-  templateCatalog?: CatalogProvider;
+  /** Loads the catalog the starter templates are built with; without it there is no template choice. */
+  templateCatalog?: () => Promise<CatalogProvider>;
 }
 
 const defaultHref = (id: ProjectId) => `/editor/?project=${encodeURIComponent(id)}`;
@@ -88,6 +95,9 @@ export function ProjectsScreen({
   const [editing, setEditing] = useState<ProjectId | undefined>();
   const [choosingSize, setChoosingSize] = useState(false);
   const [choosingTemplate, setChoosingTemplate] = useState(false);
+  // Mounted from the first opening on, so that closing keeps its exit animation.
+  const [templatesOpened, setTemplatesOpened] = useState(false);
+  if (choosingTemplate && !templatesOpened) setTemplatesOpened(true);
   const [announcement, setAnnouncement] = useState('');
   const [problem, setProblem] = useState<string | undefined>();
   const [focusRequest, setFocusRequest] = useState(0);
@@ -193,17 +203,14 @@ export function ProjectsScreen({
   );
   const hasProjects = projects.some((project) => !pendingIds.has(project.id));
 
-  async function create(size?: RoomSize, template?: TemplateId) {
+  async function create(size?: RoomSize, template?: { id: TemplateId; document: SceneDocument }) {
     setProblem(undefined);
     const name = uniqueName(
-      t(template ? TEMPLATE_TEXTS[template].name : 'projects.untitled'),
+      t(template ? TEMPLATE_TEXTS[template.id].name : 'projects.untitled'),
       [...projects, ...pending].map((project) => project.name),
     );
     try {
-      const document =
-        template && templateCatalog
-          ? createTemplateDocument(template, templateCatalog)
-          : createDocument(size);
+      const document = template ? template.document : createDocument(size);
       const saved = await repository.save({
         id: ProjectIdSchema.parse(makeId()),
         name,
@@ -501,14 +508,14 @@ export function ProjectsScreen({
         }}
       />
 
-      {templateCatalog ? (
+      {templateCatalog && templatesOpened ? (
         <TemplateDialog
           open={choosingTemplate}
           onOpenChange={setChoosingTemplate}
-          catalog={templateCatalog}
-          onCreate={(template) => {
+          loadCatalog={templateCatalog}
+          onCreate={(id, document) => {
             setChoosingTemplate(false);
-            void create(undefined, template);
+            void create(undefined, { id, document });
           }}
         />
       ) : null}

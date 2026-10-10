@@ -3,10 +3,11 @@
 import {
   type CatalogProvider,
   createTemplateDocument,
+  type SceneDocument,
   TEMPLATE_IDS,
   type TemplateId,
 } from '@roomforge/core';
-import { type FormEvent, useId, useMemo, useState } from 'react';
+import { type FormEvent, useEffect, useId, useMemo, useState } from 'react';
 import { Button } from '@/ui/components/button';
 import {
   Dialog,
@@ -19,34 +20,45 @@ import {
 import { type MessageKey, translate } from '@/ui/i18n';
 import { cn } from '@/ui/lib/utils';
 import { TemplatePlan } from './template-plan';
+import { TEMPLATE_TEXTS } from './template-texts';
 
 const t = (key: MessageKey) => translate('en', key);
-
-/** The words of each template: its name (also the new project's name) and what it holds. */
-export const TEMPLATE_TEXTS: Readonly<Record<TemplateId, { name: MessageKey; hint: MessageKey }>> =
-  {
-    empty: { name: 'templates.empty.name', hint: 'templates.empty.hint' },
-    gaming: { name: 'templates.gaming.name', hint: 'templates.gaming.hint' },
-    office: { name: 'templates.office.name', hint: 'templates.office.hint' },
-    streaming: { name: 'templates.streaming.name', hint: 'templates.streaming.hint' },
-  };
 
 const INITIAL: TemplateId = 'gaming';
 
 export interface TemplateDialogProps {
   open: boolean;
   onOpenChange(open: boolean): void;
-  /** Sizes for the plans; the documents themselves are built by the caller on confirm. */
-  catalog: CatalogProvider;
-  onCreate(id: TemplateId): void;
+  /** The catalog the templates are built with, loaded when the dialog first opens. */
+  loadCatalog(): Promise<CatalogProvider>;
+  /** Called with the template chosen and a new document built from it, with its own ids. */
+  onCreate(id: TemplateId, document: SceneDocument): void;
 }
 
 /** "Start from a template" (P8-02): a card per template, with a plan drawn from what it builds. */
-export function TemplateDialog({ open, onOpenChange, catalog, onCreate }: TemplateDialogProps) {
+export function TemplateDialog({ open, onOpenChange, loadCatalog, onCreate }: TemplateDialogProps) {
+  const [catalog, setCatalog] = useState<CatalogProvider | undefined>();
+  useEffect(() => {
+    let cancelled = false;
+    void loadCatalog().then((loaded) => {
+      if (!cancelled) setCatalog(loaded);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [loadCatalog]);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl">
-        {open ? (
+        {open && !catalog ? (
+          <DialogHeader>
+            <DialogTitle>{t('templates.title')}</DialogTitle>
+            <p role="status" className="text-fg-muted text-sm">
+              {t('shell.panelLoading')}
+            </p>
+          </DialogHeader>
+        ) : null}
+        {open && catalog ? (
           <TemplateForm
             catalog={catalog}
             onCancel={() => onOpenChange(false)}
@@ -65,7 +77,7 @@ function TemplateForm({
 }: {
   catalog: CatalogProvider;
   onCancel(): void;
-  onCreate(id: TemplateId): void;
+  onCreate(id: TemplateId, document: SceneDocument): void;
 }) {
   const id = useId();
   const [chosen, setChosen] = useState<TemplateId>(INITIAL);
@@ -80,7 +92,7 @@ function TemplateForm({
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    onCreate(chosen);
+    onCreate(chosen, createTemplateDocument(chosen, catalog));
   };
 
   return (

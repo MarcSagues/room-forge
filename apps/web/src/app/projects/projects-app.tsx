@@ -2,7 +2,7 @@
 
 import { createStarterDocument } from '@roomforge/core';
 import { useEffect, useMemo, useState } from 'react';
-import { appCatalog, emptyCatalog } from '@/asset-library';
+import { emptyCatalog } from '@/asset-library';
 import {
   downloadFile,
   exportProject,
@@ -16,6 +16,9 @@ import { type ProjectFiles, ProjectsScreen, translate } from '@/ui';
 const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? 'dev';
 
 const readStorage = () => readStorageHealth();
+
+/** The real catalog, for the starter templates: loaded only when the template picker opens. */
+const loadTemplateCatalog = () => import('@/asset-library').then((module) => module.appCatalog);
 
 /**
  * Opens the browser's project storage (IndexedDB, or memory where it is not allowed) and shows the
@@ -60,7 +63,7 @@ export function ProjectsApp() {
       storage={opened.mode}
       createDocument={(size) => createStarterDocument(size)}
       readStorage={readStorage}
-      templateCatalog={appCatalog}
+      templateCatalog={loadTemplateCatalog}
       {...(files ? { files } : {})}
     />
   );
