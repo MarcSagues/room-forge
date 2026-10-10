@@ -48,29 +48,32 @@ export function ModelBody(props: {
         visible={status !== 'ready'}
         dispose={null}
       />
-      {parts?.map((part) => (
-        <SlotMesh
-          key={part.slot}
-          geometry={part.geometry}
-          look={
-            overrides?.[part.slot] ??
-            slots?.find((slot) => slot.id === part.slot)?.default ??
-            FALLBACK
-          }
-        />
-      ))}
+      {parts?.map((part) => {
+        const slot = slots?.find((candidate) => candidate.id === part.slot);
+        return (
+          <SlotMesh
+            key={part.slot}
+            geometry={part.geometry}
+            look={overrides?.[part.slot] ?? slot?.default ?? FALLBACK}
+            emissive={slot?.emissive === true}
+          />
+        );
+      })}
     </>
   );
 }
 
+/** One slot of a model; a luminaire's light slot glows (P4-10), whatever light it gives. */
 function SlotMesh({
   geometry,
   look,
+  emissive,
 }: {
   geometry: BufferGeometry;
   look: DeepReadonly<MaterialRef>;
+  emissive: boolean;
 }) {
-  const material = useMaterial(look);
+  const material = useMaterial(look, { emissive });
   const invalidate = useThree((state) => state.invalidate);
   useLayoutEffect(() => {
     if (material) invalidate();

@@ -2,8 +2,8 @@ import { DEFAULT_MATERIAL_PRESET_ID, type MaterialRef, resolveMaterial } from '@
 import { describe, expect, it } from 'vitest';
 import { materialKey } from './material-key';
 
-const key = (ref: MaterialRef, transparent = false) =>
-  materialKey(resolveMaterial(ref), transparent);
+const key = (ref: MaterialRef, transparent = false, emissive = false) =>
+  materialKey(resolveMaterial(ref), transparent, emissive);
 
 describe('materialKey', () => {
   it('is the same for the same preset and overrides, and different otherwise', () => {
@@ -40,6 +40,12 @@ describe('materialKey', () => {
   it('tells a see-through material from an opaque one: they are different shaders', () => {
     expect(key({ presetId: 'paint.matte' }, true)).not.toBe(
       key({ presetId: 'paint.matte' }, false),
+    );
+  });
+
+  it('tells a glowing material from one that does not glow', () => {
+    expect(key({ presetId: 'paint.satin' }, false, true)).not.toBe(
+      key({ presetId: 'paint.satin' }),
     );
   });
 

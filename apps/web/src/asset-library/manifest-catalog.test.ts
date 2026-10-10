@@ -76,9 +76,10 @@ describe('createManifestCatalog', () => {
 
 describe('modelCatalog', () => {
   it('is the shipped manifest', () => {
-    expect(modelCatalog.entries()).toHaveLength(9);
+    expect(modelCatalog.entries()).toHaveLength(15);
     expect(modelCatalog.getItem('desk.office.140')?.size).toEqual({ w: 1.4, h: 0.74, d: 0.7 });
     expect(modelCatalog.byCategory('computing')).toHaveLength(3);
+    expect(modelCatalog.byCategory('lighting')).toHaveLength(6);
     expect(modelCatalog.modelUrlOf('chair.gaming.racing')).toBe(
       '/assets/models/chair.gaming.racing.glb',
     );

@@ -15,7 +15,7 @@ import { useMaterialFactory } from './materials-context';
  */
 export function useMaterial(
   ref: DeepReadonly<MaterialRef>,
-  options: { transparent?: boolean; shared?: boolean } = {},
+  options: { transparent?: boolean; shared?: boolean; emissive?: boolean } = {},
 ): MeshStandardMaterial | null {
   const factory = useMaterialFactory();
   const { presetId, tint, roughness, metalness } = ref;
@@ -33,7 +33,7 @@ export function useMaterial(
   latest.current = look;
   const lease = useRef<MaterialLease | null>(null);
   const [material, setMaterial] = useState<MeshStandardMaterial | null>(null);
-  const { transparent, shared } = options;
+  const { transparent, shared, emissive } = options;
 
   // Takes the lease when the component appears (or the factory is replaced) and lets go when it
   // goes. Strict Mode runs this twice; the cleanup makes that harmless.
@@ -41,6 +41,7 @@ export function useMaterial(
     const taken = factory.acquire(latest.current, {
       ...(transparent !== undefined ? { transparent } : {}),
       ...(shared !== undefined ? { shared } : {}),
+      ...(emissive !== undefined ? { emissive } : {}),
     });
     lease.current = taken;
     setMaterial(taken.material);
@@ -48,7 +49,7 @@ export function useMaterial(
       taken.release();
       lease.current = null;
     };
-  }, [factory, transparent, shared]);
+  }, [factory, transparent, shared, emissive]);
 
   // Follows the look after that. Changing it in place needs no re-render; moving to another
   // material does, so the mesh is handed the new one.

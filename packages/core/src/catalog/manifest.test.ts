@@ -81,6 +81,19 @@ describe('CatalogManifestSchema', () => {
       },
     ],
     ['a licence without author', { license: { spdx: 'CC0-1.0', origin: 'x', attribution: 'y' } }],
+    [
+      'a slot marked emissive: false',
+      {
+        slots: [
+          {
+            id: 'glow',
+            label: { en: 'a', es: 'b' },
+            default: { presetId: 'paint.satin' },
+            emissive: false,
+          },
+        ],
+      },
+    ],
   ])('rejects %s', (_, overrides) => {
     expect(
       CatalogManifestSchema.safeParse(manifest(item('desk.office.140', overrides))).success,
@@ -161,6 +174,17 @@ describe('validateCatalogManifest', () => {
     ).toEqual([]);
   });
 
+  it('asks a luminaire for a glowing slot, and only a luminaire', () => {
+    const [slot] = item('x.y').slots;
+    const glow = { ...slot, id: 'glow', emissive: true };
+    const light = { kind: 'strip', cost: 2, defaultColor: '#7c5cff' };
+    expect(codes(manifest(item('led.strip.1m', { light, slots: [slot, glow] })))).toEqual([]);
+    expect(codes(manifest(item('led.strip.1m', { light })))).toEqual(['light-slot']);
+    expect(codes(manifest(item('desk.office.140', { slots: [slot, glow] })))).toEqual([
+      'light-slot',
+    ]);
+  });
+
   it('never throws, whatever it is given', () => {
     fc.assert(
       fc.property(fc.anything(), (input) => {
@@ -184,6 +208,20 @@ describe('toCatalogItem', () => {
       slots: [
         { id: 'top', default: { presetId: 'paint.satin', tint: '#c6a47d', roughness: 0.65 } },
       ],
+    });
+  });
+
+  it('keeps the light and which slot glows', () => {
+    const [slot] = item('x.y').slots;
+    const light = { kind: 'bar', cost: 1, defaultColor: '#7c5cff' } as const;
+    const parsed = CatalogManifestSchema.parse(
+      manifest(item('light.bar.pair', { light, slots: [{ ...slot, id: 'glow', emissive: true }] })),
+    );
+    const entry = parsed.items[0];
+    if (!entry) throw new Error('no item');
+    expect(toCatalogItem(entry)).toMatchObject({
+      light,
+      slots: [{ id: 'glow', emissive: true }],
     });
   });
 });

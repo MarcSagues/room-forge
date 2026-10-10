@@ -630,6 +630,410 @@
         "origin": "Geometría procedural original (tools/catalog/models.mjs); sin assets de terceros",
         "attribution": "Modelo original de RoomForge. Todos los derechos reservados."
       }
+    },
+    {
+      "id": "led.strip.1m",
+      "name": {
+        "en": "LED strip 1 m",
+        "es": "Tira LED 1 m"
+      },
+      "category": "lighting",
+      "tags": ["led", "strip", "light"],
+      "size": {
+        "w": 1,
+        "h": 0.016,
+        "d": 0.02
+      },
+      "placement": {
+        "surfaces": ["floor", "wall", "tabletop"]
+      },
+      "slots": [
+        {
+          "id": "profile",
+          "label": {
+            "en": "Profile",
+            "es": "Perfil"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#9aa4b2",
+            "roughness": 0.65,
+            "metalness": 0.45
+          }
+        },
+        {
+          "id": "glow",
+          "label": {
+            "en": "Light",
+            "es": "Luz"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#8b5cf6",
+            "roughness": 0.35,
+            "metalness": 0
+          },
+          "emissive": true
+        }
+      ],
+      "light": {
+        "kind": "strip",
+        "cost": 2,
+        "defaultColor": "#8b5cf6"
+      },
+      "source": {
+        "kind": "glb",
+        "file": "models/led.strip.1m.glb",
+        "triangles": 48,
+        "bytes": 5548
+      },
+      "license": {
+        "spdx": "LicenseRef-RoomForge-Proprietary",
+        "author": "RoomForge",
+        "origin": "Geometría procedural original (tools/catalog/models.mjs); sin assets de terceros",
+        "attribution": "Modelo original de RoomForge. Todos los derechos reservados."
+      }
+    },
+    {
+      "id": "light.bars.pair",
+      "name": {
+        "en": "Light bar pair",
+        "es": "Par de barras de luz"
+      },
+      "category": "lighting",
+      "tags": ["light", "bars", "pair"],
+      "size": {
+        "w": 0.38,
+        "h": 0.33,
+        "d": 0.09
+      },
+      "placement": {
+        "surfaces": ["floor", "tabletop"]
+      },
+      "slots": [
+        {
+          "id": "body",
+          "label": {
+            "en": "Housing",
+            "es": "Carcasa"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#252c39",
+            "roughness": 0.65,
+            "metalness": 0
+          }
+        },
+        {
+          "id": "glow",
+          "label": {
+            "en": "Light",
+            "es": "Luz"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#22d3ee",
+            "roughness": 0.35,
+            "metalness": 0
+          },
+          "emissive": true
+        }
+      ],
+      "light": {
+        "kind": "bar",
+        "cost": 1,
+        "defaultColor": "#22d3ee"
+      },
+      "source": {
+        "kind": "glb",
+        "file": "models/light.bars.pair.glb",
+        "triangles": 1296,
+        "bytes": 40884
+      },
+      "license": {
+        "spdx": "LicenseRef-RoomForge-Proprietary",
+        "author": "RoomForge",
+        "origin": "Geometría procedural original (tools/catalog/models.mjs); sin assets de terceros",
+        "attribution": "Modelo original de RoomForge. Todos los derechos reservados."
+      }
+    },
+    {
+      "id": "panel.hex.cluster",
+      "name": {
+        "en": "Hexagon light panels",
+        "es": "Paneles de luz hexagonales"
+      },
+      "category": "lighting",
+      "tags": ["panel", "hex", "cluster", "light"],
+      "size": {
+        "w": 0.6,
+        "h": 0.4,
+        "d": 0.035
+      },
+      "placement": {
+        "surfaces": ["floor", "wall"]
+      },
+      "slots": [
+        {
+          "id": "frame",
+          "label": {
+            "en": "Frame",
+            "es": "Marco"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#e6e9ef",
+            "roughness": 0.65,
+            "metalness": 0.45
+          }
+        },
+        {
+          "id": "glow",
+          "label": {
+            "en": "Light",
+            "es": "Luz"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#ff4fd8",
+            "roughness": 0.35,
+            "metalness": 0
+          },
+          "emissive": true
+        }
+      ],
+      "light": {
+        "kind": "panel",
+        "cost": 2,
+        "defaultColor": "#ff4fd8"
+      },
+      "source": {
+        "kind": "glb",
+        "file": "models/panel.hex.cluster.glb",
+        "triangles": 240,
+        "bytes": 13072
+      },
+      "license": {
+        "spdx": "LicenseRef-RoomForge-Proprietary",
+        "author": "RoomForge",
+        "origin": "Geometría procedural original (tools/catalog/models.mjs); sin assets de terceros",
+        "attribution": "Modelo original de RoomForge. Todos los derechos reservados."
+      }
+    },
+    {
+      "id": "lamp.floor.cone",
+      "name": {
+        "en": "Cone floor lamp",
+        "es": "Lámpara de pie cónica"
+      },
+      "category": "lighting",
+      "tags": ["lamp", "floor", "cone", "light"],
+      "size": {
+        "w": 0.42,
+        "h": 1.6,
+        "d": 0.42
+      },
+      "placement": {
+        "surfaces": ["floor"]
+      },
+      "slots": [
+        {
+          "id": "shade",
+          "label": {
+            "en": "Shade",
+            "es": "Pantalla"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#e8dcc8",
+            "roughness": 0.65,
+            "metalness": 0
+          }
+        },
+        {
+          "id": "frame",
+          "label": {
+            "en": "Frame",
+            "es": "Estructura"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#202734",
+            "roughness": 0.65,
+            "metalness": 0.45
+          }
+        },
+        {
+          "id": "glow",
+          "label": {
+            "en": "Light",
+            "es": "Luz"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#ffd9a0",
+            "roughness": 0.35,
+            "metalness": 0
+          },
+          "emissive": true
+        }
+      ],
+      "light": {
+        "kind": "point",
+        "cost": 1,
+        "defaultColor": "#ffd9a0"
+      },
+      "source": {
+        "kind": "glb",
+        "file": "models/lamp.floor.cone.glb",
+        "triangles": 352,
+        "bytes": 15864
+      },
+      "license": {
+        "spdx": "LicenseRef-RoomForge-Proprietary",
+        "author": "RoomForge",
+        "origin": "Geometría procedural original (tools/catalog/models.mjs); sin assets de terceros",
+        "attribution": "Modelo original de RoomForge. Todos los derechos reservados."
+      }
+    },
+    {
+      "id": "lamp.desk.arm",
+      "name": {
+        "en": "Articulated desk lamp",
+        "es": "Flexo articulado"
+      },
+      "category": "lighting",
+      "tags": ["lamp", "desk", "arm", "light"],
+      "size": {
+        "w": 0.18,
+        "h": 0.44,
+        "d": 0.42
+      },
+      "placement": {
+        "surfaces": ["floor", "tabletop"]
+      },
+      "slots": [
+        {
+          "id": "shade",
+          "label": {
+            "en": "Head",
+            "es": "Cabezal"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#333e52",
+            "roughness": 0.65,
+            "metalness": 0
+          }
+        },
+        {
+          "id": "frame",
+          "label": {
+            "en": "Arm",
+            "es": "Brazo"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#596677",
+            "roughness": 0.65,
+            "metalness": 0.45
+          }
+        },
+        {
+          "id": "glow",
+          "label": {
+            "en": "Light",
+            "es": "Luz"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#fff2d6",
+            "roughness": 0.35,
+            "metalness": 0
+          },
+          "emissive": true
+        }
+      ],
+      "light": {
+        "kind": "spot",
+        "cost": 1,
+        "defaultColor": "#fff2d6"
+      },
+      "source": {
+        "kind": "glb",
+        "file": "models/lamp.desk.arm.glb",
+        "triangles": 452,
+        "bytes": 20976
+      },
+      "license": {
+        "spdx": "LicenseRef-RoomForge-Proprietary",
+        "author": "RoomForge",
+        "origin": "Geometría procedural original (tools/catalog/models.mjs); sin assets de terceros",
+        "attribution": "Modelo original de RoomForge. Todos los derechos reservados."
+      }
+    },
+    {
+      "id": "neon.sign.wave",
+      "name": {
+        "en": "Neon wave sign",
+        "es": "Letrero de neón en onda"
+      },
+      "category": "lighting",
+      "tags": ["neon", "sign", "wave", "light"],
+      "size": {
+        "w": 0.6,
+        "h": 0.32,
+        "d": 0.04
+      },
+      "placement": {
+        "surfaces": ["floor", "wall"]
+      },
+      "slots": [
+        {
+          "id": "backing",
+          "label": {
+            "en": "Backing",
+            "es": "Soporte"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#c9d3df",
+            "roughness": 0.65,
+            "metalness": 0
+          }
+        },
+        {
+          "id": "glow",
+          "label": {
+            "en": "Light",
+            "es": "Luz"
+          },
+          "default": {
+            "presetId": "paint.satin",
+            "tint": "#ff3d9a",
+            "roughness": 0.35,
+            "metalness": 0
+          },
+          "emissive": true
+        }
+      ],
+      "light": {
+        "kind": "neon",
+        "cost": 1,
+        "defaultColor": "#ff3d9a"
+      },
+      "source": {
+        "kind": "glb",
+        "file": "models/neon.sign.wave.glb",
+        "triangles": 1624,
+        "bytes": 44684
+      },
+      "license": {
+        "spdx": "LicenseRef-RoomForge-Proprietary",
+        "author": "RoomForge",
+        "origin": "Geometría procedural original (tools/catalog/models.mjs); sin assets de terceros",
+        "attribution": "Modelo original de RoomForge. Todos los derechos reservados."
+      }
     }
   ]
 }

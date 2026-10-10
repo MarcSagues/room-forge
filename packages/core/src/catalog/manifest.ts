@@ -30,6 +30,8 @@ export const CatalogSlotSchema = z.object({
   id: z.string().max(LIMITS.maxKeyLength).regex(SLOT_ID),
   label: I18nTextSchema,
   default: MaterialRefSchema,
+  /** The part that glows: a luminaire's light source, drawn emissive (ADR-0006). */
+  emissive: z.literal(true).exactOptional(),
 });
 
 export const CatalogLicenseSchema = z.object({
@@ -83,7 +85,11 @@ export function toCatalogItem(item: CatalogManifestItem): CatalogItem {
     id: item.id,
     size: item.size,
     placement: { surfaces: item.placement.surfaces },
-    slots: item.slots.map((slot) => ({ id: slot.id, default: slot.default })),
+    slots: item.slots.map((slot) => ({
+      id: slot.id,
+      default: slot.default,
+      ...(slot.emissive ? { emissive: true } : {}),
+    })),
     ...(item.light ? { light: item.light } : {}),
   };
 }

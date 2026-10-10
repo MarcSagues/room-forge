@@ -3,11 +3,11 @@ import { appCatalog, catalogEntries } from './app-catalog';
 import { stubEntries } from './stub-catalog';
 
 describe('appCatalog', () => {
-  it('lists the nine models first, then the stub boxes, with unique ids', () => {
+  it('lists the fifteen models first, then the stub boxes, with unique ids', () => {
     const entries = catalogEntries();
-    expect(entries).toHaveLength(9 + stubEntries().length);
+    expect(entries).toHaveLength(15 + stubEntries().length);
     expect(entries[0]?.id).toBe('desk.office.140');
-    expect(entries.slice(9)).toEqual(stubEntries());
+    expect(entries.slice(15)).toEqual(stubEntries());
     expect(new Set(entries.map((entry) => entry.id)).size).toBe(entries.length);
   });
 

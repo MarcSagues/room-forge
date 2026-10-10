@@ -1,7 +1,7 @@
 import ReactThreeTestRenderer from '@react-three/test-renderer';
 import { createEditorSession, type PlacedObject, type SceneDocument } from '@roomforge/core';
 import { buildDocument, buildObject, buildRoom } from '@roomforge/core/testing';
-import { BufferGeometry, type Mesh } from 'three';
+import { BufferGeometry, type Mesh, type MeshStandardMaterial } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import type { SceneCatalog } from '../canvas/scene-catalog';
 import { SceneSessionProvider } from '../canvas/scene-context';
@@ -14,21 +14,33 @@ import { ObjectList } from './object-views';
 const { act, create } = ReactThreeTestRenderer;
 
 const DESK = 'desk.test';
+const LAMP = 'lamp.test';
 const catalog: SceneCatalog = {
   getItem: (id) =>
-    id === DESK
+    id === LAMP
       ? {
           id,
-          size: { w: 1.4, h: 0.75, d: 0.7 },
+          size: { w: 0.4, h: 1.6, d: 0.4 },
           placement: { surfaces: ['floor'] },
           slots: [
-            { id: 'top', default: { presetId: 'paint.satin', tint: '#c6a47d' } },
-            { id: 'frame', default: { presetId: 'paint.satin', tint: '#252c39' } },
+            { id: 'top', default: { presetId: 'paint.satin', tint: '#e8dcc8' } },
+            { id: 'frame', default: { presetId: 'paint.satin', tint: '#ffd9a0' }, emissive: true },
           ],
+          light: { kind: 'point', cost: 1, defaultColor: '#ffd9a0' },
         }
-      : undefined,
+      : id === DESK
+        ? {
+            id,
+            size: { w: 1.4, h: 0.75, d: 0.7 },
+            placement: { surfaces: ['floor'] },
+            slots: [
+              { id: 'top', default: { presetId: 'paint.satin', tint: '#c6a47d' } },
+              { id: 'frame', default: { presetId: 'paint.satin', tint: '#252c39' } },
+            ],
+          }
+        : undefined,
   colorOf: () => '#c6a47d',
-  modelUrlOf: (id) => (id === DESK ? '/assets/models/desk.test.glb' : undefined),
+  modelUrlOf: (id) => (id === DESK || id === LAMP ? `/assets/models/${id}.glb` : undefined),
 };
 
 function documentWith(objects: PlacedObject[]): SceneDocument {
@@ -94,6 +106,21 @@ describe('ModelBody', () => {
     const [a, b, c] = tops.map((mesh) => mesh.material);
     expect(a).toBe(b); // same look, same material
     expect(c).not.toBe(a); // the override in PlacedObject.materials
+  });
+
+  it("draws a luminaire's light slot glowing, with one material for every lamp", async () => {
+    const model = parts();
+    const lamp = (id: string, x: number) => ({ ...desk(id, x), catalogId: LAMP });
+    const { meshes } = await mount([lamp('a', 1), lamp('b', 3)], async () => model);
+    await act(async () => {});
+    const material = (slot: number) => {
+      const found = meshes().filter((mesh) => mesh.geometry === model[slot]?.geometry);
+      expect(new Set(found.map((mesh) => mesh.material)).size).toBe(1);
+      return found[0]?.material as MeshStandardMaterial;
+    };
+    expect(material(1).emissive.getHex()).toBe(material(1).color.getHex());
+    expect(material(1).toneMapped).toBe(false);
+    expect(material(0).emissive.getHex()).toBe(0);
   });
 
   it('keeps the placeholder when the model cannot be loaded', async () => {

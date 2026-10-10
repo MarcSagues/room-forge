@@ -223,7 +223,7 @@ interface CatalogItem {
     snapToWall?: boolean;
   };
   supports?: Array<{ y: number; rect: { x: number; z: number; w: number; d: number } }>; // superficies de apoyo (escritorios)
-  slots?: Array<{ id: string; label: { en: string; es: string }; default: MaterialRef }>;
+  slots?: Array<{ id: string; label: { en: string; es: string }; default: MaterialRef; emissive?: true }>; // emissive: la parte que da luz (solo luminarias, al menos una)
   light?: { kind: 'strip' | 'bar' | 'panel' | 'point' | 'spot' | 'neon'; cost: 0 | 1 | 2; defaultColor: HexColor };
   source:
     | { kind: 'glb'; file: string; thumb: string; stats: { tris: number; bytes: number } }

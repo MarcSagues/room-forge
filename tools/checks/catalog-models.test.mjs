@@ -16,7 +16,7 @@ test('the committed models, manifest and attributions are what the generator bui
     [resolve(root, 'tools/catalog/build-models.mjs'), '--check'],
     { cwd: root, encoding: 'utf8' },
   );
-  assert.match(output, /Checked 9 models/);
+  assert.match(output, /Checked 15 models/);
 });
 
 test('the attributions page lists every item under its licence, sorted, with its source', () => {

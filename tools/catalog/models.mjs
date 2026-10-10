@@ -57,7 +57,46 @@ export const variants = [
     name: { es: 'Brazo · 27 pulgadas', en: 'Arm · 27 inch' },
     size: [0.61, 0.45, 0.2],
   },
+  {
+    id: 'led-strip',
+    family: 'strip',
+    name: { es: 'Tira LED · 1 m', en: 'LED strip · 1 m' },
+    size: [1, 0.016, 0.02],
+  },
+  {
+    id: 'light-bars',
+    family: 'bars',
+    name: { es: 'Barras de luz · par', en: 'Light bars · pair' },
+    size: [0.38, 0.33, 0.09],
+  },
+  {
+    id: 'hex-panels',
+    family: 'hex',
+    name: { es: 'Paneles hexagonales · 5', en: 'Hexagon panels · 5' },
+    size: [0.6, 0.4, 0.035],
+  },
+  {
+    id: 'lamp-floor',
+    family: 'floorlamp',
+    name: { es: 'Lámpara de pie · cónica', en: 'Floor lamp · cone' },
+    size: [0.42, 1.6, 0.42],
+  },
+  {
+    id: 'lamp-desk',
+    family: 'desklamp',
+    name: { es: 'Flexo · articulado', en: 'Desk lamp · arm' },
+    size: [0.18, 0.44, 0.42],
+  },
+  {
+    id: 'neon-wave',
+    family: 'neon',
+    name: { es: 'Neón · onda', en: 'Neon · wave' },
+    size: [0.6, 0.32, 0.04],
+  },
 ];
+
+/** The part of a luminaire that gives light: drawn emissive, coloured apart from the body. */
+const glow = (color) => ({ id: 'glow', label: { es: 'Luz', en: 'Light' }, color, emissive: true });
 
 export const slots = {
   desk: [
@@ -78,6 +117,29 @@ export const slots = {
     { id: 'body', label: { es: 'Carcasa', en: 'Housing' }, color: '#252c39' },
     { id: 'stand', label: { es: 'Soporte', en: 'Stand' }, color: '#596677' },
     { id: 'screen', label: { es: 'Pantalla', en: 'Screen' }, color: '#467b93' },
+  ],
+  strip: [
+    { id: 'profile', label: { es: 'Perfil', en: 'Profile' }, color: '#9aa4b2' },
+    glow('#8b5cf6'),
+  ],
+  bars: [
+    { id: 'body', label: { es: 'Carcasa', en: 'Housing' }, color: '#252c39' },
+    glow('#22d3ee'),
+  ],
+  hex: [{ id: 'frame', label: { es: 'Marco', en: 'Frame' }, color: '#e6e9ef' }, glow('#ff4fd8')],
+  floorlamp: [
+    { id: 'shade', label: { es: 'Pantalla', en: 'Shade' }, color: '#e8dcc8' },
+    { id: 'frame', label: { es: 'Estructura', en: 'Frame' }, color: '#202734' },
+    glow('#ffd9a0'),
+  ],
+  desklamp: [
+    { id: 'shade', label: { es: 'Cabezal', en: 'Head' }, color: '#333e52' },
+    { id: 'frame', label: { es: 'Brazo', en: 'Arm' }, color: '#596677' },
+    glow('#fff2d6'),
+  ],
+  neon: [
+    { id: 'backing', label: { es: 'Soporte', en: 'Backing' }, color: '#c9d3df' },
+    glow('#ff3d9a'),
   ],
 };
 
@@ -102,6 +164,10 @@ function buildGeometry(definition) {
       position,
       rotation,
     );
+  }
+  /** Square-edged box: a profile that can be stretched along x and stay correct. */
+  function plain(slot, size, position) {
+    add(slot, new THREE.BoxGeometry(...size), position);
   }
   function cylinder(slot, radius, height, position, rotation, topRadius = radius) {
     add(slot, new THREE.CylinderGeometry(topRadius, radius, height, 12), position, rotation);
@@ -179,6 +245,8 @@ function buildGeometry(definition) {
         box('upholstery', [0.38, 0.14, 0.045], [0, 1.2, 0.169], 0.02);
       }
     }
+  } else if (definition.family !== 'monitor') {
+    buildLuminaire(definition, { add, box, plain, cylinder, rod });
   } else {
     const wide = definition.id === 'monitor-wide';
     if (wide) {
@@ -246,6 +314,59 @@ function buildGeometry(definition) {
     });
 }
 
+/** Six luminaires (P4-10). Fronts face -Z, like every model here; the light slot is `glow`. */
+function buildLuminaire(definition, { add, box, plain, cylinder, rod }) {
+  const [w, h] = definition.size;
+  if (definition.family === 'strip') {
+    // Aluminium channel and diffuser, the same section all along: stretching x keeps it exact.
+    plain('profile', [w, 0.003, 0.02], [0, 0.0015, 0]);
+    for (const z of [-0.009, 0.009]) plain('profile', [w, 0.016, 0.002], [0, 0.008, z]);
+    plain('glow', [w, 0.008, 0.016], [0, 0.007, 0]);
+  } else if (definition.family === 'bars') {
+    for (const x of [-0.14, 0.14]) {
+      cylinder('body', 0.045, 0.012, [x, 0.006, 0]);
+      box('body', [0.032, 0.3, 0.032], [x, 0.168, 0.006], 0.008);
+      box('glow', [0.022, 0.28, 0.006], [x, 0.168, -0.012], 0.003);
+    }
+  } else if (definition.family === 'hex') {
+    const step = 0.115;
+    const centres = [
+      ...[-1, 0, 1].map((i) => [i * Math.sqrt(3) * step, 0.11]),
+      ...[-0.5, 0.5].map((i) => [i * Math.sqrt(3) * step, 0.11 + 1.5 * step]),
+    ];
+    const prism = (radius, depth) => new THREE.CylinderGeometry(radius, radius, depth, 6);
+    for (const [x, y] of centres) {
+      add('frame', prism(0.11, 0.018), [x, y, 0.006], [Math.PI / 2, 0, 0]);
+      add('glow', prism(0.095, 0.008), [x, y, -0.006], [Math.PI / 2, 0, 0]);
+    }
+  } else if (definition.family === 'floorlamp') {
+    cylinder('frame', 0.16, 0.025, [0, 0.0125, 0]);
+    rod('frame', [0, 0.025, 0], [0, 1.36, 0], 0.012);
+    add('shade', new THREE.CylinderGeometry(0.12, 0.2, 0.26, 24, 1, true), [0, h - 0.13, 0]);
+    add('glow', new THREE.SphereGeometry(0.055, 12, 8), [0, 1.4, 0]);
+  } else if (definition.family === 'desklamp') {
+    cylinder('frame', 0.075, 0.02, [0, 0.01, 0.12]);
+    rod('frame', [0, 0.02, 0.12], [0, 0.3, 0.02], 0.009);
+    rod('frame', [0, 0.3, 0.02], [0, 0.41, -0.14], 0.008);
+    add('frame', new THREE.SphereGeometry(0.016, 10, 6), [0, 0.3, 0.02]);
+    add('shade', new THREE.CylinderGeometry(0.025, 0.065, 0.09, 20, 1, true), [0, 0.37, -0.14]);
+    cylinder('shade', 0.026, 0.006, [0, 0.415, -0.14]);
+    cylinder('glow', 0.058, 0.004, [0, 0.333, -0.14]);
+  } else {
+    box('backing', [0.2, 0.02, 0.04], [0, 0.01, 0], 0.006);
+    box('backing', [w, h - 0.02, 0.008], [0, 0.02 + (h - 0.02) / 2, 0.01], 0.004);
+    const points = Array.from({ length: 25 }, (_, i) => {
+      const t = i / 24;
+      return new THREE.Vector3(-0.24 + 0.48 * t, 0.17 + 0.07 * Math.sin(t * Math.PI * 3), -0.006);
+    });
+    add(
+      'glow',
+      new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 64, 0.008, 8),
+      [0, 0, 0],
+    );
+  }
+}
+
 export function createModel(id) {
   const definition = variants.find((variant) => variant.id === id);
   if (!definition) throw new Error(`Unknown model: ${id}`);
@@ -258,17 +379,18 @@ export function createModel(id) {
     license: 'LicenseRef-RoomForge-Proprietary',
   };
   for (const { slot, geometry } of geometryCache.get(id)) {
-    const color = slots[definition.family].find((entry) => entry.id === slot).color;
+    const entry = slots[definition.family].find((candidate) => candidate.id === slot);
+    const lit = slot === 'screen' || entry.emissive;
     const material = new THREE.MeshStandardMaterial({
       name: slot,
-      color,
-      roughness: slot === 'screen' ? 0.35 : 0.65,
-      metalness: ['frame', 'stand'].includes(slot) ? 0.45 : 0,
+      color: entry.color,
+      roughness: lit ? 0.35 : 0.65,
+      metalness: ['frame', 'stand', 'profile'].includes(slot) ? 0.45 : 0,
       side: THREE.DoubleSide,
     });
-    if (slot === 'screen') {
+    if (lit) {
       material.emissive.copy(material.color);
-      material.emissiveIntensity = 0.35;
+      material.emissiveIntensity = entry.emissive ? 1 : 0.35;
     }
     const mesh = new THREE.Mesh(geometry, material);
     mesh.name = slot;
@@ -284,7 +406,7 @@ export function setSlotColor(model, slot, hex) {
   const mesh = model.children.find((child) => child.name === slot);
   if (!mesh) throw new Error(`Unknown material slot: ${slot}`);
   mesh.material.color.set(hex);
-  if (slot === 'screen') mesh.material.emissive.set(hex);
+  if (slot === 'screen' || slot === 'glow') mesh.material.emissive.set(hex);
 }
 
 export function disposeModelMaterials(model) {
