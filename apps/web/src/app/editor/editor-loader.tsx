@@ -13,3 +13,13 @@ export const EditorLoader = dynamic(() => import('./editor-app'), {
     </p>
   ),
 });
+
+// The viewer of shared links (P6-08) is its own chunk: the editor route never loads its code.
+export const ViewerLoader = dynamic(() => import('./viewer-app'), {
+  ssr: false,
+  loading: () => (
+    <p role="status" className="grid h-dvh place-items-center text-fg-muted">
+      {translate('en', 'viewer.opening')}
+    </p>
+  ),
+});

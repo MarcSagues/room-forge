@@ -2,7 +2,7 @@
 
 import { type ReactNode, useCallback, useSyncExternalStore } from 'react';
 import type { Autosave, SaveState } from '@/persistence';
-import { ProjectStatusProvider, SaveNotice, type SaveProblem } from '@/ui';
+import { ProjectStatusProvider, SaveNotice, type SaveProblem, type ShareOutcome } from '@/ui';
 
 const NO_AUTOSAVE: SaveState = { status: 'saved', lastSavedAt: null, error: null, failures: 0 };
 
@@ -30,6 +30,8 @@ export function SaveStatusBridge(props: {
   onExport?: () => void;
   /** Renames the project; turns the name in the top bar into a field. */
   onRename?: ((name: string) => Promise<void>) | undefined;
+  /** Copies a share link; turns on the Share button of the top bar. */
+  onShare?: (() => Promise<ShareOutcome>) | undefined;
   children: ReactNode;
 }) {
   const save = useSaveState(props.autosave);
@@ -39,6 +41,7 @@ export function SaveStatusBridge(props: {
       save={save.status}
       onExport={props.onExport}
       onRename={props.onRename}
+      onShare={props.onShare}
     >
       {props.children}
     </ProjectStatusProvider>

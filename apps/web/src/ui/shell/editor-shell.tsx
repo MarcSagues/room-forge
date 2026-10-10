@@ -14,12 +14,13 @@ import {
 import { createShortcutRegistry, type ShortcutRegistry } from '@/editor';
 import { Button } from '@/ui/components/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/components/tabs';
+import { TooltipProvider } from '@/ui/components/tooltip';
 import { translate } from '@/ui/i18n';
 import { cn } from '@/ui/lib/utils';
 import { ErrorBoundary } from '@/ui/resilience/error-boundary';
 import { PanelFallback } from '@/ui/resilience/failure-screen';
 import { ShortcutsProvider } from '@/ui/shortcuts/shortcuts-context';
-import { BottomBar } from './bottom-bar';
+import { BottomBar, ViewControls } from './bottom-bar';
 import { SHELL_LAYOUT_ID, safeLayoutStorage } from './layout-storage';
 import { PanelHeader, PanelHint, SidePanel } from './side-panel';
 import { TopBar } from './top-bar';
@@ -50,6 +51,7 @@ export function EditorShell({
   session,
   shortcuts,
   onPanelError,
+  sharedView,
 }: {
   viewport?: ReactNode;
   /** Content of the Properties tab (the app passes the selection details); a hint by default. */
@@ -64,6 +66,11 @@ export function EditorShell({
   shortcuts?: ShortcutRegistry;
   /** Told about an error inside a panel, with the panel's name (the app logs it). */
   onPanelError?: (error: Error, panel: string) => void;
+  /**
+   * The banner of a shared link's viewer (P6-08). With it the shell is the viewer at every width:
+   * the banner, the viewport and the view controls, and no editing chrome.
+   */
+  sharedView?: ReactNode;
 }) {
   const { mode, wide } = useShellMode();
   const fallback = useMemo(() => (shortcuts ? null : createShortcutRegistry()), [shortcuts]);
@@ -83,7 +90,9 @@ export function EditorShell({
   const guardedScene = guard(t('shell.scene'), scene);
 
   let shell: ReactNode;
-  if (mode === 'viewer') shell = <ViewerShell viewport={guardedViewport} />;
+  if (sharedView !== undefined) {
+    shell = <ViewerShell viewport={guardedViewport} banner={sharedView} session={session} />;
+  } else if (mode === 'viewer') shell = <ViewerShell viewport={guardedViewport} />;
   else if (mode === 'full') {
     shell = (
       <DockedShell
@@ -250,14 +259,31 @@ function DrawerShell({
   );
 }
 
-/** < 768 px: view-only, no panels or editing chrome (DESIGN_SYSTEM §3). */
-function ViewerShell({ viewport }: { viewport: ReactNode }) {
+/**
+ * < 768 px: view-only, no panels or editing chrome (DESIGN_SYSTEM §3). Also a shared link's viewer
+ * at any width, with its own banner and the view controls.
+ */
+function ViewerShell(props: {
+  viewport: ReactNode;
+  banner?: ReactNode;
+  session?: EditorSession | undefined;
+}) {
+  const { viewport, banner, session } = props;
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-background">
-      <p role="status" className="shrink-0 border-b bg-card px-4 py-2 text-center text-fg-muted">
-        {t('shell.viewerBanner')}
-      </p>
+      {banner ?? (
+        <p role="status" className="shrink-0 border-b bg-card px-4 py-2 text-center text-fg-muted">
+          {t('shell.viewerBanner')}
+        </p>
+      )}
       <Viewport>{viewport}</Viewport>
+      {banner && session ? (
+        <TooltipProvider delayDuration={400}>
+          <footer className="flex h-11 shrink-0 items-center gap-1 overflow-x-auto border-t bg-card px-3">
+            <ViewControls session={session} />
+          </footer>
+        </TooltipProvider>
+      ) : null}
     </div>
   );
 }

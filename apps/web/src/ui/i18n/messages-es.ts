@@ -151,6 +151,32 @@ export const es: Record<MessageKey, string> = {
     'Puedes verlo aquí, pero no editarlo. Toma el control para editarlo aquí; la otra pestaña quedará en solo lectura.',
   'lock.takeOver': 'Tomar el control',
   'lock.takingOver': 'Tomando el control…',
+  'share.making': 'Creando el enlace…',
+  'share.copied': 'Enlace copiado. Quien lo tenga podrá ver esta sala, sin editarla.',
+  'share.copiedLong':
+    'Enlace copiado ({size} KB). Es largo: algunas apps pueden cortarlo; un archivo de proyecto viaja mejor.',
+  'share.tooLarge':
+    'Esta sala es demasiado grande para un enlace. Exporta el archivo de proyecto y envía eso.',
+  'share.unsupported':
+    'Este navegador no puede crear enlaces. Exporta el archivo de proyecto y envía eso.',
+  'share.copyFailed': 'No se pudo copiar el enlace. Inténtalo de nuevo.',
+  'share.export': 'Exportar archivo de proyecto',
+  'viewer.opening': 'Abriendo la sala compartida…',
+  'viewer.title': 'Una sala compartida, solo lectura',
+  'viewer.body': 'Estás viendo «{name}». Los cambios aquí no se guardan.',
+  'viewer.copy': 'Hacer una copia para editar',
+  'viewer.copying': 'Haciendo la copia…',
+  'viewer.unavailableTitle': 'No se puede abrir este enlace',
+  'viewer.error.empty': 'El enlace no contiene ninguna sala. Pide el enlace de nuevo.',
+  'viewer.error.broken':
+    'El enlace está dañado o incompleto. Pídelo de nuevo y comprueba que se copia entero.',
+  'viewer.error.tooLarge':
+    'El enlace contiene más de lo que cabe en una sala, así que no se ha abierto.',
+  'viewer.error.newer':
+    'Este enlace se creó con una versión más nueva de RoomForge. Recarga la página para actualizar y vuelve a abrirlo.',
+  'viewer.error.unsupported':
+    'Este navegador no puede abrir enlaces de RoomForge. Prueba una versión reciente de Chrome, Edge, Firefox o Safari.',
+  'viewer.toProjects': 'Ir a tus proyectos',
   'settings.open': 'Ajustes',
   'settings.title': 'Ajustes',
   'settings.storage': 'Almacenamiento',
