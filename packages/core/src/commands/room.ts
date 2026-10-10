@@ -1,5 +1,5 @@
 import { current } from 'immer';
-import { z } from 'zod';
+import { z } from 'zod/mini';
 import {
   LIMITS,
   type MaterialRef,
@@ -20,23 +20,23 @@ export const DEFAULT_ROOM_MATERIALS = {
 
 export type RoomSurface = 'floor' | 'ceiling' | WallId;
 
-const side = z.number().min(LIMITS.roomSide.min).max(LIMITS.roomSide.max);
-const height = z.number().min(LIMITS.roomHeight.min).max(LIMITS.roomHeight.max);
+const side = z.number().check(z.gte(LIMITS.roomSide.min), z.lte(LIMITS.roomSide.max));
+const height = z.number().check(z.gte(LIMITS.roomHeight.min), z.lte(LIMITS.roomHeight.max));
 
 const CreateRoomInput = z.object({
-  id: RoomIdSchema.optional(),
-  name: z.string().max(LIMITS.maxNameLength),
+  id: z.optional(RoomIdSchema),
+  name: z.string().check(z.maxLength(LIMITS.maxNameLength)),
   width: side,
   depth: side,
   height,
 });
 const ResizeInput = z.object({
-  width: side.optional(),
-  depth: side.optional(),
-  height: height.optional(),
+  width: z.optional(side),
+  depth: z.optional(side),
+  height: z.optional(height),
 });
 
-function invalid(error: z.ZodError): CommandError {
+function invalid(error: z.core.$ZodError): CommandError {
   const message = error.issues
     .map((issue) =>
       issue.path.length ? `${issue.path.join('.')}: ${issue.message}` : issue.message,

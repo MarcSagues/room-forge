@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/mini';
 import { ObjectIdSchema, OpeningIdSchema, RoomIdSchema } from './ids';
 import { LIMITS } from './limits';
 import type { DeepReadonly } from './readonly';
@@ -14,12 +14,17 @@ export const HexColorSchema = z.custom<HexColor>(
   'Expected a #rrggbb color',
 );
 
-const unit = z.number().min(0).max(1);
-const coordinate = z.number().min(-LIMITS.maxCoordinate).max(LIMITS.maxCoordinate);
+/** A number in [min, max] (`z.number().min().max()` in classic zod). */
+const between = (min: number, max: number) => z.number().check(z.gte(min), z.lte(max));
+/** A number in (0, max]. */
+const positiveUpTo = (max: number) => z.number().check(z.positive(), z.lte(max));
+
+const unit = between(0, 1);
+const coordinate = between(-LIMITS.maxCoordinate, LIMITS.maxCoordinate);
 const name = z
   .string()
-  .max(LIMITS.maxNameLength, `Must be at most ${LIMITS.maxNameLength} characters`);
-const key = z.string().min(1).max(LIMITS.maxKeyLength);
+  .check(z.maxLength(LIMITS.maxNameLength, `Must be at most ${LIMITS.maxNameLength} characters`));
+const key = z.string().check(z.minLength(1), z.maxLength(LIMITS.maxKeyLength));
 
 export const Vec2Schema = z.tuple([coordinate, coordinate]);
 export const Vec3Schema = z.tuple([coordinate, coordinate, coordinate]);
@@ -34,23 +39,25 @@ export type WallId = z.infer<typeof WallIdSchema>;
 
 export const MaterialRefSchema = z.object({
   presetId: key,
-  tint: HexColorSchema.exactOptional(),
-  roughness: unit.exactOptional(),
-  metalness: unit.exactOptional(),
+  tint: z.exactOptional(HexColorSchema),
+  roughness: z.exactOptional(unit),
+  metalness: z.exactOptional(unit),
 });
 export type MaterialRef = z.infer<typeof MaterialRefSchema>;
 
 export const SurfaceSchema = z.object({ material: MaterialRefSchema });
 export type Surface = z.infer<typeof SurfaceSchema>;
 
-const speed = z.number().positive().max(LIMITS.maxEffectSpeed);
+const speed = positiveUpTo(LIMITS.maxEffectSpeed);
 export const LightEffectSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('static') }),
   z.object({ kind: z.literal('breathing'), speed }),
   z.object({
     kind: z.literal('cycle'),
     speed,
-    palette: z.array(HexColorSchema).min(1).max(LIMITS.maxPaletteColors).exactOptional(),
+    palette: z.exactOptional(
+      z.array(HexColorSchema).check(z.minLength(1), z.maxLength(LIMITS.maxPaletteColors)),
+    ),
   }),
 ]);
 
@@ -65,13 +72,13 @@ export type LightState = z.infer<typeof LightStateSchema>;
 export const LightingSchema = z.object({
   mode: z.enum(['day', 'night']),
   ambient: unit,
-  sunAzimuth: z.number().min(0).max(360),
+  sunAzimuth: between(0, 360),
 });
 export type Lighting = z.infer<typeof LightingSchema>;
 
 // ── Rooms and openings ──────────────────────────────────────────
 
-const roomSide = z.number().min(LIMITS.roomSide.min).max(LIMITS.roomSide.max);
+const roomSide = between(LIMITS.roomSide.min, LIMITS.roomSide.max);
 
 export const RoomSchema = z.object({
   id: RoomIdSchema,
@@ -80,7 +87,7 @@ export const RoomSchema = z.object({
   shape: z.discriminatedUnion('kind', [
     z.object({ kind: z.literal('rect'), width: roomSide, depth: roomSide }),
   ]),
-  height: z.number().min(LIMITS.roomHeight.min).max(LIMITS.roomHeight.max),
+  height: between(LIMITS.roomHeight.min, LIMITS.roomHeight.max),
   origin: Vec2Schema,
   floor: SurfaceSchema,
   ceiling: SurfaceSchema,
@@ -93,7 +100,7 @@ export const RoomSchema = z.object({
 });
 export type Room = z.infer<typeof RoomSchema>;
 
-const openingSize = z.number().positive().max(LIMITS.roomSide.max);
+const openingSize = positiveUpTo(LIMITS.roomSide.max);
 
 // Fitting inside the wall and not overlapping other openings (I4) needs the room: see invariants.
 export const OpeningSchema = z
@@ -103,15 +110,17 @@ export const OpeningSchema = z
     wall: WallIdSchema,
     kind: z.enum(['door', 'window']),
     variant: key,
-    offset: z.number().min(0).max(LIMITS.roomSide.max),
+    offset: between(0, LIMITS.roomSide.max),
     width: openingSize,
     height: openingSize,
-    sill: z.number().min(0).max(LIMITS.roomHeight.max),
+    sill: between(0, LIMITS.roomHeight.max),
   })
-  .refine((opening) => opening.kind !== 'door' || opening.sill === 0, {
-    message: 'A door must start at floor level (sill 0)',
-    path: ['sill'],
-  });
+  .check(
+    z.refine((opening) => opening.kind !== 'door' || opening.sill === 0, {
+      message: 'A door must start at floor level (sill 0)',
+      path: ['sill'],
+    }),
+  );
 export type Opening = z.infer<typeof OpeningSchema>;
 
 // ── Placed objects ──────────────────────────────────────────────
@@ -119,34 +128,40 @@ export type Opening = z.infer<typeof OpeningSchema>;
 export const TransformSchema = z.object({
   position: Vec3Schema,
   rotationY: z.number(),
-  scale: z
-    .tuple([
-      z.number().positive().max(LIMITS.maxScale),
-      z.number().positive().max(LIMITS.maxScale),
-      z.number().positive().max(LIMITS.maxScale),
-    ])
-    .exactOptional(),
+  scale: z.exactOptional(
+    z.tuple([
+      positiveUpTo(LIMITS.maxScale),
+      positiveUpTo(LIMITS.maxScale),
+      positiveUpTo(LIMITS.maxScale),
+    ]),
+  ),
 });
 
-function boundedRecord<T extends z.ZodType>(value: T, max: number) {
+function boundedRecord<T extends z.ZodMiniType>(value: T, max: number) {
   return z
     .record(key, value)
-    .refine((record) => Object.keys(record).length <= max, `At most ${max} entries`);
+    .check(z.refine((record) => Object.keys(record).length <= max, `At most ${max} entries`));
 }
 
 export const PlacedObjectSchema = z.object({
   id: ObjectIdSchema,
   catalogId: key,
-  name: name.exactOptional(),
+  name: z.exactOptional(name),
   roomId: RoomIdSchema,
-  parentId: ObjectIdSchema.nullable(),
+  parentId: z.nullable(ObjectIdSchema),
   transform: TransformSchema,
   materials: boundedRecord(MaterialRefSchema, LIMITS.maxMaterialSlots),
-  light: LightStateSchema.exactOptional(),
-  params: boundedRecord(
-    z.union([z.number(), z.string().max(LIMITS.maxParamStringLength), z.boolean()]),
-    LIMITS.maxParams,
-  ).exactOptional(),
+  light: z.exactOptional(LightStateSchema),
+  params: z.exactOptional(
+    boundedRecord(
+      z.union([
+        z.number(),
+        z.string().check(z.maxLength(LIMITS.maxParamStringLength)),
+        z.boolean(),
+      ]),
+      LIMITS.maxParams,
+    ),
+  ),
   locked: z.boolean(),
   hidden: z.boolean(),
 });
@@ -167,11 +182,13 @@ export const SceneDocumentSchema = z
     objectOrder: z.array(ObjectIdSchema),
     lighting: LightingSchema,
   })
-  .superRefine((doc, ctx) => {
-    for (const { path, message } of documentStructureIssues(doc)) {
-      ctx.addIssue({ code: 'custom', path, message });
-    }
-  });
+  .check(
+    z.superRefine((doc, ctx) => {
+      for (const { path, message } of documentStructureIssues(doc)) {
+        ctx.addIssue({ code: 'custom', path, message });
+      }
+    }),
+  );
 export type SceneDocument = z.infer<typeof SceneDocumentSchema>;
 
 export interface DocumentIssue {
