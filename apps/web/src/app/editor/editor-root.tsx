@@ -3,7 +3,7 @@
 import { useEffect, useMemo } from 'react';
 import { createErrorLog, installErrorCapture, type StorageLike } from '@/editor';
 import { downloadText, ErrorBoundary, FailureScreen } from '@/ui';
-import { EditorLoader } from './editor-loader';
+import { EditorLoader, ViewerLoader } from './editor-loader';
 
 const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? 'dev';
 
@@ -21,7 +21,7 @@ function browserStorage(): StorageLike | undefined {
  * would lose, and, if the whole editor fails, shows a screen with a way back, a copy of the log and
  * a report that carries no project data. The panels have boundaries of their own (the shell).
  */
-export function EditorRoot() {
+export function EditorRoot({ app = 'editor' }: { app?: 'editor' | 'viewer' }) {
   const log = useMemo(() => {
     const storage = browserStorage();
     return createErrorLog(storage ? { storage } : {});
@@ -46,7 +46,7 @@ export function EditorRoot() {
         />
       )}
     >
-      <EditorLoader errorLog={log} />
+      {app === 'viewer' ? <ViewerLoader errorLog={log} /> : <EditorLoader errorLog={log} />}
     </ErrorBoundary>
   );
 }

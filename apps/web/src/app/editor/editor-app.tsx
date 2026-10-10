@@ -17,6 +17,7 @@ import {
   autosaveSourceOf,
   createAutosave,
   createBackupReminder,
+  createShareLink,
   downloadFile,
   exportFileOf,
   installAutosaveLifecycle,
@@ -35,6 +36,8 @@ import {
   RoomMaterialsPanel,
   RoomSizePanel,
   SelectionSummary,
+  SharedViewBanner,
+  type ShareOutcome,
   showBackupReminder,
   showStorageWarning,
   translate,
@@ -116,15 +119,20 @@ function LockedWorkspace({ editor, errorLog }: { editor: BootedEditor; errorLog?
   );
 }
 
-function Workspace(props: {
+/**
+ * The editor on an open project. Also the viewer of a shared link (P6-08) when `viewer` is given:
+ * the session is read-only, nothing is saved, and a banner offers a copy to edit.
+ */
+export function Workspace(props: {
   editor: BootedEditor;
   autosaveRef: RefObject<Autosave | null>;
   /** Another tab owns the project: nothing is saved here, and a notice offers to take over. */
   owner: boolean;
   onTakeOver: () => Promise<void>;
   errorLog?: ErrorLog;
+  viewer?: { onCopy: () => Promise<void> };
 }) {
-  const { editor, autosaveRef, owner, onTakeOver, errorLog } = props;
+  const { editor, autosaveRef, owner, onTakeOver, errorLog, viewer } = props;
   const { session, project, repository, storage, journal } = editor;
   const [context, setContext] = useState<ContextState>('ok');
   const scene = useRef<SceneHandle | null>(null);
@@ -225,6 +233,22 @@ function Workspace(props: {
     });
   }, [owner, storage, session, reminder, exportCopy]);
 
+  // A link to what is on screen, copied for the person to paste: the scene is in the fragment.
+  const share = useCallback(async (): Promise<ShareOutcome> => {
+    const document = session.getState().document as SceneDocument;
+    const link = await createShareLink(
+      { name: nameRef.current, document },
+      { origin: window.location.origin, catalog: appCatalog },
+    );
+    if (!link.ok) return { kind: link.reason };
+    try {
+      await navigator.clipboard.writeText(link.url);
+    } catch {
+      return { kind: 'copy-failed' };
+    }
+    return { kind: 'copied', length: link.length, long: link.overTarget };
+  }, [session]);
+
   // The next autosave already writes the new name; if renaming fails it goes back to the old one.
   const rename = useCallback(
     async (next: string) => {
@@ -248,6 +272,7 @@ function Workspace(props: {
       name={name}
       onExport={exportCopy}
       onRename={owner ? rename : undefined}
+      onShare={viewer ? undefined : share}
     >
       <EditorShell
         session={session}
@@ -260,6 +285,7 @@ function Workspace(props: {
           />
         }
         onPanelError={(error, panel) => errorLog?.record(error, { source: 'react', where: panel })}
+        sharedView={viewer ? <SharedViewBanner name={name} onCopy={viewer.onCopy} /> : undefined}
         properties={
           <>
             <SelectionSummary session={session} catalog={appCatalog} live={live} />
@@ -286,8 +312,10 @@ function Workspace(props: {
               onContextRestored={() => setContext('restored')}
             />
             <ContextNotice state={context} />
-            <SaveNoticeBridge autosave={autosave} storage={storage} onExport={exportCopy} />
-            {owner ? null : <ReadOnlyNotice onTakeOver={onTakeOver} />}
+            {viewer ? null : (
+              <SaveNoticeBridge autosave={autosave} storage={storage} onExport={exportCopy} />
+            )}
+            {owner || viewer ? null : <ReadOnlyNotice onTakeOver={onTakeOver} />}
           </>
         }
       />
