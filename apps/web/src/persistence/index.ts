@@ -13,6 +13,12 @@ export {
 export { installAutosaveLifecycle, type LifecycleTarget } from './autosave-lifecycle';
 export { autosaveSourceOf } from './autosave-source';
 export {
+  BACKUP_REMINDER_KEY,
+  type BackupReminder,
+  type BackupReminderOptions,
+  createBackupReminder,
+} from './backup-reminder';
+export {
   createIndexedDbProjectRepository,
   type IndexedDbProjectRepository,
   type IndexedDbRepositoryOptions,
@@ -50,3 +56,12 @@ export {
   type ProjectLock,
   type ProjectLockOptions,
 } from './project-lock';
+export {
+  readStorageHealth,
+  SMALL_QUOTA_BYTES,
+  STORAGE_WARNING_KEY,
+  type StorageHealth,
+  type StorageHealthManager,
+  storageAtRisk,
+  takeStorageWarning,
+} from './storage-health';
