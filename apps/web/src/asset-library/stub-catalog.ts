@@ -60,7 +60,7 @@ export const stubCatalog: ColoredCatalog = {
   colorOf: (id) => byId.get(id)?.color,
 };
 
-/** Every item of the catalog, in the order the panel lists them. */
-export function catalogEntries(): readonly CatalogEntry[] {
+/** The stub items, in the order the panel lists them (after the real ones). */
+export function stubEntries(): readonly CatalogEntry[] {
   return ENTRIES;
 }

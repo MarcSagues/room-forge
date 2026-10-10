@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { catalogEntries, emptyCatalog, stubCatalog } from './index';
+import { emptyCatalog, stubCatalog } from './index';
+import { stubEntries } from './stub-catalog';
 
 describe('stub catalog (P3-06, replaced by the real manifest in P4-02)', () => {
-  const entries = catalogEntries();
+  const entries = stubEntries();
 
   it('has five items with unique ids', () => {
     expect(entries).toHaveLength(5);

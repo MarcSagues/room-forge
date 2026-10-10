@@ -57,6 +57,13 @@ export {
   type ProjectLockOptions,
 } from './project-lock';
 export {
+  browserShareCodec,
+  createShareLink,
+  openShareLink,
+  type ShareLink,
+  VIEW_PATH,
+} from './share-link';
+export {
   readStorageHealth,
   SMALL_QUOTA_BYTES,
   STORAGE_WARNING_KEY,
