@@ -10,6 +10,7 @@ export type { SaveIndicator } from './editor/save-status';
 export { showBackupReminder, showStorageWarning } from './editor/storage-toasts';
 export { DEFAULT_LOCALE, type Locale, type MessageKey, translate } from './i18n';
 export { RoomMaterialsPanel } from './materials';
+export { LazySceneOutliner, SceneOutliner } from './outliner';
 export { type ProjectFiles, ProjectsScreen, type ProjectsScreenProps } from './projects';
 export { SelectionSummary } from './properties';
 export { Providers } from './providers';

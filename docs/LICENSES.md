@@ -13,6 +13,7 @@ side is enough; for `A AND B` both must be.
 - `caniuse-lite`: CC-BY-4.0 data used by build tools (browserslist). It is not part of the bundle sent to browsers; attribution is kept in docs/LICENSES.md.
 - `@img/sharp-*`: Apache-2.0 AND LGPL-3.0-or-later (libvips binaries). An optional dependency of Next's image optimizer, which the static export does not use (images.unoptimized); it is never shipped.
 - `lightningcss*`: MPL-2.0, file-level copyleft. A build tool used unmodified by Tailwind; nothing of it is distributed.
+- `axe-core`: MPL-2.0, file-level copyleft. A dev dependency used unmodified by the accessibility tests (unit and e2e); it is never bundled or distributed.
 
 ## Production dependencies (`dependencies` of the app and everything they pull in)
 
@@ -194,8 +195,8 @@ side is enough; for `A AND B` both must be.
 | MIT | 191 |
 | ISC | 13 |
 | Apache-2.0 | 9 |
+| MPL-2.0 | 3 |
 | MIT OR Apache-2.0 | 2 |
-| MPL-2.0 | 2 |
 | Apache-2.0 AND LGPL-3.0-or-later | 1 |
 | BSD-2-Clause | 1 |
 | BSD-3-Clause | 1 |
