@@ -22,6 +22,24 @@ export const es: Record<MessageKey, string> = {
   'newRoom.preview': 'Plano de una sala de {width} por {depth} m',
   'newRoom.create': 'Crear proyecto',
   'newRoom.cancel': 'Cancelar',
+  'templates.open': 'Desde una plantilla…',
+  'templates.title': 'Empezar con una plantilla',
+  'templates.description':
+    'Elige una habitación ya montada. El proyecto nuevo es tuyo: la plantilla no cambia.',
+  'templates.list': 'Plantillas',
+  'templates.create': 'Crear proyecto',
+  'templates.cancel': 'Cancelar',
+  'templates.empty.name': 'Habitación vacía',
+  'templates.empty.hint': 'Una sala de 4 × 4,5 m sin nada, para empezar de cero.',
+  'templates.gaming.name': 'Setup gaming',
+  'templates.gaming.hint':
+    'Mesa ancha, pantalla ultrapanorámica, silla racing y luces RGB, de noche.',
+  'templates.office.name': 'Despacho en casa',
+  'templates.office.hint':
+    'Una mesa tranquila junto a la ventana, monitor con brazo y lámparas cálidas.',
+  'templates.streaming.name': 'Rincón de streaming',
+  'templates.streaming.hint':
+    'Dos pantallas, un letrero de neón, paneles de luz y una luz principal.',
   'projects.untitled': 'Proyecto sin título',
   'projects.search': 'Buscar proyectos',
   'projects.searchPlaceholder': 'Buscar por nombre',
@@ -198,6 +216,31 @@ export const es: Record<MessageKey, string> = {
   'history.nothingToUndo': 'Nada que deshacer',
   'history.nothingToRedo': 'Nada que rehacer',
   'shortcuts.open': 'Atajos de teclado',
+  'tutorial.open': 'Ver el recorrido',
+  'tutorial.close': 'Cerrar el recorrido',
+  'tutorial.progress': 'Paso {step} de {total}',
+  'tutorial.next': 'Siguiente',
+  'tutorial.back': 'Atrás',
+  'tutorial.done': 'Hecho',
+  'tutorial.skip': 'Saltar el recorrido',
+  'tutorial.place.title': 'Añade muebles',
+  'tutorial.place.body':
+    'Arrastra un elemento del catálogo a la habitación, o selecciónalo y pulsa Intro para colocarlo en el centro de la vista.',
+  'tutorial.move.title': 'Mueve y gira',
+  'tutorial.move.body':
+    'Arrastra un objeto para moverlo: cerca de una pared, se pone de espaldas a ella. Pulsa R para girar la selección y Mayús+R para girarla al otro lado.',
+  'tutorial.view.title': 'Vista e imán',
+  'tutorial.view.body':
+    'El imán mantiene los objetos en una cuadrícula (G lo activa o desactiva). Cambia entre perspectiva y vista cenital, y baja las paredes para ver dentro.',
+  'tutorial.colour.title': 'Colores y materiales',
+  'tutorial.colour.body':
+    'Selecciona un objeto, o el suelo y las paredes, y cambia aquí su material y su color.',
+  'tutorial.light.title': 'Enciende las luces',
+  'tutorial.light.body':
+    'Lámparas, tiras LED, barras y paneles de luz dan luz de color real. Las plantillas las muestran encendidas de noche.',
+  'tutorial.keep.title': 'Guarda, exporta, comparte',
+  'tutorial.keep.body':
+    'Tu trabajo se guarda solo en este navegador. Exporta una copia o comparte un enlace de solo lectura.',
   'shortcuts.title': 'Atajos de teclado',
   'shortcuts.description':
     'Estos atajos funcionan en cualquier sitio salvo al escribir en un campo.',
@@ -308,6 +351,16 @@ export const es: Record<MessageKey, string> = {
   'catalog.placed': '{name} colocado.',
   'catalog.notPlaced': 'No se pudo colocar {name}.',
   'catalog.dimensions': '{width} × {depth} cm',
+  'catalog.tabObjects': 'Objetos',
+  'catalog.tabStructure': 'Estructura',
+  'catalog.structureList': 'Puertas y ventanas',
+  'catalog.structureHint':
+    'Arrastra una puerta o ventana a una pared, o pulsa Intro para ponerla en la pared que tienes delante.',
+  'catalog.openingDimensions': '{width} × {height} cm',
+  'catalog.opening.door.single': 'Puerta',
+  'catalog.opening.door.double': 'Puerta doble',
+  'catalog.opening.window.standard': 'Ventana',
+  'catalog.opening.window.large': 'Ventana grande',
   'properties.name': 'Nombre',
   'properties.position': 'Posición',
   'properties.x': 'X',
