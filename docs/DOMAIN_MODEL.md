@@ -317,7 +317,7 @@ Un `catalogId` desconocido **no** es un error: se conserva (I6) y se lista en `u
 
 | Necesidad futura | Cambio en el modelo | Impacto |
 |---|---|---|
-| Salas poligonales | `shape` admite `{ kind: 'polygon', points: Vec2[] }`; paredes pasan de `Record<WallId,…>` a lista de segmentos con IDs estables | Migración v2; el generador de mallas y el solver aceptan unión discriminada (por eso `kind` desde ya). |
+| Salas poligonales | `shape` pasa a `{ kind: 'polygon', points, wallIds }`; las paredes son segmentos con IDs estables | Planificada en la Fase 10 (P10-09): ver §8.1. |
 | Varias plantas | Nueva entidad `Level { id, elevation }`; `Room.levelId` | Migración aditiva. |
 | Vivienda completa | Varias `rooms` conectadas por aperturas compartidas | Planificada en la Fase 10: ver §8.1. |
 | Dormitorios/salones | Solo catálogo (nuevas categorías) | Sin cambios de modelo. |
@@ -342,22 +342,44 @@ interface DoorState {
 ```
 
 - La puerta doble tiene una bisagra en cada jamba: `hinge` se guarda pero no cambia su aspecto.
-- **Barrido de la hoja:** el cuarto de círculo de radio igual al ancho de la hoja, centrado en la bisagra, desde cerrada hasta el ángulo de `open`. Hacia dentro su profundidad es `anchoHoja × sen(open × 90°)` y **debe caber en la sala** (no puede atravesar la pared opuesta): es una ampliación de **I4**, así que también la respeta un cambio de tamaño de la sala. Hacia fuera, en el modo Habitación, no hay pared que atravesar; con paredes compartidas (P10-04) se comprueba contra la sala vecina. Los **objetos** dentro del barrido no bloquean: generan un **aviso** (coherente con FR-OBJ-09). El barrido se calcula con la caja envolvente alineada de la huella de cada objeto (aproximación conservadora, suficiente para un aviso).
+- **Barrido de la hoja:** el cuarto de círculo de radio igual al ancho de la hoja, centrado en la bisagra, desde cerrada hasta el ángulo de `open`. Hacia dentro su profundidad es `anchoHoja × sen(open × 90°)` y **debe caber en la sala** (no puede atravesar la pared opuesta): es una ampliación de **I4**, así que también la respeta un cambio de tamaño de la sala. Con salas poligonales (P10-09) la regla se generaliza: el cuarto de círculo no puede cortar ningún otro segmento de pared de la sala. Hacia fuera, en el modo Habitación, no hay pared que atravesar; con paredes compartidas (P10-04) se comprueba contra la sala vecina. Los **objetos** dentro del barrido no bloquean: generan un **aviso** (coherente con FR-OBJ-09). El barrido se calcula con la caja envolvente alineada de la huella de cada objeto (aproximación conservadora, suficiente para un aviso).
 - **Comandos:** `opening/setOpen` (`open` 0…1; repetido sobre la misma puerta se fusiona por `mergeKey` dentro de la ventana de coalescencia, así que un doble clic repetido es una entrada) y `opening/setSwing` (`swing` y/o `hinge`). Ambos rechazan ventanas (`invalid`) y un barrido que atraviesa una pared (`blocked`). `opening/add` crea las puertas cerradas, `swing: 'in'`, `hinge: 'left'`.
 - **Migración v1 → v2:** añade `swing: 'in'`, `hinge: 'left'`, `open: 0` a cada puerta y no toca ventanas ni nada más; golden file `v1-to-v2`. Los archivos y registros de IndexedDB v1 se migran al abrirse (mismo camino que hoy, `parseProjectFile`/`parseProjectValue`).
 
-**Varias salas y pasillos (P10-03, esquema v3).**
+**Salas con forma libre (P10-09, esquema v3; la issue dice «v1→v2» porque se escribió antes que P10-02).**
+
+```ts
+type WallId = Brand<string, 'WallId'>;  // deja de ser 'north' | 'east' | 'south' | 'west'
+interface Room {
+  // … campos actuales
+  shape: {
+    kind: 'polygon';
+    points: Vec2[];      // vértices interiores en metros locales de la sala, ≥ 4
+    wallIds: WallId[];   // wallIds[i] es la pared de points[i] a points[(i + 1) % n]
+  };
+  walls: Record<WallId, Surface>; // una entrada por segmento, mismas claves que wallIds
+}
+```
+
+- **Orden:** área con signo positiva en coordenadas `(x, z)` (antihorario en el plano matemático), que es **horario visto desde arriba**: el mismo sentido en que hoy se miden los *offsets* de las aperturas (§1). Un `offset` se mide desde `points[i]` hacia `points[i+1]`.
+- **Validez (invariante nueva):** polígono simple (sin autointersecciones ni vértices repetidos), lados ≥ `LIMITS.wallMin` (p. ej. 0,5 m), envolvente dentro de `LIMITS.roomSide`, ≤ `LIMITS.maxWalls` segmentos; en la primera versión **todos los ángulos son de 90°** (lados alternos paralelos a los ejes), comprobado por una regla aparte para poder relajarla sin migrar.
+- **IDs estables:** partir una pared conserva su ID en el primer tramo y genera uno nuevo (`idGen`) para el segundo, que hereda el material; quitar una esquina fusiona dos paredes conservando el ID de la primera. Aperturas y materiales siguen a su pared por ID; si una edición dejaría una apertura u objeto fuera, se rechaza con la lista de conflictos (como `room/resize`).
+- **Migración v2 → v3:** un rectángulo `width × depth` pasa a `points: [[0,0],[width,0],[width,depth],[0,depth]]`, `wallIds: ['north','east','south','west']`; `walls` y `Opening.wall` no cambian (las claves ya son esos IDs). Ningún documento cambia de significado; golden file `v2-to-v3`.
+- **Geometría:** `footprintInside`, `solvePlacement` (imán a pared, también en esquinas interiores), `pickWall` y el barrido de puertas trabajan por segmento; suelo y techo se triangulan; la escena dibuja una pared por segmento con esquinas interiores y exteriores correctas.
+- La edición de la forma (mover y partir paredes, mover esquinas, presets L/U/T; P10-10) está en **ambos planes**.
+
+**Varias salas y pasillos (P10-03, esquema v4).**
 
 ```ts
 interface Room {
   // … campos actuales
-  kind: 'room' | 'corridor';  // pasillo: lado corto entre LIMITS.corridorWidth.min y .max
+  kind: 'room' | 'corridor';  // pasillo: rectángulo cuyo lado corto está entre LIMITS.corridorWidth.min y .max
   origin: Vec2;               // esquina noroeste en el mundo (deja de ser siempre [0, 0])
   rotation: 0 | 1 | 2 | 3;    // cuartos de vuelta en sentido antihorario visto desde arriba
 }
 ```
 
-- Migración v2 → v3: `kind: 'room'`, `rotation: 0`; `origin` no cambia (los documentos de una sala no cambian de significado).
+- Migración v3 → v4: `kind: 'room'`, `rotation: 0`; `origin` no cambia (los documentos de una sala no cambian de significado).
 - Invariante nueva: las salas **no se solapan** (sus interiores, más un grosor de pared, son disjuntos).
 - Los objetos y aperturas siguen siendo locales a su sala (`roomId`); mover o girar una sala mueve su contenido sin reescribirlo.
 

@@ -18,7 +18,7 @@
 
 Decisión del propietario ([ADR-0012](ADR/0012-homeforge-modes-and-plans.md)): el producto pasa de diseñar **una habitación** a diseñar **la casa** y se llamará **HomeForge** (el cambio de nombre en producto y código es P10-08; hasta entonces sigue «RoomForge»). Dos modos sobre el mismo documento:
 
-- **Modo Habitación** (plan gratuito): una habitación por proyecto, el editor actual.
+- **Modo Habitación** (plan gratuito): una habitación por proyecto, el editor actual, con forma libre (rectángulo, L, U, T…: paredes y esquinas editables).
 - **Modo Casa** (plan premium): varias habitaciones y pasillos en un plano, unidos por puertas que se abren y cierran, y plantillas de casa.
 
 Premium es por ahora **«solo el límite, sin pagos»**: plan local, pantalla «Premium próximamente» e interruptor de desarrollo. Cuentas y pagos siguen en P9-01/P9-05.
@@ -62,6 +62,7 @@ Leyenda: ✅ imprescindible · 🟡 importante, puede resbalar · ⏳ futuro · 
 | Habitación con muebles, luces, materiales, puertas y ventanas | ✅ | ✅ |
 | Abrir y cerrar puertas | ✅ | ✅ |
 | Guardar, importar/exportar, PNG, enlaces, plantillas de habitación | ✅ | ✅ |
+| Forma libre de la sala (paredes y esquinas editables, presets L/U/T) | ✅ | ✅ |
 | Habitaciones por proyecto | 1 | hasta 16 (`LIMITS.maxRooms`) |
 | Pasillos y puertas entre habitaciones | ❌ | ✅ |
 | Plantillas de casa | ❌ (visibles, bloqueadas) | ✅ |
@@ -170,6 +171,8 @@ Prioridad: P0 crítico · P1 importante · P2 mejora · P3 futuro (ver [WORKFLOW
 | FR-HOME-05 | Editar la distribución: añadir, arrastrar con imán, renombrar y quitar salas y pasillos; outliner por salas; plantilla de casa. | P1 | P10-06 |
 | FR-HOME-06 | Planes gratuito (1 habitación) y premium (modo Casa) con límite local, aviso accesible y pantalla «Premium próximamente»; proyectos de varias salas en solo lectura en el plan gratuito. | P1 | P10-07 |
 | FR-HOME-07 | Nombre HomeForge en interfaz, código y documentación, migrando lo guardado sin pérdida. | P1 | P10-08 |
+| FR-HOME-08 | Salas con forma libre: planta poligonal de paredes rectas (90° en la primera versión) con paredes como segmentos de ID estable; suelo, techo, paredes, aperturas, colocación e imán funcionan con cualquier forma; las salas rectangulares se migran sin cambio. | P1 | P10-09 |
+| FR-HOME-09 | Editar la forma: arrastrar y partir paredes, mover esquinas, presets rectángulo/L/U/T; con ratón, valores escritos y teclado; un gesto = una entrada. Ambos planes. | P1 | P10-10 |
 
 ## 5. Catálogo del MVP (30 objetos)
 
@@ -285,9 +288,9 @@ flowchart TB
 
 ## 9. Fuera de alcance (documentado)
 
-Pagos, marketplace, usuarios, colaboración en tiempo real, generación con IA, backend complejo, salas poligonales, varias plantas, dormitorios/salones, física, AR, importación de modelos propios, exportación glTF/USDZ. Detalle y puntos de extensión en [FUTURE_VERSIONS.md](FUTURE_VERSIONS.md).
+Pagos, marketplace, usuarios, colaboración en tiempo real, generación con IA, backend complejo, paredes curvas, varias plantas, dormitorios/salones, física, AR, importación de modelos propios, exportación glTF/USDZ. Detalle y puntos de extensión en [FUTURE_VERSIONS.md](FUTURE_VERSIONS.md).
 
-La **vivienda de una planta** (varias salas y pasillos) deja de estar fuera de alcance con la Fase 10 (§1.1); los pagos siguen fuera hasta P9-05.
+La **vivienda de una planta** (varias salas y pasillos) y las **salas poligonales** de paredes rectas dejan de estar fuera de alcance con la Fase 10 (§1.1); los pagos siguen fuera hasta P9-05.
 
 ## 10. Preguntas abiertas
 
