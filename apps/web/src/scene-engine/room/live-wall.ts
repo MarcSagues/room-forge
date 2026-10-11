@@ -2,12 +2,18 @@ import type { EditorSession, Opening, OpeningId, RoomId, WallId } from '@roomfor
 import {
   BufferAttribute,
   BufferGeometry,
+  Color,
   DynamicDrawUsage,
+  LineBasicMaterial,
+  LineSegments,
   type Material,
   Mesh,
   type Object3D,
 } from 'three';
+import { outlineGeometry } from '../interaction/outline-geometry';
+import { tokenColor } from '../interaction/token-color';
 import type { OpeningDragState, TransientStore } from '../interaction/transient-store';
+import { FRAME_PROUD } from './opening-parts';
 import { type WallHole, WallMeshWriter } from './wall-mesh';
 import { MAX_OPENINGS, type WallOpeningsLayer } from './wall-openings';
 
@@ -31,6 +37,8 @@ export interface LiveWallDeps {
  */
 export class LiveWall {
   readonly mesh = new Mesh();
+  /** Where a new opening dragged in from the catalog would go: accent, or red if it does not fit. */
+  readonly outline = new LineSegments(outlineGeometry());
   /** The cached wall mesh it stands in for, and the wall's dimensions (set by the view). */
   surface: Object3D | null = null;
   length = 0;
@@ -44,6 +52,8 @@ export class LiveWall {
     this.deps = deps;
     this.mesh.visible = false;
     this.mesh.frustumCulled = false;
+    this.outline.visible = false;
+    this.outline.renderOrder = 10;
     for (let i = 0; i < MAX_OPENINGS; i += 1) this.holes.push({ u0: 0, u1: 0, v0: 0, v1: 0 });
   }
 
@@ -93,6 +103,7 @@ export class LiveWall {
       count += 1;
     }
     layer.commit();
+    this.placeOutline(drag);
 
     writer.write(this.length, this.height, thickness, this.holes as readonly WallHole[], count);
     const geometry = this.mesh.geometry;
@@ -118,8 +129,25 @@ export class LiveWall {
     }
     layer.commit();
     this.mesh.visible = false;
+    this.outline.visible = false;
     if (this.surface) this.surface.visible = true;
     this.active = false;
+  }
+
+  /** Only for a new opening: one being slid is selected, and the selection outline follows it. */
+  private placeOutline(drag: Readonly<OpeningDragState>) {
+    const outline = this.outline;
+    outline.visible = drag.id === null;
+    if (!outline.visible) return;
+    const depth = this.deps.thickness + 2 * FRAME_PROUD;
+    outline.position.set(
+      this.deps.shift + drag.offset + drag.width / 2,
+      drag.sill,
+      -this.deps.thickness / 2,
+    );
+    outline.scale.set(drag.width * INFLATE, drag.height * INFLATE, depth * INFLATE);
+    const materials = ghostMaterials();
+    outline.material = drag.valid ? materials.valid : materials.invalid;
   }
 
   private onWall(opening: Opening) {
@@ -152,3 +180,17 @@ export class LiveWall {
 }
 
 const ATTRIBUTES = ['position', 'normal', 'uv'] as const;
+const INFLATE = 1.02;
+
+let ghost: { valid: LineBasicMaterial; invalid: LineBasicMaterial } | undefined;
+
+/** Outline materials shared by every wall (rule 6), drawn over everything like the selection. */
+function ghostMaterials() {
+  const line = (color: string) =>
+    new LineBasicMaterial({ color: new Color(color), depthTest: false, transparent: true });
+  ghost ??= {
+    valid: line(tokenColor('--accent', '#ff7a45')),
+    invalid: line(tokenColor('--danger', '#f2555a')),
+  };
+  return ghost;
+}
