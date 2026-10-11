@@ -1,4 +1,15 @@
 /** Public API of the editor module (bridge between the core session and the UI). */
+
+export {
+  ANALYTICS_EVENTS,
+  type Analytics,
+  type AnalyticsEvent,
+  createAnalytics,
+  installAnalyticsTracking,
+  noAnalytics,
+  pageAnalytics,
+  readAnalyticsEndpoint,
+} from './analytics';
 export { createDemoSession } from './demo-session';
 export {
   createErrorLog,

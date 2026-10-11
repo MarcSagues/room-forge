@@ -15,5 +15,6 @@ Las ADR de la Fase 0 fueron **aceptadas el 2026-10-08** (aprobación global del 
 | [0008](0008-tooling.md) | Herramientas de calidad y testing | Aceptada | P1-02 |
 | [0009](0009-git-workflow.md) | Flujo Git, rama por defecto y revisión | Aceptada | P0-03 |
 | [0010](0010-share-links-url-fragment.md) | Enlaces compartibles en el fragmento de URL | Aceptada | P6-08 |
+| [0011](0011-respectful-analytics.md) | Analítica respetuosa: apagada por defecto, sin cookies ni terceros | Propuesta | Q6 / P8-03 |
 
 Para añadir una decisión: copiar la plantilla, numerar secuencialmente, abrir PR `docs(adr): …`.

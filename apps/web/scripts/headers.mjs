@@ -31,16 +31,19 @@ export function scriptHash(text) {
  * scripts, only the hashes of that page's own. Inline styles stay allowed: React sets `style`
  * attributes and Next's error pages carry a `<style>`; that is a far smaller risk than scripts.
  * `wasm-unsafe-eval` is not here because nothing compiles WebAssembly yet: P4-04 adds it with Draco.
+ * `connectSources` adds origins the page may send requests to: only the analytics endpoint's, and
+ * only when a build configures one on another origin (ADR-0011).
  */
-export function contentSecurityPolicy(scriptHashes) {
+export function contentSecurityPolicy(scriptHashes, connectSources = []) {
   const scripts = ["'self'", ...scriptHashes].join(' ');
+  const connect = ["'self'", ...connectSources].join(' ');
   return [
     "default-src 'self'",
     `script-src ${scripts}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob:",
     "font-src 'self'",
-    "connect-src 'self'",
+    `connect-src ${connect}`,
     "worker-src 'self' blob:",
     "manifest-src 'self'",
     "frame-ancestors 'none'",
@@ -48,6 +51,22 @@ export function contentSecurityPolicy(scriptHashes) {
     "form-action 'self'",
     "object-src 'none'",
   ].join('; ');
+}
+
+/**
+ * The origin to allow in `connect-src` for `NEXT_PUBLIC_ANALYTICS_ENDPOINT`: none for a same-origin
+ * path or no endpoint (`'self'` covers it), the https origin otherwise. Anything else is refused,
+ * like the app itself refuses it (editor/analytics).
+ */
+export function analyticsConnectSources(endpoint) {
+  const value = endpoint?.trim();
+  if (!value || (value.startsWith('/') && !value.startsWith('//'))) return [];
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' ? [url.origin] : [];
+  } catch {
+    return [];
+  }
 }
 
 /** `editor/index.html` → `/editor/`, `index.html` → `/`, `404.html` → `/404.html`. */
@@ -63,8 +82,9 @@ export function urlPathOf(file) {
  * the Content-Security-Policy is set by exactly one rule per page (never in `/*`): two policies
  * would both be enforced and the stricter one would break the page.
  * @param {Map<string, string>} pages file path (relative to the export) → HTML
+ * @param {{ connectSources?: string[] }} [options]
  */
-export function renderHeaders(pages) {
+export function renderHeaders(pages, { connectSources = [] } = {}) {
   const blocks = [
     [
       '/*',
@@ -78,7 +98,10 @@ export function renderHeaders(pages) {
   for (const [file, html] of sorted) {
     const hashes = [...new Set(inlineScripts(html).map(scriptHash))].sort();
     blocks.push(
-      [urlPathOf(file), `  Content-Security-Policy: ${contentSecurityPolicy(hashes)}`].join('\n'),
+      [
+        urlPathOf(file),
+        `  Content-Security-Policy: ${contentSecurityPolicy(hashes, connectSources)}`,
+      ].join('\n'),
     );
   }
   return `${blocks.join('\n\n')}\n`;
