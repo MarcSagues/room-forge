@@ -50,6 +50,10 @@ export function contentSecurityPolicy(scriptHashes) {
   ].join('; ');
 }
 
+const LONG_CACHE = 'public, max-age=31536000, immutable';
+/** Files whose names carry a hash of their content: Next's build and the catalog's (P4-03). */
+const IMMUTABLE = ['/_next/static/*', '/assets/models/*', '/assets/thumbnails/*'];
+
 /** `editor/index.html` → `/editor/`, `index.html` → `/`, `404.html` → `/404.html`. */
 export function urlPathOf(file) {
   const normalized = file.replaceAll('\\', '/');
@@ -72,7 +76,7 @@ export function renderHeaders(pages) {
       '  Referrer-Policy: strict-origin-when-cross-origin',
       '  Permissions-Policy: camera=(), microphone=(), geolocation=()',
     ].join('\n'),
-    ['/_next/static/*', '  Cache-Control: public, max-age=31536000, immutable'].join('\n'),
+    ...IMMUTABLE.map((pattern) => `${pattern}\n  Cache-Control: ${LONG_CACHE}`),
   ];
   const sorted = [...pages].sort(([a], [b]) => a.localeCompare(b));
   for (const [file, html] of sorted) {

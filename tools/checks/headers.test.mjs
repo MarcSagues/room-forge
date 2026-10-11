@@ -105,10 +105,16 @@ test('every page also gets the common headers, and assets get long caching', () 
   assert.equal(page.get('x-content-type-options'), 'nosniff');
   assert.equal(page.get('referrer-policy'), 'strict-origin-when-cross-origin');
   assert.equal(page.get('permissions-policy'), 'camera=(), microphone=(), geolocation=()');
-  assert.equal(
-    headersFor(rules, '/_next/static/chunks/a.js').get('cache-control'),
-    'public, max-age=31536000, immutable',
-  );
+  for (const asset of [
+    '/_next/static/chunks/a.js',
+    '/assets/models/desk.office.140.0a1b2c3d4e.glb',
+    '/assets/thumbnails/desk.office.140.0a1b2c3d4e.webp',
+  ]) {
+    assert.equal(
+      headersFor(rules, asset).get('cache-control'),
+      'public, max-age=31536000, immutable',
+    );
+  }
   assert.equal(headersFor(rules, '/editor/').get('cache-control'), undefined);
 });
 
