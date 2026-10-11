@@ -10,6 +10,7 @@ import { SaveStatusPill } from '@/ui/editor/save-status';
 import { ShareButton } from '@/ui/editor/share-button';
 import { translate } from '@/ui/i18n';
 import { ShortcutHelp } from '@/ui/shortcuts/shortcut-help';
+import { TutorialButton } from '@/ui/tutorial/tutorial-button';
 import { HistoryButtons } from './history-buttons';
 
 interface TopBarProps {
@@ -80,8 +81,11 @@ export function TopBar(props: TopBarProps) {
         </div>
       )}
       <div className="ml-auto flex items-center gap-1">
-        <ExportMenu />
-        <ShareButton />
+        <div data-tour="export" className="flex items-center gap-1">
+          <ExportMenu />
+          <ShareButton />
+        </div>
+        <TutorialButton />
         <ShortcutHelp />
         <Button
           variant="ghost"

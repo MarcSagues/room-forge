@@ -7,15 +7,18 @@ interface SidePanelProps {
   /** Collapsed or closed panels are `inert`: not focusable and hidden from assistive technology. */
   hidden: boolean;
   className?: string | undefined;
+  /** What the first-run tour calls this panel (`data-tour`). */
+  tour?: string;
   children: ReactNode;
 }
 
 /** Landmark container for a side panel (catalog, properties). */
-export function SidePanel({ id, label, hidden, className, children }: SidePanelProps) {
+export function SidePanel({ id, label, hidden, className, tour, children }: SidePanelProps) {
   return (
     <aside
       id={id}
       aria-label={label}
+      data-tour={tour}
       inert={hidden}
       className={cn('flex h-full min-h-0 min-w-60 flex-col overflow-hidden bg-card', className)}
     >

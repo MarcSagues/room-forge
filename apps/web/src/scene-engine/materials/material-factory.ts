@@ -3,6 +3,12 @@ import { Color, MeshStandardMaterial } from 'three';
 import { materialKey } from './material-key';
 import { createPatternTextures } from './pattern-textures';
 
+/**
+ * A look, plus for a glowing material the colour it glows in: a luminaire's light slot shows its
+ * light (colour and brightness, black when off) rather than its own colour.
+ */
+export type MaterialLook = ResolvedMaterial & { readonly glow?: string };
+
 export interface MaterialFactoryOptions {
   /** Side of the pattern pictures in pixels, a power of two (default 256). */
   textureSize?: number;
@@ -37,7 +43,7 @@ export interface MaterialLease {
    * lease moves to a material of its own and theirs is untouched. Returns whether `material` is
    * now a different object, so the user knows to hand it to its mesh.
    */
-  update(next: ResolvedMaterial): boolean;
+  update(next: MaterialLook): boolean;
   /** Lets go. The material (and its texture) is freed with its last user. Safe to call twice. */
   release(): void;
 }
@@ -54,7 +60,7 @@ export interface MaterialFactoryStats {
 }
 
 export interface MaterialFactory {
-  acquire(look: ResolvedMaterial, options?: AcquireOptions): MaterialLease;
+  acquire(look: MaterialLook, options?: AcquireOptions): MaterialLease;
   /** Texture filtering for every pattern texture, now and later. */
   setAnisotropy(anisotropy: number): void;
   stats(): MaterialFactoryStats;
@@ -98,12 +104,16 @@ export function createMaterialFactory(options: MaterialFactoryOptions = {}): Mat
   const tint = new Color();
 
   /** Dresses `entry.material` as `look`. Returns whether the shader it needs changed. */
-  function paint(entry: Entry, look: ResolvedMaterial): boolean {
+  function paint(entry: Entry, look: MaterialLook): boolean {
     const { material } = entry;
     colour.set(look.color);
     if (look.tint) colour.multiply(tint.set(look.tint));
     material.color.copy(colour);
-    if (entry.emissive) material.emissive.copy(colour);
+    // A glow is a colour change: the shader stays the same, on or off.
+    if (entry.emissive) {
+      if (look.glow === undefined) material.emissive.copy(colour);
+      else material.emissive.set(look.glow);
+    }
     material.roughness = look.roughness;
     material.metalness = look.metalness;
     if (look.pattern === entry.pattern) return false;
@@ -116,7 +126,7 @@ export function createMaterialFactory(options: MaterialFactoryOptions = {}): Mat
   }
 
   function make(
-    look: ResolvedMaterial,
+    look: MaterialLook,
     transparent: boolean,
     emissive: boolean,
     key: string | null,
@@ -155,7 +165,7 @@ export function createMaterialFactory(options: MaterialFactoryOptions = {}): Mat
     if (entry.leases.size === 0) free(entry);
   }
 
-  function find(look: ResolvedMaterial, transparent: boolean, emissive: boolean): Entry {
+  function find(look: MaterialLook, transparent: boolean, emissive: boolean): Entry {
     const key = materialKey(look, transparent, emissive);
     return shared.get(key) ?? make(look, transparent, emissive, key);
   }

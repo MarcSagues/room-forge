@@ -10,14 +10,17 @@ import {
   solvePlacement,
 } from '@roomforge/core';
 import { buildDocument, createFixtureCatalog } from '@roomforge/core/testing';
-import { Object3D, Ray, Vector3 } from 'three';
+import { Object3D, PerspectiveCamera, Ray, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
+import { createLightPool } from '../lighting/light-pool';
+import { createLightPoolDriver } from '../lighting/light-pool-driver';
 import { createEntityRegistry } from '../objects/entity-registry';
 import { LiveWall } from '../room/live-wall';
 import { WALL_THICKNESS } from '../room/room-geometry';
 import { WallOpeningsLayer } from '../room/wall-openings';
 import { MoveController } from './move-controller';
 import { OpeningController } from './opening-controller';
+import { OpeningPlaceController } from './opening-place-controller';
 import { PlaceController } from './place-controller';
 import { RotateController } from './rotate-controller';
 import { hitsHandle } from './rotate-handle';
@@ -320,6 +323,54 @@ describe('hot path: no allocations per step', () => {
       );
     }
   });
+  describe('LightPoolDriver.watch (every rendered frame)', () => {
+    function setup() {
+      const catalog = createFixtureCatalog();
+      const session = createEditorSession({ initialDocument: buildDocument(), catalog });
+      const size = { point: 8, spot: 2 };
+      const driver = createLightPoolDriver({
+        session,
+        catalog,
+        pool: createLightPool(size),
+        size,
+        invalidate: () => {},
+      });
+      const camera = new PerspectiveCamera();
+      camera.position.set(2, 1.6, 5);
+      camera.lookAt(2, 0.5, 1.5);
+      driver.watch(camera);
+      return { driver, camera };
+    }
+
+    it(
+      'while the camera drifts less than the reallocation step',
+      async () => {
+        const { driver, camera } = setup();
+        const drift = sweep(500, -0.2, 0.2);
+        expectQuiet(
+          await largeBytesPerCall((i) => {
+            camera.position.x = 2 + (drift[i % drift.length] as number);
+            driver.watch(camera);
+          }),
+        );
+        driver.dispose();
+      },
+      SLOW,
+    );
+
+    it(
+      'while a reallocation is already waiting for the camera to settle',
+      async () => {
+        const { driver, camera } = setup();
+        camera.position.set(-3, 1.6, 5);
+        driver.watch(camera); // schedules one
+        expectQuiet(await largeBytesPerCall(() => driver.watch(camera)));
+        driver.dispose();
+      },
+      SLOW,
+    );
+  });
+
   describe('sliding an opening (OpeningController.update + the live wall it redraws)', () => {
     // Window-1 (0.9 wide) on the north wall of the 4 × 3 fixture room, plus a window at 2.5 so
     // the sweep goes through valid and overlapping positions and into both corners.
@@ -370,6 +421,56 @@ describe('hot path: no allocations per step', () => {
           controller.begin('window-1' as OpeningId, atNorth(0.9));
           expectQuiet(
             await largeBytesPerCall((i) => controller.update(path[i % path.length] as Ray, free)),
+          );
+          controller.cancel();
+          live.dispose();
+          layer.dispose();
+        },
+        SLOW,
+      );
+    }
+  });
+  describe('OpeningPlaceController.update (a window dragged in from the catalog)', () => {
+    // From the middle of the fixture room, the pointer turns around: every wall, the gaps between
+    // them, over window-1 (an overlap) and up off the walls.
+    const turn = sweep(600, 0, Math.PI * 2).map(
+      (a, i) =>
+        new Ray(
+          new Vector3(2, 1.5, 1.5),
+          new Vector3(Math.cos(a), i % 7 === 0 ? 2 : 0, Math.sin(a)).normalize(),
+        ),
+    );
+
+    for (const free of [false, true]) {
+      it(
+        `${free ? 'with Alt' : 'with snapping'}`,
+        async () => {
+          const session = createEditorSession({
+            initialDocument: buildDocument(),
+            catalog: createFixtureCatalog(),
+          });
+          const transient = createTransientStore();
+          const layer = new WallOpeningsLayer();
+          const live = new LiveWall({
+            session,
+            transient,
+            layer,
+            roomId: 'room-1' as RoomId,
+            wall: 'north',
+            shift: WALL_THICKNESS,
+            thickness: WALL_THICKNESS,
+          });
+          live.length = 4 + 2 * WALL_THICKNESS;
+          live.height = 2.6;
+          transient.subscribe(() => live.sync());
+          const controller = new OpeningPlaceController({
+            session,
+            transient,
+            invalidate: () => {},
+          });
+          controller.begin('window.standard');
+          expectQuiet(
+            await largeBytesPerCall((i) => controller.update(turn[i % turn.length] as Ray, free)),
           );
           controller.cancel();
           live.dispose();

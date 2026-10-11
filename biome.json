@@ -17,7 +17,8 @@
       "!docs",
       "!tools/planning",
       "!packages/core/type-tests",
-      "!tools/checks/fixtures"
+      "!tools/checks/fixtures",
+      "!apps/web/src/ui/site/legal/dependencies.json"
     ]
   },
   "formatter": {
