@@ -1,7 +1,10 @@
 import type { ObjectId, OpeningId, RoomId, WallId } from '@roomforge/core';
 
-/** What the gesture does: move the object over the floor, or turn it with the rotation handle. */
-export type DragKind = 'move' | 'rotate';
+/**
+ * What the gesture does: move the object over the floor, turn it with the rotation handle, or raise
+ * or lower it (Shift + drag, P3-16).
+ */
+export type DragKind = 'move' | 'rotate' | 'elevate';
 
 /** The pose of the object being dragged, in room-local metres. */
 export interface DragState {

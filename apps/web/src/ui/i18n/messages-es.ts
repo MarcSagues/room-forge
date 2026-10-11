@@ -256,6 +256,8 @@ export const es: Record<MessageKey, string> = {
   'shortcut.walls': 'Alternar las paredes: arriba, corte, abajo',
   'shortcut.ceiling': 'Mostrar u ocultar el techo',
   'shortcut.snap': 'Activar o desactivar el imán',
+  'shortcut.raise': 'Subir la selección un paso de rejilla (Mayús: ×10)',
+  'shortcut.lower': 'Bajar la selección un paso de rejilla (Mayús: ×10)',
   'shortcut.leftPanel': 'Mostrar u ocultar el panel de catálogo',
   'shortcut.rightPanel': 'Mostrar u ocultar el panel de propiedades',
   'shortcut.help': 'Mostrar los atajos de teclado',
@@ -264,6 +266,9 @@ export const es: Record<MessageKey, string> = {
   'shortcut.category.view': 'Vista',
   'shortcut.category.panels': 'Paneles',
   'shortcut.category.help': 'Ayuda',
+  'shortcut.category.mouse': 'Ratón',
+  'shortcut.dragElevation': 'Subir o bajar un objeto',
+  'shortcuts.drag': '+ arrastrar',
   'error.title': 'Algo ha ido mal',
   'error.description':
     'El editor ha tenido un problema. Inténtalo de nuevo; si sigue pasando, exporta una copia de tu trabajo y repórtalo.',

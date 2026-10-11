@@ -4,8 +4,9 @@ import {
   moveObjects,
   type ObjectId,
   type OpeningId,
+  setObjectProps,
 } from '@roomforge/core';
-import { buildDocument, createFixtureCatalog } from '@roomforge/core/testing';
+import { buildDocument, createFakeClock, createFixtureCatalog } from '@roomforge/core/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { editorShortcuts } from './editor-shortcuts';
 import { createShortcutRegistry, type ShortcutRegistry } from './registry';
@@ -167,6 +168,71 @@ describe('editor shortcuts: the view', () => {
   });
 });
 
+describe('editor shortcuts: elevation (P3-16)', () => {
+  const elevation = (id: ObjectId = DESK) =>
+    session.getState().document.objects[id]?.transform.position[1];
+  const clock = createFakeClock(0);
+
+  beforeEach(() => {
+    session = createEditorSession({
+      initialDocument: buildDocument(),
+      catalog: createFixtureCatalog(),
+      clock,
+    });
+    registry = createShortcutRegistry({ isMac: false });
+    registry.registerAll(editorShortcuts({ session, fit }));
+    session.setSnap({ gridStep: 0.1 });
+    session.select([DESK]);
+  });
+
+  it('Alt+↑/↓ and PageUp/PageDown raise and lower the selection one grid step', () => {
+    expect(press('ArrowUp', { altKey: true })).toBe(true);
+    expect(elevation()).toBeCloseTo(0.1);
+    expect(press('PageUp')).toBe(true);
+    expect(elevation()).toBeCloseTo(0.2);
+    expect(press('PageDown')).toBe(true);
+    expect(press('ArrowDown', { altKey: true })).toBe(true);
+    expect(elevation()).toBeCloseTo(0);
+  });
+
+  it('Shift makes the step ten times bigger, and the ceiling and the floor stop it', () => {
+    press('PageUp', { shiftKey: true });
+    expect(elevation()).toBeCloseTo(1);
+    press('PageUp', { shiftKey: true });
+    expect(elevation()).toBeCloseTo(1.85); // room 2.6 m, desk 75 cm
+    press('ArrowDown', { altKey: true, shiftKey: true });
+    press('ArrowDown', { altKey: true, shiftKey: true });
+    expect(elevation()).toBe(0);
+  });
+
+  it('each press is one undo step, a held key coalesces', () => {
+    press('PageUp');
+    clock.advance(1000);
+    press('PageUp');
+    clock.advance(1000);
+    press('PageUp', { repeat: true });
+    clock.advance(50);
+    press('PageUp', { repeat: true });
+    expect(elevation()).toBeCloseTo(0.4);
+    session.undo(); // the held key: one entry
+    expect(elevation()).toBeCloseTo(0.2);
+    session.undo();
+    expect(elevation()).toBeCloseTo(0.1);
+    session.undo();
+    expect(elevation()).toBe(0);
+  });
+
+  it('leaves alone objects standing on another, locked ones, and plain arrows', () => {
+    session.select([MONITOR]);
+    expect(press('PageUp')).toBe(false);
+    session.select([DESK]);
+    session.execute(setObjectProps([DESK], { locked: true }));
+    expect(press('PageUp')).toBe(false);
+    expect(press('ArrowUp')).toBe(false);
+    expect(elevation()).toBe(0);
+  });
+});
+
 describe('editor shortcuts: the list', () => {
   it('describes every shortcut with a message key and a section', () => {
     for (const shortcut of registry.list()) {
@@ -186,6 +252,8 @@ describe('editor shortcuts: the list', () => {
       'view.fit',
       'view.walls',
       'view.ceiling',
+      'object.raise',
+      'object.lower',
     ]);
   });
 });

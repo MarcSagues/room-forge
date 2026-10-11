@@ -249,6 +249,8 @@ export const en = {
   'shortcut.walls': 'Cycle the walls: up, cutaway, down',
   'shortcut.ceiling': 'Show or hide the ceiling',
   'shortcut.snap': 'Turn snap on or off',
+  'shortcut.raise': 'Raise the selection one grid step (Shift: ×10)',
+  'shortcut.lower': 'Lower the selection one grid step (Shift: ×10)',
   'shortcut.leftPanel': 'Show or hide the catalog panel',
   'shortcut.rightPanel': 'Show or hide the properties panel',
   'shortcut.help': 'Show the keyboard shortcuts',
@@ -257,6 +259,9 @@ export const en = {
   'shortcut.category.view': 'View',
   'shortcut.category.panels': 'Panels',
   'shortcut.category.help': 'Help',
+  'shortcut.category.mouse': 'Mouse',
+  'shortcut.dragElevation': 'Raise or lower an object',
+  'shortcuts.drag': '+ drag',
   'error.title': 'Something went wrong',
   'error.description':
     'The editor ran into a problem. Try again; if it keeps happening, export a copy of your work and report it.',

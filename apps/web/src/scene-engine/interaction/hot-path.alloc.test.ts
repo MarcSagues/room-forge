@@ -18,6 +18,7 @@ import { createEntityRegistry } from '../objects/entity-registry';
 import { LiveWall } from '../room/live-wall';
 import { WALL_THICKNESS } from '../room/room-geometry';
 import { WallOpeningsLayer } from '../room/wall-openings';
+import { ElevateController } from './elevate-controller';
 import { MoveController } from './move-controller';
 import { OpeningController } from './opening-controller';
 import { OpeningPlaceController } from './opening-place-controller';
@@ -204,6 +205,45 @@ describe('hot path: no allocations per step', () => {
           SLOW,
         );
       }
+    }
+  });
+
+  describe('ElevateController.update (Shift + drag, P3-16)', () => {
+    // Fixture room 4 × 3 × 2.6; desk-1 at (2, 0, 1.5), lifted from the south.
+    const DESK = 'desk-1' as ObjectId;
+    const level = (y: number) => new Ray(new Vector3(2, y, 10), new Vector3(0, 0, -1));
+    const rays = sweep(600, -1, 4).map(level);
+    for (const free of [false, true]) {
+      it(
+        `sweeping from below the floor to above the ceiling${free ? ' with Alt' : ''}`,
+        async () => {
+          const session = createEditorSession({
+            initialDocument: buildDocument(),
+            catalog: createFixtureCatalog(),
+          });
+          const registry = createEntityRegistry();
+          for (const object of Object.values(session.getState().document.objects)) {
+            const node = new Object3D();
+            node.position.fromArray(object.transform.position);
+            registry.register(object.id, node);
+          }
+          const transient = createTransientStore();
+          transient.subscribe(() => {}); // like the camera rig, which listens during a drag
+          const controller = new ElevateController({
+            session,
+            catalog: createFixtureCatalog(),
+            registry,
+            transient,
+            invalidate: () => {},
+          });
+          expect(controller.begin(DESK, level(0.4))).toBe(true);
+          expectQuiet(
+            await largeBytesPerCall((i) => controller.update(rays[i % rays.length] as Ray, free)),
+          );
+          controller.cancel();
+        },
+        SLOW,
+      );
     }
   });
 

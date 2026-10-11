@@ -106,8 +106,8 @@ export function RotationHandle() {
     const object = id ? state.document.objects[id] : undefined;
     const node = id ? registry.get(id) : undefined;
     const drag = transient.drag();
-    // A move drag has no use for the ring; a turn drag keeps it, with the readout.
-    if (!id || !object || !node || (drag && drag.kind === 'move')) {
+    // A move or lift drag has no use for the ring; a turn drag keeps it, with the readout.
+    if (!id || !object || !node || (drag && drag.kind !== 'rotate')) {
       group.visible = false;
       if (label && label.style.display !== 'none') label.style.display = 'none';
       return;

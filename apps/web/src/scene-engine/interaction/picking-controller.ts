@@ -6,9 +6,10 @@ export const CLICK_SLOP_PX = 4;
 export interface DragHandlers {
   /**
    * The pointer was pressed on `id` and moved past the click slop. `ndcX/Y` is where it was
-   * pressed. Return false to refuse (e.g. a stacked or locked object): the press is then ignored.
+   * pressed; `vertical` = Shift was held at the press (raise or lower instead of moving, P3-16).
+   * Return false to refuse (e.g. a stacked or locked object): the press is then ignored.
    */
-  start(id: EntityId, ndcX: number, ndcY: number): boolean;
+  start(id: EntityId, ndcX: number, ndcY: number, vertical: boolean): boolean;
   /** At most once per animation frame. `free` = Alt held (no snapping). */
   move(ndcX: number, ndcY: number, free: boolean): void;
   end(): void;
@@ -63,6 +64,7 @@ export function attachPicking(deps: PickingDeps): () => void {
   let hovered: EntityId | null = null;
   let downX = 0;
   let downY = 0;
+  let downShift = false;
   let pressing = false;
   let pressedOn: EntityId | null = null;
   let dragging = false;
@@ -132,7 +134,7 @@ export function attachPicking(deps: PickingDeps): () => void {
     alt = event.altKey;
     if (pressing && !dragging && pressedOn && deps.drag) {
       if (pastSlop(event.clientX, event.clientY)) {
-        dragging = toNdc(downX, downY, ndc) && deps.drag.start(pressedOn, ndc.x, ndc.y);
+        dragging = toNdc(downX, downY, ndc) && deps.drag.start(pressedOn, ndc.x, ndc.y, downShift);
         if (dragging) {
           active = deps.drag;
           pointerId = event.pointerId;
@@ -157,6 +159,7 @@ export function attachPicking(deps: PickingDeps): () => void {
     if (event.button !== 0) return;
     downX = event.clientX;
     downY = event.clientY;
+    downShift = event.shiftKey;
     const handle = deps.rotate && toNdc(downX, downY, ndc) ? deps.rotate.hit(ndc.x, ndc.y) : null;
     if (handle && deps.rotate) {
       // The handle is a control of its own: it takes the press before any object does.

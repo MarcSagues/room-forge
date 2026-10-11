@@ -15,6 +15,11 @@ import { useShortcutRegistry } from './shortcuts-context';
 
 const t = (key: MessageKey) => translate('en', key);
 
+/** Pointer gestures in the scene: not keys, so not in the registry, but listed all the same. */
+const GESTURES: readonly { id: string; description: MessageKey }[] = [
+  { id: 'gesture.elevate', description: 'shortcut.dragElevation' },
+];
+
 /** Order of the sections; any other section a module invents goes after these. */
 const CATEGORY_ORDER = ['edit', 'selection', 'view', 'panels', 'help'];
 
@@ -76,6 +81,24 @@ export function ShortcutHelpDialog({
               </ul>
             </section>
           ))}
+        {open && (
+          <section className="flex flex-col gap-1">
+            <h3 className="font-medium text-fg-muted text-xs uppercase tracking-wide">
+              {t('shortcut.category.mouse')}
+            </h3>
+            <ul className="flex flex-col">
+              {GESTURES.map((gesture) => (
+                <li key={gesture.id} className="flex items-center justify-between gap-4 py-1.5">
+                  <span className="text-sm">{t(gesture.description)}</span>
+                  <span className="flex shrink-0 items-center gap-1">
+                    <Kbd>{registry.isMac ? '⇧' : 'Shift'}</Kbd>
+                    <span className="text-fg-subtle text-xs">{t('shortcuts.drag')}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
       </DialogContent>
     </Dialog>
   );
