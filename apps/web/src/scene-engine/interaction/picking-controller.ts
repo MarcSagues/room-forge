@@ -163,7 +163,7 @@ export function attachPicking(deps: PickingDeps): () => void {
     const handle = deps.rotate && toNdc(downX, downY, ndc) ? deps.rotate.hit(ndc.x, ndc.y) : null;
     if (handle && deps.rotate) {
       // The handle is a control of its own: it takes the press before any object does.
-      if (deps.rotate.start(handle, ndc.x, ndc.y)) {
+      if (deps.rotate.start(handle, ndc.x, ndc.y, false)) {
         dragging = true;
         active = deps.rotate;
         pointerId = event.pointerId;
