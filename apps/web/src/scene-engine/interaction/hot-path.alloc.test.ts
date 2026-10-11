@@ -21,6 +21,7 @@ import { WALL_THICKNESS } from '../room/room-geometry';
 import { WallOpeningsLayer } from '../room/wall-openings';
 import { MoveController } from './move-controller';
 import { OpeningController } from './opening-controller';
+import { OpeningPlaceController } from './opening-place-controller';
 import { PlaceController } from './place-controller';
 import { RotateController } from './rotate-controller';
 import { hitsHandle } from './rotate-handle';
@@ -491,6 +492,56 @@ describe('hot path: no allocations per step', () => {
           controller.begin('window-1' as OpeningId, atNorth(0.9));
           expectQuiet(
             await largeBytesPerCall((i) => controller.update(path[i % path.length] as Ray, free)),
+          );
+          controller.cancel();
+          live.dispose();
+          layer.dispose();
+        },
+        SLOW,
+      );
+    }
+  });
+  describe('OpeningPlaceController.update (a window dragged in from the catalog)', () => {
+    // From the middle of the fixture room, the pointer turns around: every wall, the gaps between
+    // them, over window-1 (an overlap) and up off the walls.
+    const turn = sweep(600, 0, Math.PI * 2).map(
+      (a, i) =>
+        new Ray(
+          new Vector3(2, 1.5, 1.5),
+          new Vector3(Math.cos(a), i % 7 === 0 ? 2 : 0, Math.sin(a)).normalize(),
+        ),
+    );
+
+    for (const free of [false, true]) {
+      it(
+        `${free ? 'with Alt' : 'with snapping'}`,
+        async () => {
+          const session = createEditorSession({
+            initialDocument: buildDocument(),
+            catalog: createFixtureCatalog(),
+          });
+          const transient = createTransientStore();
+          const layer = new WallOpeningsLayer();
+          const live = new LiveWall({
+            session,
+            transient,
+            layer,
+            roomId: 'room-1' as RoomId,
+            wall: 'north',
+            shift: WALL_THICKNESS,
+            thickness: WALL_THICKNESS,
+          });
+          live.length = 4 + 2 * WALL_THICKNESS;
+          live.height = 2.6;
+          transient.subscribe(() => live.sync());
+          const controller = new OpeningPlaceController({
+            session,
+            transient,
+            invalidate: () => {},
+          });
+          controller.begin('window.standard');
+          expectQuiet(
+            await largeBytesPerCall((i) => controller.update(turn[i % turn.length] as Ray, free)),
           );
           controller.cancel();
           live.dispose();
