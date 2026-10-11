@@ -105,6 +105,24 @@ describe('checkInvariants', () => {
       });
       expect(checkInvariants(withEntities({ objects: [shelf, unknown] }), catalog)).toEqual([]);
     });
+
+    it('keeps a floor object between the floor and the ceiling (P3-16)', () => {
+      // Room 2.6 m high, desk 0.75 m: its base may go up to 1.85 m.
+      const deskAtHeight = (y: number, scale?: [number, number, number]) =>
+        buildObject({
+          id: 'desk',
+          transform: scale
+            ? { position: [2, y, 1.5], rotationY: 0, scale }
+            : { position: [2, y, 1.5], rotationY: 0 },
+        });
+      expect(check(deskAtHeight(1.2))).toEqual([]);
+      expect(check(deskAtHeight(1.85))).toEqual([]);
+      expect(check(deskAtHeight(1.8505))).toEqual([]); // 1 mm tolerance
+      expect(check(deskAtHeight(1.9))).toContain('I3');
+      expect(check(deskAtHeight(-0.01))).toContain('I3');
+      // Twice as tall: 1.5 m, so 1.2 m reaches 2.7 m.
+      expect(check(deskAtHeight(1.2, [1, 2, 1]))).toContain('I3');
+    });
   });
 
   describe('I4: openings inside their wall without overlapping', () => {

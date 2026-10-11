@@ -10,6 +10,7 @@ export {
   removeObjects,
   reorderObject,
   rotateObjects,
+  setObjectElevations,
   setObjectProps,
 } from './object';
 export {

@@ -137,6 +137,20 @@ describe('room/resize', () => {
     expect(session.getState().document.rooms[ROOM]?.shape).toEqual(before.rooms[ROOM]?.shape);
   });
 
+  it('blocks lowering the ceiling onto a raised object (P3-16)', () => {
+    const doc = buildDocument();
+    const desk = buildObject({
+      id: 'desk-1',
+      transform: { position: [2, 1.6, 1.5], rotationY: 0 },
+    });
+    const session = setup({ ...doc, objects: { ...doc.objects, [desk.id]: desk } });
+    expect(session.execute(resizeRoom(ROOM, { height: 2.3 }))).toMatchObject({
+      ok: false,
+      error: { code: 'conflict', conflicts: ['desk-1'] },
+    });
+    expect(session.execute(resizeRoom(ROOM, { height: 2.4 })).ok).toBe(true);
+  });
+
   it('reports every conflicting entity once', () => {
     const chair = buildObject({
       id: 'chair',

@@ -23,8 +23,6 @@ export interface MoveControllerDeps {
   invalidate(): void;
 }
 
-const floor = new Plane(new Vector3(0, 1, 0), 0);
-
 /**
  * Drags a floor object (ARCHITECTURE §4.2). While the pointer moves the controller mutates the
  * object's `Object3D` directly and publishes the pose to the transient store; the document only
@@ -36,6 +34,8 @@ export class MoveController {
   private readonly deps: MoveControllerDeps;
   private id: ObjectId | null = null;
   private readonly hit = new Vector3();
+  /** Horizontal plane at the object's elevation: it slides at its own height (P3-16). */
+  private readonly plane = new Plane(new Vector3(0, 1, 0), 0);
   private readonly start = { x: 0, y: 0, z: 0, rotationY: 0 };
   private readonly grab = { x: 0, z: 0 };
   private readonly origin = { x: 0, z: 0 };
@@ -68,6 +68,7 @@ export class MoveController {
     kind: 'move',
     id: '' as ObjectId,
     x: 0,
+    y: 0,
     z: 0,
     rotationY: 0,
     valid: true,
@@ -83,7 +84,7 @@ export class MoveController {
   }
 
   /**
-   * Starts dragging `id` from where `ray` meets the floor. Only unlocked objects standing on a
+   * Starts dragging `id` from where `ray` meets the horizontal plane at its elevation. Only unlocked objects standing on a
    * room can be dragged here; objects on other objects move with the tabletop rules (#46).
    */
   begin(id: ObjectId, ray: Ray): boolean {
@@ -92,9 +93,10 @@ export class MoveController {
     const room = object ? document.rooms[object.roomId] : undefined;
     const node = this.deps.registry.get(id);
     if (!object || !room || !node || object.parentId !== null || object.locked) return false;
-    if (!ray.intersectPlane(floor, this.hit)) return false;
-
     const [x, y, z] = object.transform.position;
+    this.plane.constant = -y;
+    if (!ray.intersectPlane(this.plane, this.hit)) return false;
+
     const [sx, , sz] = object.transform.scale ?? [1, 1, 1];
     const size = objectSize(this.deps.catalog, object.catalogId);
     this.id = id;
@@ -119,6 +121,7 @@ export class MoveController {
     const pose = this.pose;
     pose.id = id;
     pose.x = x;
+    pose.y = y;
     pose.z = z;
     pose.rotationY = this.start.rotationY;
     pose.valid = true;
@@ -145,7 +148,7 @@ export class MoveController {
   update(ray: Ray, free: boolean): void {
     const id = this.id;
     const node = id ? this.deps.registry.get(id) : undefined;
-    if (!id || !node || !ray.intersectPlane(floor, this.hit)) return;
+    if (!id || !node || !ray.intersectPlane(this.plane, this.hit)) return;
 
     this.lastRay.copy(ray);
     this.lastFree = free;

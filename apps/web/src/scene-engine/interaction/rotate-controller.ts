@@ -62,6 +62,7 @@ export class RotateController {
     kind: 'rotate',
     id: '' as ObjectId,
     x: 0,
+    y: 0,
     z: 0,
     rotationY: 0,
     valid: true,
@@ -113,6 +114,7 @@ export class RotateController {
     const pose = this.pose;
     pose.id = id;
     pose.x = x;
+    pose.y = y;
     pose.z = z;
     pose.rotationY = this.start.rotationY;
     pose.valid = true;

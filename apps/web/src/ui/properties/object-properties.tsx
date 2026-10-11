@@ -6,10 +6,12 @@ import {
   type CommandResult,
   duplicateObjects,
   type EditorSession,
+  maxElevation,
   moveObjects,
   type ObjectId,
   removeObjects,
   rotateObjects,
+  setObjectElevations,
   setObjectProps,
 } from '@roomforge/core';
 import { useId, useMemo, useState } from 'react';
@@ -28,7 +30,7 @@ const t = (key: MessageKey, vars?: Record<string, string | number>) => translate
  * shows it live without re-rendering. The object `read` returns is reused: read it, do not keep it.
  */
 export interface LiveTransform {
-  read(): { id: string; x: number; z: number; rotationY: number } | null;
+  read(): { id: string; x: number; y: number; z: number; rotationY: number } | null;
   subscribe(listener: () => void): () => void;
 }
 
@@ -56,6 +58,10 @@ export function ObjectProperties(props: {
 }) {
   const { session, id, catalog, live } = props;
   const object = useStore(session.store, (state) => state.document.objects[id]);
+  const roomHeight = useStore(session.store, (state) => {
+    const roomId = state.document.objects[id]?.roomId;
+    return roomId ? (state.document.rooms[roomId]?.height ?? 0) : 0;
+  });
   const [actionError, setActionError] = useState<string | null>(null);
   const prefix = useId();
 
@@ -67,6 +73,10 @@ export function ObjectProperties(props: {
     () => live && liveField(live, id, (p) => metresToCm(p.z)),
     [live, id],
   );
+  const liveY = useMemo<LiveValue | undefined>(
+    () => live && liveField(live, id, (p) => metresToCm(p.y)),
+    [live, id],
+  );
   const liveRotation = useMemo<LiveValue | undefined>(
     () => live && liveField(live, id, (p) => radiansToDegrees(p.rotationY)),
     [live, id],
@@ -76,6 +86,10 @@ export function ObjectProperties(props: {
   const [x, y, z] = object.transform.position;
   const [sx, sy, sz] = object.transform.scale ?? [1, 1, 1];
   const size = catalog?.getItem(object.catalogId)?.size;
+  // Down to the millimetre, so the top of the range is never a hair above the ceiling.
+  const elevationMax = Math.floor(metresToCm(maxElevation(roomHeight, size?.h ?? 0, sy)) * 10) / 10;
+  // Objects standing on another take their height from it (P3-13).
+  const onParent = object.parentId !== null;
 
   /** The position as it is now, so a field never commits a stale value for the other axis. */
   const current = () => session.getState().document.objects[id]?.transform.position ?? [x, y, z];
@@ -148,8 +162,12 @@ export function ObjectProperties(props: {
           unit="cm"
           value={metresToCm(y)}
           step={1}
-          readOnly
-          onCommit={() => ({ ok: true })}
+          readOnly={onParent}
+          {...(onParent ? {} : { min: 0, max: elevationMax })}
+          onCommit={(cm) =>
+            outcome(session.execute(setObjectElevations([{ id, elevation: cmToMetres(cm) }])))
+          }
+          {...(liveY ? { live: liveY } : {})}
         />
         <ScrubInput
           id={`${prefix}-rotation`}
@@ -221,7 +239,7 @@ export function ObjectProperties(props: {
 function liveField(
   live: LiveTransform,
   id: ObjectId,
-  pick: (pose: { x: number; z: number; rotationY: number }) => number,
+  pick: (pose: { x: number; y: number; z: number; rotationY: number }) => number,
 ): LiveValue {
   return {
     read() {

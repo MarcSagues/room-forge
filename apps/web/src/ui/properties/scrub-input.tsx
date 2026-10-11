@@ -5,7 +5,8 @@ import { translate } from '@/ui/i18n';
 import { cn } from '@/ui/lib/utils';
 import { formatNumber, parseNumber } from './units';
 
-const t = (key: Parameters<typeof translate>[1]) => translate('en', key);
+const t = (key: Parameters<typeof translate>[1], vars?: Record<string, string | number>) =>
+  translate('en', key, vars);
 
 /** How a commit went: the panel turns the document's refusal into a message to show. */
 export type Commit = { ok: true } | { ok: false; message: string };
@@ -37,6 +38,12 @@ export interface ScrubInputProps {
   onCommit(value: number): Commit;
   readOnly?: boolean;
   live?: LiveValue;
+  /**
+   * The legal range, if any: arrows and scrubbing stop at its ends, and a typed value outside it
+   * is refused with a message instead of being committed.
+   */
+  min?: number;
+  max?: number;
 }
 
 /**
@@ -47,16 +54,22 @@ export interface ScrubInputProps {
  * message.
  */
 export function ScrubInput(props: ScrubInputProps) {
-  const { id, label, unit, value, step, onCommit, readOnly, live } = props;
+  const { id, label, unit, value, step, onCommit, readOnly, live, min, max } = props;
   const inputRef = useRef<HTMLInputElement>(null);
   const errorId = useId();
   // What is being typed, or null while the field just shows the value.
   const [draft, setDraft] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const latest = useRef({ value, step, onCommit });
-  latest.current = { value, step, onCommit };
+  const latest = useRef({ value, step, onCommit, min, max });
+  latest.current = { value, step, onCommit, min, max };
   const scrub = useRef<{ startX: number; startValue: number; last: number } | null>(null);
   const stopScrub = useRef<(() => void) | null>(null);
+
+  /** `next` kept inside the range (arrows and scrubbing stop at its ends). */
+  const clamp = (next: number): number => {
+    const { min: low, max: high } = latest.current;
+    return Math.min(Math.max(next, low ?? -Infinity), high ?? Infinity);
+  };
 
   const commit = (next: number): boolean => {
     const result = latest.current.onCommit(next);
@@ -70,6 +83,17 @@ export function ScrubInput(props: ScrubInputProps) {
     const parsed = parseNumber(draft);
     if (parsed === null) {
       setError(t('properties.notANumber'));
+      return;
+    }
+    const { min: low, max: high } = latest.current;
+    if ((low !== undefined && parsed < low) || (high !== undefined && parsed > high)) {
+      setError(
+        t('properties.outOfRange', {
+          min: formatNumber(low ?? -Infinity),
+          max: formatNumber(high ?? Infinity),
+          unit,
+        }),
+      );
       return;
     }
     if (parsed === latest.current.value) {
@@ -110,7 +134,8 @@ export function ScrubInput(props: ScrubInputProps) {
       const parsed = draft === null ? latest.current.value : parseNumber(draft);
       if (parsed === null) return;
       const amount = latest.current.step * (event.shiftKey ? COARSE_FACTOR : 1);
-      commit(parsed + (event.key === 'ArrowUp' ? amount : -amount));
+      const next = clamp(parsed + (event.key === 'ArrowUp' ? amount : -amount));
+      if (next !== latest.current.value || draft !== null) commit(next);
     }
   };
 
@@ -142,7 +167,7 @@ export function ScrubInput(props: ScrubInputProps) {
     if (!gesture) return;
     const steps = Math.trunc((event.clientX - gesture.startX) / SCRUB_PX_PER_STEP);
     const factor = event.shiftKey ? COARSE_FACTOR : 1;
-    const next = gesture.startValue + steps * latest.current.step * factor;
+    const next = clamp(gesture.startValue + steps * latest.current.step * factor);
     if (next === gesture.last) return;
     gesture.last = next;
     commit(next);
@@ -181,6 +206,8 @@ export function ScrubInput(props: ScrubInputProps) {
           spellCheck={false}
           readOnly={readOnly}
           aria-valuenow={value}
+          aria-valuemin={min}
+          aria-valuemax={max}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
           value={shown}

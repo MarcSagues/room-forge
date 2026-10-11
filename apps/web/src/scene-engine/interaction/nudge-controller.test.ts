@@ -118,6 +118,7 @@ describe('attachNudge', () => {
       kind: 'move',
       id: DESK,
       x: 2,
+      y: 0,
       z: 1.5,
       rotationY: 0,
       valid: true,

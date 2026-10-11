@@ -1,13 +1,18 @@
 import type { ObjectId, OpeningId, RoomId, WallId } from '@roomforge/core';
 
-/** What the gesture does: move the object over the floor, or turn it with the rotation handle. */
-export type DragKind = 'move' | 'rotate';
+/**
+ * What the gesture does: move the object over the floor, turn it with the rotation handle, or raise
+ * or lower it (Shift + drag, P3-16).
+ */
+export type DragKind = 'move' | 'rotate' | 'elevate';
 
 /** The pose of the object being dragged, in room-local metres. */
 export interface DragState {
   kind: DragKind;
   id: ObjectId;
   x: number;
+  /** Elevation of the base above the floor (P3-16). */
+  y: number;
   z: number;
   rotationY: number;
   /** False when the pose could not be made legal (the drop would be rejected). */
@@ -82,6 +87,7 @@ export function createTransientStore(): TransientStore {
     kind: 'move',
     id: '' as ObjectId,
     x: 0,
+    y: 0,
     z: 0,
     rotationY: 0,
     valid: true,
@@ -127,6 +133,7 @@ export function createTransientStore(): TransientStore {
       shared.kind = state.kind;
       shared.id = state.id;
       shared.x = state.x;
+      shared.y = state.y;
       shared.z = state.z;
       shared.rotationY = state.rotationY;
       shared.valid = state.valid;

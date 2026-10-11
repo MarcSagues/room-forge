@@ -18,6 +18,7 @@ import { useEntityRegistry } from '../objects/entity-registry';
 import { objectSize } from '../objects/placeholder-resources';
 import { FRAME_PROUD } from '../room/opening-parts';
 import { WALL_THICKNESS } from '../room/room-geometry';
+import { ElevateController } from './elevate-controller';
 import { MoveController } from './move-controller';
 import { attachNudge } from './nudge-controller';
 import { OpeningController } from './opening-controller';
@@ -103,6 +104,7 @@ export function Picking() {
     const mover = new MoveController({ session, catalog, registry, transient, invalidate });
     const rotator = new RotateController({ session, catalog, registry, transient, invalidate });
     const slider = new OpeningController({ session, registry, transient, invalidate });
+    const lifter = new ElevateController({ session, catalog, registry, transient, invalidate });
     const handleCentre = new Vector3();
     return attachPicking({
       element,
@@ -113,12 +115,14 @@ export function Picking() {
         else if (!additive) session.select([]);
       },
       drag: {
-        start: (id, x, y) => {
-          // Doors and windows slide along their wall; objects move over the floor.
+        start: (id, x, y, vertical) => {
+          // Doors and windows slide along their wall; objects move over the floor, or up and down
+          // with Shift (from straight above that cannot work: they move as usual).
           const opening = Object.hasOwn(session.getState().document.openings, id);
           const started = opening
             ? slider.begin(id as OpeningId, rayAt(x, y))
-            : mover.begin(id as ObjectId, rayAt(x, y));
+            : (vertical && lifter.begin(id as ObjectId, rayAt(x, y))) ||
+              mover.begin(id as ObjectId, rayAt(x, y));
           if (!started) return false;
           // Dragging selects what is dragged, so the outline follows it.
           if (!session.getState().selection.includes(id)) session.select([id], 'replace');
@@ -126,14 +130,17 @@ export function Picking() {
         },
         move: (x, y, free) => {
           if (slider.active) slider.update(rayAt(x, y), free);
+          else if (lifter.active) lifter.update(rayAt(x, y), free);
           else mover.update(rayAt(x, y), free);
         },
         end: () => {
           if (slider.active) slider.end();
+          else if (lifter.active) lifter.end();
           else mover.end();
         },
         cancel: () => {
           slider.cancel();
+          lifter.cancel();
           mover.cancel();
         },
         turn: (steps, fine) =>

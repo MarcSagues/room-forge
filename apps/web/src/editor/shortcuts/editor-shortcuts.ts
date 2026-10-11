@@ -6,8 +6,12 @@ import {
   type OpeningId,
   removeObjects,
   removeOpenings,
+  setObjectElevations,
 } from '@roomforge/core';
 import type { ShortcutDef } from './registry';
+
+/** Shift makes an elevation step this many grid steps. */
+export const ELEVATION_FAST_FACTOR = 10;
 
 export interface EditorShortcutDeps {
   session: EditorSession;
@@ -23,6 +27,25 @@ export interface EditorShortcutDeps {
 export function editorShortcuts({ session, fit }: EditorShortcutDeps): ShortcutDef[] {
   const selected = () => session.getState().selection as readonly ObjectId[];
   const hasSelection = () => selected().length > 0;
+  /** Selected objects whose elevation can change: on the floor, unlocked and shown (P3-16). */
+  const liftable = () => {
+    const { objects } = session.getState().document;
+    return selected().filter((id) => {
+      const object = objects[id];
+      return object !== undefined && object.parentId === null && !object.locked && !object.hidden;
+    });
+  };
+  /** One grid step up or down (Shift ×10), kept between the floor and the ceiling. */
+  const lift = (direction: 1 | -1) => (event: KeyboardEvent) => {
+    const { document, snap } = session.getState();
+    const step = snap.gridStep * (event.shiftKey ? ELEVATION_FAST_FACTOR : 1) * direction;
+    const changes = liftable().map((id) => ({
+      id,
+      elevation: (document.objects[id]?.transform.position[1] ?? 0) + step,
+    }));
+    session.execute(setObjectElevations(changes, { clamp: true }));
+  };
+  const canLift = () => liftable().length > 0;
 
   return [
     {
@@ -134,6 +157,31 @@ export function editorShortcuts({ session, fit }: EditorShortcutDeps): ShortcutD
       category: 'view',
       description: 'shortcut.ceiling',
       handler: () => session.setShowCeiling(!session.getState().showCeiling),
+    },
+    {
+      // Plain arrows move on the floor and Ctrl/⌘+arrows belong to the browser: Alt goes vertical.
+      id: 'object.raise',
+      keys: [
+        { alt: true, shift: 'any', key: 'ArrowUp' },
+        { shift: 'any', key: 'PageUp' },
+      ],
+      category: 'edit',
+      description: 'shortcut.raise',
+      repeat: true,
+      enabled: canLift,
+      handler: lift(1),
+    },
+    {
+      id: 'object.lower',
+      keys: [
+        { alt: true, shift: 'any', key: 'ArrowDown' },
+        { shift: 'any', key: 'PageDown' },
+      ],
+      category: 'edit',
+      description: 'shortcut.lower',
+      repeat: true,
+      enabled: canLift,
+      handler: lift(-1),
     },
   ];
 }

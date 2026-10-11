@@ -57,7 +57,10 @@ describe('ShortcutHelp', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Keyboard shortcuts' });
     const rows = within(dialog).getAllByRole('listitem');
     // Every registered shortcut, including the one that opened this dialog.
-    expect(rows).toHaveLength(registry.list().length);
+    // ...plus the pointer gestures (Shift + drag to raise or lower, P3-16).
+    expect(rows).toHaveLength(registry.list().length + 1);
+    expect(within(dialog).getByRole('heading', { name: 'Mouse' })).toBeInTheDocument();
+    expect(within(dialog).getByText('Raise or lower an object')).toBeInTheDocument();
     expect(within(dialog).getByRole('heading', { name: 'Edit' })).toBeInTheDocument();
     expect(within(dialog).getByRole('heading', { name: 'View' })).toBeInTheDocument();
     expect(within(dialog).getByRole('heading', { name: 'Help' })).toBeInTheDocument();

@@ -12,7 +12,7 @@ function setup() {
   const onHover = vi.fn();
   const onClick = vi.fn();
   const drag = {
-    start: vi.fn((_id: ObjectId, _x: number, _y: number) => true),
+    start: vi.fn((_id: ObjectId, _x: number, _y: number, _vertical: boolean) => true),
     move: vi.fn(),
     end: vi.fn(),
     cancel: vi.fn(),
@@ -132,7 +132,17 @@ describe('attachPicking: drag', () => {
   it('starts a drag after the click slop on an object, from where it was pressed', () => {
     ctx.pointer('pointerdown', 20, { button: 0 });
     ctx.pointer('pointermove', 20 + CLICK_SLOP_PX + 2);
-    expect(ctx.drag.start).toHaveBeenCalledWith('a', -0.8, 0);
+    expect(ctx.drag.start).toHaveBeenCalledWith('a', -0.8, 0, false);
+  });
+
+  it('a drag pressed with Shift is vertical (P3-16); a Shift click still toggles', () => {
+    ctx.pointer('pointerdown', 20, { button: 0, shiftKey: true });
+    ctx.pointer('pointermove', 20 + CLICK_SLOP_PX + 2);
+    expect(ctx.drag.start).toHaveBeenCalledWith('a', -0.8, 0, true);
+    ctx.pointer('pointerup', 20 + CLICK_SLOP_PX + 2, { button: 0 });
+    ctx.pointer('pointerdown', 20, { button: 0, shiftKey: true });
+    ctx.pointer('pointerup', 20, { button: 0, shiftKey: true });
+    expect(ctx.onClick).toHaveBeenCalledWith('a', true);
   });
 
   it('moves at most once per frame, passes Alt, and ends without a click', () => {

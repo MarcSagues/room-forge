@@ -170,6 +170,8 @@ const SPECIAL_KEYS: Readonly<Record<string, string>> = {
   arrowleft: '←',
   arrowright: '→',
   enter: 'Enter',
+  pageup: 'PgUp',
+  pagedown: 'PgDn',
 };
 
 /** A combo as the parts of a label: `['Ctrl', 'Shift', 'Z']`, or `['⇧', '⌘', 'Z']` on macOS. */

@@ -485,3 +485,48 @@ Pestaña «Escena» en el panel derecho: lista jerárquica de sala, aperturas y 
 
 ### Tests esperados
 - RTL de teclado y selección; axe sin violaciones graves.
+
+## ISSUE P3-16 — core + ui: controlar la altura (elevación) de los objetos
+
+- **Tipo:** feature
+- **Prioridad:** P1
+- **Épica:** E3
+- **Hito:** M3
+- **Estimación:** M
+- **Etiquetas:** area:core, area:ui, area:scene
+- **Depende de:** P3-07, P3-13
+
+### Descripción
+Hoy la **elevación** de un objeto (`transform.position[1]`) se ve en el panel de propiedades pero es de solo lectura: todo queda en el suelo. Se pide poder subir y bajar un objeto (paneles hexagonales, tira LED o neón en la pared, una lámpara colgada, una estantería sobre un mueble) con el ratón, tecleando el valor y con el teclado, siempre dentro de la sala.
+
+### Contexto
+Petición del propietario (2026-10-11). [DOMAIN_MODEL](../DOMAIN_MODEL.md): la posición de un objeto de suelo está en metros locales de la sala y `y` es la altura de su base; los hijos (`parentId`, P3-13) guardan la posición local a su soporte. [ARCHITECTURE §4.3](../ARCHITECTURE.md): hoy I3 solo comprueba la huella en planta.
+
+Decisiones:
+- **Qué objetos:** cualquier objeto de suelo (`parentId === null`), no solo los que admiten `wall` en `placement.surfaces`: colgar una lámpara o subir un panel es igual de legítimo. La superficie del catálogo no cambia (sigue siendo `floor` por defecto); los objetos de pared con anclaje real llegarán con su propia issue.
+- **Límites:** `0 ≤ y ≤ altura de la sala − alto del objeto` (alto del catálogo × escala Y), con la tolerancia geométrica de 1 mm. Se amplía **I3** a «volumen contenido en la sala»: la huella en planta y, ahora, la altura. Reducir la altura de la sala con objetos por encima del nuevo techo queda bloqueado como cualquier conflicto de `room/resize`.
+- **Hijos:** un objeto apoyado en otro (P3-13) toma la altura de su soporte; su elevación queda de **solo lectura** en el panel y el comando la rechaza. Subir el escritorio sube lo que lleva encima porque su posición es local.
+- **La colocación desde el catálogo** sigue dejando el objeto en el suelo (y = 0); duplicar conserva la altura.
+
+### Requisitos
+- `core`: comando `object/setElevation` (valores absolutos, en metros) que rechaza hijos y valores no finitos, con modo *clamp* opcional para los atajos; `mergeKey` por objetos, de modo que una ráfaga de cambios es una sola entrada. Función pura `elevationRange` con el rango legal. I3 comprueba también la altura.
+- `ui`: el campo **Elevación** del panel es editable en cm: escribir y Enter, ↑/↓ dentro del campo (Shift ×10), arrastrar la etiqueta (*scrub*); arrastrar y las flechas se ajustan al rango; un valor tecleado fuera de rango se rechaza con error accesible (`aria-invalid` + mensaje con el mínimo y el máximo). Expone `aria-valuemin`/`aria-valuemax`.
+- Atajos en el registro (y en el diálogo `?`): **Alt+↑/↓** y **RePág/AvPág** suben/bajan la selección un paso de rejilla (Shift ×10). Una pulsación es una entrada de historial; mantener la tecla las fusiona. Las flechas sin modificador siguen moviendo en planta.
+- `scene` (ratón en el visor): **Shift + arrastrar** un objeto lo sube o baja en vertical (plano vertical por el objeto, de cara a la cámara), con rejilla si el *snap* está activo (Alt la desactiva), limitado al rango legal. Camino caliente sin React ni asignaciones (*transient store*), un solo comando al soltar, **Esc** cancela. El campo del panel sigue el valor en vivo. Se documenta en el diálogo de ayuda.
+- Un arrastre normal en planta conserva la elevación del objeto (el plano de arrastre está a su altura). El contorno de selección y los *proxies* de *picking* siguen al objeto.
+
+### Criterios de aceptación
+- [ ] Escribir una elevación en el panel sube el objeto (cambia su `y` y se dibuja más alto) y es una sola entrada de deshacer.
+- [ ] ↑/↓ dentro del campo y arrastrar su etiqueta cambian la elevación (Shift ×10) sin salir del rango.
+- [ ] Un valor por encima del techo (o negativo) se rechaza con un mensaje accesible y el documento no cambia.
+- [ ] Alt+↑/↓ y RePág/AvPág suben/bajan la selección un paso; cada pulsación es una entrada de deshacer y aparecen en el diálogo `?`.
+- [ ] Shift + arrastrar un objeto en el visor lo sube/baja; soltar es una entrada de historial y Esc lo devuelve.
+- [ ] Arrastrar en planta un objeto elevado conserva su elevación.
+- [ ] La elevación de un objeto apoyado en otro es de solo lectura.
+- [ ] Propiedad: tras secuencias aleatorias de `object/setElevation` con *clamp*, todo objeto de suelo cumple `0 ≤ y ≤ alto de sala − alto del objeto`.
+
+### Tests esperados
+- Unitarios y fast-check de `object/setElevation`, `elevationRange` e I3 vertical (core, tests primero).
+- RTL del campo Elevación (escribir, flechas, rango, error) y de los atajos.
+- Unitarios del controlador de elevación (plano, *clamp*, Esc, un comando) y ampliación de `hot-path.alloc.test.ts`.
+- E2E: escribir la elevación, RePág/AvPág y Alt+↑/↓, un *undo* por edición, Shift + arrastrar, arrastre en planta que conserva la altura y valor por encima del techo rechazado.
