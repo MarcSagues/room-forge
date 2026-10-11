@@ -17,6 +17,7 @@
 | 7 | M7 | E2E, visual, presupuestos, accesibilidad, móvil, seguridad | 9 | 10,5 | Puerta de salida del MVP (PRD §11) |
 | 8 | M8 | Beta pública | 6 | 6 | URL pública; 10 usuarios completan el flujo |
 | 9 | M9 | IA, nube, pagos, marketplace (post-MVP) | 9 | 28 | Planificada con datos de la beta |
+| 10 | M10 | HomeForge: puertas que se abren, varias salas y pasillos, planes gratuito/premium, cambio de nombre | 9 | 11,5 | Casa de 3 salas y un pasillo en < 5 min dentro de presupuesto; plan gratuito limitado a 1 sala |
 | | | **MVP + beta (M0–M8)** | **82** | **91,25** | |
 
 Esfuerzo = «días ideales de desarrollo asistido por IA» (XS 0,25 · S 0,5 · M 1 · L 2 · XL 4), incluyendo tests, PR y una ronda de revisión. **No son días de calendario.**
@@ -38,6 +39,8 @@ flowchart LR
   F5 --> F7
   F7 --> F8["Fase 8<br/>Beta pública"]
   F8 --> F9["Fase 9<br/>IA + monetización"]
+  F8 --> F10["Fase 10<br/>HomeForge: la casa"]
+  F10 -. "cuentas y pagos" .-> F9
   style F9 stroke-dasharray: 5 5
 ```
 
@@ -149,6 +152,16 @@ El factor esperado cubre integración, bugs, revisiones y desconocidos (assets y
 - **Criterios de aceptación:** definidos por issue; el spike P9-01 y P9-03 deciden el resto.
 - **Estimación:** 28 d (muy incierto; se re-estima al planificar).
 - **Entregables:** ADR de backend/IA/pagos; releases incrementales.
+
+### Fase 10 — HomeForge: la casa completa (M10)
+- **Objetivo:** pasar de diseñar una habitación a diseñar la casa, con modo Habitación (gratuito) y modo Casa (premium), según [ADR-0012](ADR/0012-homeforge-modes-and-plans.md) (decisión del propietario, 2026-10-11).
+- **Funcionalidades:** ADR y documentación (P10-01); puertas que se abren y se cierran (P10-02); varias salas y pasillos en un plano (P10-03); puertas entre salas en paredes compartidas (P10-04); render de la casa (P10-05); edición de la distribución y plantilla de casa (P10-06); planes gratuito/premium con límite local y sin pagos (P10-07); cambio de nombre a HomeForge con migración de lo guardado (P10-08).
+- **Orden:** P10-01 → P10-02 y P10-03 (en paralelo) → P10-04 → P10-05 → P10-06 → P10-07. P10-08 cuando no haya PRs abiertos.
+- **Dependencias:** M8 (editor completo). Independiente de la Fase 9: los pagos reales (P9-05) sustituirán después la política de plan local sin tocar `core`.
+- **Riesgos:** rendimiento con varias salas (R2); migraciones de esquema v2 y v3 (R6); un cambio de nombre que pierda datos guardados (R5); confusión de plan sin pagos.
+- **Criterios de aceptación:** un proyecto premium tiene varias salas y pasillos unidos por puertas que se abren; el plan gratuito queda limitado a una sala con aviso claro; una casa de 6 salas y 40 objetos cumple el presupuesto; el producto se llama HomeForge sin perder datos.
+- **Estimación:** 11,5 d (P10-01 S, P10-02 M, P10-03 L, P10-04 M, P10-05 L, P10-06 L, P10-07 M, P10-08 L).
+- **Entregables:** ADR-0012; esquema v3; modo Casa; política de plan; `homeforge.*`.
 
 ## 5. Plan de implementación (primeras semanas)
 

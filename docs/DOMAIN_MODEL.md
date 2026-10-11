@@ -169,6 +169,10 @@ interface Opening {
   width: number;
   height: number;
   sill: number;                       // altura del alféizar (0 para puertas)
+  // Solo puertas, desde el esquema v2 (P10-02, §8.1):
+  swing?: 'in' | 'out';
+  hinge?: 'left' | 'right';
+  open?: number;                      // 0 cerrada … 1 abierta 90°
 }
 
 interface PlacedObject {
@@ -315,12 +319,53 @@ Un `catalogId` desconocido **no** es un error: se conserva (I6) y se lista en `u
 |---|---|---|
 | Salas poligonales | `shape` admite `{ kind: 'polygon', points: Vec2[] }`; paredes pasan de `Record<WallId,…>` a lista de segmentos con IDs estables | Migración v2; el generador de mallas y el solver aceptan unión discriminada (por eso `kind` desde ya). |
 | Varias plantas | Nueva entidad `Level { id, elevation }`; `Room.levelId` | Migración aditiva. |
-| Vivienda completa | Varias `rooms` conectadas por aperturas compartidas | El mapa `rooms` y `roomOrder` ya existen. |
+| Vivienda completa | Varias `rooms` conectadas por aperturas compartidas | Planificada en la Fase 10: ver §8.1. |
 | Dormitorios/salones | Solo catálogo (nuevas categorías) | Sin cambios de modelo. |
 | Selección múltiple | Estado de sesión (no del documento); comandos aceptan `ids[]` | Los comandos ya reciben arrays. |
 | Colaboración | Los patches de Immer son el log de operaciones | Capa de transporte + resolución de conflictos (ADR futuro). |
 | Escenas guardadas/vistas | `views: Record<ViewId, CameraPreset>` aditivo | Sin migración. |
 | Hijos de hijos (jerarquía profunda) | Relajar I2 | Sin migración. |
+
+### 8.1 La casa completa y las puertas que se abren (Fase 10, [ADR-0012](ADR/0012-homeforge-modes-and-plans.md))
+
+El documento **no sabe de planes**: un `SceneDocument` con N salas (≤ `LIMITS.maxRooms`) es válido siempre; el límite del plan gratuito lo aplica la app con el puerto `PlanPolicy`. El modo (Habitación/Casa) tampoco se guarda: se deriva del número de salas.
+
+**Puertas que se abren (P10-02, esquema v2).** Las aperturas de tipo puerta ganan tres campos, **obligatorios en puertas y ausentes en ventanas**:
+
+```ts
+interface DoorState {
+  swing: 'in' | 'out';    // 'in': la hoja entra en la sala propietaria (roomId); 'out': sale de ella
+  hinge: 'left' | 'right'; // jamba de la bisagra vista desde dentro de la sala, mirando a la pared
+  open: number;            // 0 = cerrada … 1 = abierta 90°; ángulo = open × 90°
+}
+// El esquema exige los tres en `kind: 'door'` y los rechaza en `kind: 'window'`.
+```
+
+- La puerta doble tiene una bisagra en cada jamba: `hinge` se guarda pero no cambia su aspecto.
+- **Barrido de la hoja:** el cuarto de círculo de radio igual al ancho de la hoja, centrado en la bisagra, desde cerrada hasta el ángulo de `open`. Hacia dentro su profundidad es `anchoHoja × sen(open × 90°)` y **debe caber en la sala** (no puede atravesar la pared opuesta): es una ampliación de **I4**, así que también la respeta un cambio de tamaño de la sala. Hacia fuera, en el modo Habitación, no hay pared que atravesar; con paredes compartidas (P10-04) se comprueba contra la sala vecina. Los **objetos** dentro del barrido no bloquean: generan un **aviso** (coherente con FR-OBJ-09). El barrido se calcula con la caja envolvente alineada de la huella de cada objeto (aproximación conservadora, suficiente para un aviso).
+- **Comandos:** `opening/setOpen` (`open` 0…1; repetido sobre la misma puerta se fusiona por `mergeKey` dentro de la ventana de coalescencia, así que un doble clic repetido es una entrada) y `opening/setSwing` (`swing` y/o `hinge`). Ambos rechazan ventanas (`invalid`) y un barrido que atraviesa una pared (`blocked`). `opening/add` crea las puertas cerradas, `swing: 'in'`, `hinge: 'left'`.
+- **Migración v1 → v2:** añade `swing: 'in'`, `hinge: 'left'`, `open: 0` a cada puerta y no toca ventanas ni nada más; golden file `v1-to-v2`. Los archivos y registros de IndexedDB v1 se migran al abrirse (mismo camino que hoy, `parseProjectFile`/`parseProjectValue`).
+
+**Varias salas y pasillos (P10-03, esquema v3).**
+
+```ts
+interface Room {
+  // … campos actuales
+  kind: 'room' | 'corridor';  // pasillo: lado corto entre LIMITS.corridorWidth.min y .max
+  origin: Vec2;               // esquina noroeste en el mundo (deja de ser siempre [0, 0])
+  rotation: 0 | 1 | 2 | 3;    // cuartos de vuelta en sentido antihorario visto desde arriba
+}
+```
+
+- Migración v2 → v3: `kind: 'room'`, `rotation: 0`; `origin` no cambia (los documentos de una sala no cambian de significado).
+- Invariante nueva: las salas **no se solapan** (sus interiores, más un grosor de pared, son disjuntos).
+- Los objetos y aperturas siguen siendo locales a su sala (`roomId`); mover o girar una sala mueve su contenido sin reescribirlo.
+
+**Paredes compartidas y puertas entre salas (P10-03, P10-04).**
+
+- Una **pared compartida no se guarda**: se deriva cuando dos paredes paralelas de salas distintas están separadas exactamente por un grosor de pared y se solapan en un tramo. La detección es simétrica y estable (propiedad fast-check).
+- El grosor de una pared compartida es único (el de una pared normal); el render la dibuja una vez (P10-05).
+- Una **apertura en una pared compartida** sigue perteneciendo a **una** sala (`roomId` + `wall`, la «propietaria»); el hueco en la otra cara se deriva. Debe caber en el tramo compartido y no solaparse con aperturas de ninguna de las dos caras. Mover una de las salas reubica o rechaza la puerta compartida (nunca la deja inválida). `swing: 'in'` siempre se refiere a la sala propietaria.
 
 ## 9. Glosario
 

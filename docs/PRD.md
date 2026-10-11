@@ -14,6 +14,15 @@
 
 **No-objetivos del MVP:** planos acotados profesionales, normativa, física, renderizado fotorrealista, edición móvil, cuentas, pagos, IA, colaboración.
 
+### 1.1 Visión ampliada: HomeForge (Fase 10, 2026-10-11)
+
+Decisión del propietario ([ADR-0012](ADR/0012-homeforge-modes-and-plans.md)): el producto pasa de diseñar **una habitación** a diseñar **la casa** y se llamará **HomeForge** (el cambio de nombre en producto y código es P10-08; hasta entonces sigue «RoomForge»). Dos modos sobre el mismo documento:
+
+- **Modo Habitación** (plan gratuito): una habitación por proyecto, el editor actual.
+- **Modo Casa** (plan premium): varias habitaciones y pasillos en un plano, unidos por puertas que se abren y cierran, y plantillas de casa.
+
+Premium es por ahora **«solo el límite, sin pagos»**: plan local, pantalla «Premium próximamente» e interruptor de desarrollo. Cuentas y pagos siguen en P9-01/P9-05.
+
 ## 2. Alcance del MVP
 
 | Capacidad | MVP | Notas |
@@ -40,8 +49,26 @@
 | Modo visor móvil | 🟡 P1 | |
 | Selección múltiple | ⏳ P3 | Diseñada, no construida |
 | Usuarios, pagos, marketplace, colaboración, IA | ❌ | [FUTURE_VERSIONS.md](FUTURE_VERSIONS.md) |
+| Abrir y cerrar puertas | 🟡 P1 (Fase 10) | Ambos planes; P10-02 |
+| Varias habitaciones, pasillos y puertas entre ellas (modo Casa) | 🟡 P1 (Fase 10) | Plan premium; P10-03…P10-06 |
+| Planes gratuito/premium con límite local | 🟡 P1 (Fase 10) | Sin pagos; P10-07 |
 
 Leyenda: ✅ imprescindible · 🟡 importante, puede resbalar · ⏳ futuro · ❌ fuera.
+
+### 2.1 Planes (Fase 10)
+
+| Capacidad | Gratuito — modo Habitación | Premium — modo Casa |
+|---|:---:|:---:|
+| Habitación con muebles, luces, materiales, puertas y ventanas | ✅ | ✅ |
+| Abrir y cerrar puertas | ✅ | ✅ |
+| Guardar, importar/exportar, PNG, enlaces, plantillas de habitación | ✅ | ✅ |
+| Habitaciones por proyecto | 1 | hasta 16 (`LIMITS.maxRooms`) |
+| Pasillos y puertas entre habitaciones | ❌ | ✅ |
+| Plantillas de casa | ❌ (visibles, bloqueadas) | ✅ |
+| Proyecto con varias habitaciones (importado, enlace o tras bajar de plan) | Solo lectura con aviso y «Abrir una habitación como proyecto nuevo» | ✅ |
+| Precio | Gratis | «Premium próximamente» (sin pagos; interruptor local) |
+
+El límite lo aplica la app (puerto `PlanPolicy`), no el documento: un archivo con varias salas es válido para todos. Detalle y justificación en [ADR-0012](ADR/0012-homeforge-modes-and-plans.md).
 
 ## 3. Historias de usuario (selección)
 
@@ -135,6 +162,14 @@ Prioridad: P0 crítico · P1 importante · P2 mejora · P3 futuro (ver [WORKFLOW
 | FR-OPS-02 | Feedback in-app y triage. | P1 | P8-04 |
 | FR-OPS-03 | Resiliencia: errores, pérdida de contexto WebGL, fallo sin WebGL. | P0 | P7-08, P7-07 |
 | FR-OPS-04 | Offline/PWA. | P2 | P8-05 |
+| **Casa (Fase 10)** | | | |
+| FR-HOME-01 | Abrir y cerrar puertas (doble clic, panel de propiedades, outliner) con sentido de giro y bisagra; una entrada de historial; se guarda en el proyecto; la hoja no atraviesa paredes y avisa si barre un objeto. | P1 | P10-02 |
+| FR-HOME-02 | Varias habitaciones y pasillos colocados en un plano (posición y giro de 90°) sin solaparse; mover una sala mueve su contenido. | P1 | P10-03 |
+| FR-HOME-03 | Puertas y huecos de paso en paredes compartidas que unen dos salas. | P1 | P10-04 |
+| FR-HOME-04 | Render de la casa completa (paredes compartidas una vez, modos de pared, encuadre y planta de la casa) dentro del presupuesto de escena. | P1 | P10-05 |
+| FR-HOME-05 | Editar la distribución: añadir, arrastrar con imán, renombrar y quitar salas y pasillos; outliner por salas; plantilla de casa. | P1 | P10-06 |
+| FR-HOME-06 | Planes gratuito (1 habitación) y premium (modo Casa) con límite local, aviso accesible y pantalla «Premium próximamente»; proyectos de varias salas en solo lectura en el plan gratuito. | P1 | P10-07 |
+| FR-HOME-07 | Nombre HomeForge en interfaz, código y documentación, migrando lo guardado sin pérdida. | P1 | P10-08 |
 
 ## 5. Catálogo del MVP (30 objetos)
 
@@ -192,6 +227,8 @@ Requisitos transversales del catálogo: dimensiones reales; `supports` en escrit
 | Luces reales simultáneas | 4 (baja) / 8 (media) / 12 (alta) |
 | Historial | 200 entradas |
 | Proyectos locales | sin límite fijo (sujeto a cuota del navegador) |
+| Habitaciones por proyecto | 1 en el plan gratuito; ≤ 16 en premium (política de la app, ADR-0012) |
+| Apertura de puerta | 0–90° (`open` 0…1); la hoja no atraviesa paredes |
 
 ## 7. Requisitos no funcionales
 
@@ -248,7 +285,9 @@ flowchart TB
 
 ## 9. Fuera de alcance (documentado)
 
-Pagos, marketplace, usuarios, colaboración en tiempo real, generación con IA, backend complejo, salas poligonales, varias plantas, dormitorios/salones/viviendas, física, AR, importación de modelos propios, exportación glTF/USDZ. Detalle y puntos de extensión en [FUTURE_VERSIONS.md](FUTURE_VERSIONS.md).
+Pagos, marketplace, usuarios, colaboración en tiempo real, generación con IA, backend complejo, salas poligonales, varias plantas, dormitorios/salones, física, AR, importación de modelos propios, exportación glTF/USDZ. Detalle y puntos de extensión en [FUTURE_VERSIONS.md](FUTURE_VERSIONS.md).
+
+La **vivienda de una planta** (varias salas y pasillos) deja de estar fuera de alcance con la Fase 10 (§1.1); los pagos siguen fuera hasta P9-05.
 
 ## 10. Preguntas abiertas
 
@@ -274,7 +313,7 @@ Cada una tiene una **propuesta por defecto** con la que se procederá salvo que 
 | ID | Decisión |
 |---|---|
 | Q1 | UI en **EN + ES** con textos externalizados. Documentación e issues en español; código, commits y PRs en inglés. |
-| Q2 | Nombre **RoomForge** provisional; repositorio `MarcSagues/room-forge`. Comprobar dominio y marca antes de P8-03. |
+| Q2 | Nombre **RoomForge** provisional; repositorio `MarcSagues/room-forge`. Comprobar dominio y marca antes de P8-03. **Actualizado el 2026-10-11:** el producto pasa a llamarse **HomeForge** ([ADR-0012](ADR/0012-homeforge-modes-and-plans.md), cambio en P10-08); renombrar el repositorio es una acción remota del propietario. |
 | Q3 | Repositorio **privado**; licencia «todos los derechos reservados» hasta decidir. |
 | Q4, Q5, Q6, Q8, Q10 | Se mantienen las propuestas por defecto (estilo estilizado a confirmar en P4-01; puertas/ventanas P1; analítica a decidir en P8-01; métrico; IA y monetización tras la beta). |
 | Q7 | **Abierta**: falta indicar el portátil y el móvil de referencia (necesario antes de P2-11 y P7-04). |
