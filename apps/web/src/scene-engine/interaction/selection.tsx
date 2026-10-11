@@ -2,7 +2,7 @@
 
 import { useFrame, useThree } from '@react-three/fiber';
 import type { EntityId, ObjectId, OpeningId } from '@roomforge/core';
-import { useEffect, useMemo, useRef } from 'react';
+import { type RefObject, useEffect, useMemo, useRef } from 'react';
 import {
   Color,
   LineBasicMaterial,
@@ -54,7 +54,7 @@ export function ObjectKeys() {
  * hidden and locked objects are skipped, and walls, floor and ceiling are never candidates, so
  * clicking through a faded wall reaches the objects behind it. Nothing here touches React state.
  */
-export function Picking() {
+export function Picking({ viewOnly }: { viewOnly?: RefObject<boolean> }) {
   const session = useSceneSession();
   const catalog = useSceneCatalog();
   const registry = useEntityRegistry();
@@ -104,8 +104,12 @@ export function Picking() {
     const rotator = new RotateController({ session, catalog, registry, transient, invalidate });
     const slider = new OpeningController({ session, registry, transient, invalidate });
     const handleCentre = new Vector3();
+    // A read-only session (a shared link, another tab's project) refuses every edit: a drag would
+    // show the object moving, block the camera, and then snap back.
+    const editable = () => !session.getState().readOnly;
     return attachPicking({
       element,
+      enabled: () => viewOnly?.current !== true,
       pick,
       onHover: (id) => session.setHover(id),
       onClick: (id, additive) => {
@@ -114,6 +118,7 @@ export function Picking() {
       },
       drag: {
         start: (id, x, y) => {
+          if (!editable()) return false;
           // Doors and windows slide along their wall; objects move over the floor.
           const opening = Object.hasOwn(session.getState().document.openings, id);
           const started = opening
@@ -162,7 +167,7 @@ export function Picking() {
           );
           return grabbed ? id : null;
         },
-        start: (id, x, y) => rotator.begin(id as ObjectId, rayAt(x, y)),
+        start: (id, x, y) => editable() && rotator.begin(id as ObjectId, rayAt(x, y)),
         move: (x, y, free) => rotator.update(rayAt(x, y), free),
         end: () => {
           rotator.end();
@@ -170,7 +175,7 @@ export function Picking() {
         cancel: () => rotator.cancel(),
       },
     });
-  }, [session, catalog, registry, transient, element, get, invalidate]);
+  }, [session, catalog, registry, transient, element, get, invalidate, viewOnly]);
 
   return null;
 }

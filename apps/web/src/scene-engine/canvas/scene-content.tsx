@@ -19,10 +19,13 @@ export function SceneContent({
   registry,
   quality = 'medium',
   lightPool,
+  viewOnly,
 }: {
   registry?: EntityRegistry;
   quality?: LightQuality;
   lightPool?: RefObject<LightPoolDriver | null>;
+  /** Read on every press: true turns picking off without remounting anything. */
+  viewOnly?: RefObject<boolean>;
 }) {
   const roomIds = useSessionState(useShallow((state) => state.document.roomOrder));
   return (
@@ -38,7 +41,7 @@ export function SceneContent({
         <SelectionOutline />
         <DragGuides />
         <PlacementGhost />
-        <Picking />
+        <Picking {...(viewOnly ? { viewOnly } : {})} />
         <RotationHandle />
         <ObjectKeys />
       </EntityRegistryProvider>
