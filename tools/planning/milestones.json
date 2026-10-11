@@ -8,5 +8,6 @@
   { "id": "M6", "title": "M6 · Fase 6 — Persistencia y exportación", "description": "IndexedDB, autoguardado, JSON, PNG, enlaces." },
   { "id": "M7", "title": "M7 · Fase 7 — Testing y optimización", "description": "E2E, visual, presupuestos, accesibilidad, móvil, seguridad." },
   { "id": "M8", "title": "M8 · Fase 8 — Beta pública", "description": "Landing, plantillas, producción, feedback, release v0.1.0-beta." },
-  { "id": "M9", "title": "M9 · Fase 9 — IA y monetización", "description": "Cuentas, nube, IA, pagos, marketplace (post-MVP)." }
+  { "id": "M9", "title": "M9 · Fase 9 — IA y monetización", "description": "Cuentas, nube, IA, pagos, marketplace (post-MVP)." },
+  { "id": "M10", "title": "M10 · Fase 10 — HomeForge: la casa completa", "description": "Puertas que se abren, varias habitaciones y pasillos, planes gratuito/premium y cambio de nombre a HomeForge." }
 ]

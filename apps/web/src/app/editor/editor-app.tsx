@@ -11,7 +11,13 @@ import {
   useState,
 } from 'react';
 import { appCatalog, catalogEntries } from '@/asset-library';
-import { createShortcutRegistry, type ErrorLog, editorShortcuts } from '@/editor';
+import {
+  createShortcutRegistry,
+  type ErrorLog,
+  editorShortcuts,
+  installAnalyticsTracking,
+  pageAnalytics,
+} from '@/editor';
 import {
   type Autosave,
   autosaveSourceOf,
@@ -185,6 +191,23 @@ export function Workspace(props: {
     };
   }, [repository, project.id, session, journal, owner, autosaveRef]);
 
+  // Respectful analytics (ADR-0011): a no-op unless the build sets an endpoint. The viewer of a
+  // shared link reports nothing at all.
+  useEffect(() => {
+    if (viewer) return;
+    const analytics = pageAnalytics();
+    analytics.track('editor_opened');
+    return installAnalyticsTracking(
+      {
+        onDocumentChanged: (listener) => session.on('document:changed', listener),
+        ...(autosave
+          ? { onSaveStatus: (listener) => autosave.subscribe((state) => listener(state.status)) }
+          : {}),
+      },
+      analytics,
+    );
+  }, [viewer, session, autosave]);
+
   // The shortcuts are data: the editor's own go in here, the shell adds the panels and the help.
   const shortcuts = useMemo(() => {
     const registry = createShortcutRegistry();
@@ -241,6 +264,7 @@ export function Workspace(props: {
     const document = session.getState().document as SceneDocument;
     downloadFile(exportFileOf({ name: nameRef.current, document }, { appVersion: APP_VERSION }));
     reminder.recordExport();
+    pageAnalytics().track('export_json');
   }, [session, reminder]);
 
   // The browser may clear what it stores: warn once if it might, and suggest a copy now and then.
@@ -270,6 +294,7 @@ export function Workspace(props: {
     } catch {
       return { kind: 'copy-failed' };
     }
+    pageAnalytics().track('share_link_created');
     return { kind: 'copied', length: link.length, long: link.overTarget };
   }, [session]);
 

@@ -30,7 +30,16 @@ async function watch(page: Page) {
   };
 }
 
-const PAGES = ['/', '/es/', '/projects/', '/editor/', '/view/'];
+const PAGES = [
+  '/',
+  '/es/',
+  '/privacy/',
+  '/es/terminos/',
+  '/licenses/',
+  '/projects/',
+  '/editor/',
+  '/view/',
+];
 
 test.describe('headers of every page', () => {
   for (const path of PAGES) {

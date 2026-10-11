@@ -30,5 +30,16 @@ export {
 export { RoomSizePanel } from './room';
 export { formatBytes, SettingsButton, type StorageInfo } from './settings/settings-dialog';
 export { EditorShell } from './shell';
-export { Landing, type SiteMessages, SitePage, siteMessages } from './site';
+export {
+  Landing,
+  LegalPage,
+  LicensesPage,
+  PUBLIC_PAGES,
+  type PublicPage,
+  privacyPolicy,
+  type SiteMessages,
+  SitePage,
+  siteMessages,
+  termsOfUse,
+} from './site';
 export { ThemeToggle } from './theme-toggle';
