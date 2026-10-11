@@ -29,7 +29,38 @@ export interface SiteMessages {
     readonly items: readonly { readonly question: string; readonly answer: string }[];
   };
   readonly closing: { readonly title: string; readonly body: string; readonly cta: string };
-  readonly footer: { readonly label: string; readonly tagline: string; readonly rights: string };
+  readonly footer: {
+    readonly label: string;
+    readonly tagline: string;
+    readonly rights: string;
+    readonly privacy: string;
+    readonly terms: string;
+    readonly licenses: string;
+  };
+  readonly legal: { readonly updated: string; readonly draft: string; readonly reference: string };
+  readonly licensesPage: {
+    readonly title: string;
+    readonly description: string;
+    readonly intro: string;
+    readonly modelsTitle: string;
+    readonly modelsIntro: string;
+    readonly ownLicense: string;
+    readonly modelColumns: {
+      readonly name: string;
+      readonly author: string;
+      readonly license: string;
+      readonly attribution: string;
+    };
+    readonly softwareTitle: string;
+    readonly softwareIntro: string;
+    readonly softwareColumns: {
+      readonly name: string;
+      readonly version: string;
+      readonly license: string;
+    };
+    readonly fontsTitle: string;
+    readonly fonts: readonly string[];
+  };
 }
 
 const en: SiteMessages = {
@@ -125,6 +156,38 @@ const en: SiteMessages = {
     label: 'Site',
     tagline: 'Design rooms, offices and gaming setups in 3D.',
     rights: '© {year} RoomForge',
+    privacy: 'Privacy',
+    terms: 'Terms',
+    licenses: 'Licences',
+  },
+  legal: {
+    updated: 'Last updated: {date}',
+    draft: 'Draft pending legal review. This text may still change before the public launch.',
+    reference: 'This is a translation; the Spanish version is the reference text.',
+  },
+  licensesPage: {
+    title: 'Licences and attributions',
+    description: 'The licences of the 3D models, software and fonts that RoomForge uses.',
+    intro:
+      'RoomForge is built on open source software and on 3D models of its own. This page is generated from the catalog manifest and the dependency report, so it always matches what the app ships.',
+    modelsTitle: '3D models of the catalog',
+    modelsIntro: 'Every model in the catalog, with its author and licence.',
+    ownLicense: 'Original RoomForge model, all rights reserved',
+    modelColumns: {
+      name: 'Model',
+      author: 'Author',
+      license: 'Licence',
+      attribution: 'Attribution',
+    },
+    softwareTitle: 'Open source software',
+    softwareIntro:
+      'The packages the app ships to your browser, and everything they depend on, with their licences.',
+    softwareColumns: { name: 'Package', version: 'Version', license: 'Licence' },
+    fontsTitle: 'Fonts',
+    fonts: [
+      'Inter, by Rasmus Andersson, under the SIL Open Font License 1.1 (package @fontsource-variable/inter).',
+      'Geist, by Vercel, under the SIL Open Font License 1.1, in the social card image.',
+    ],
   },
 };
 
@@ -221,6 +284,39 @@ const es: SiteMessages = {
     label: 'Sitio',
     tagline: 'Diseña habitaciones, despachos y setups gaming en 3D.',
     rights: '© {year} RoomForge',
+    privacy: 'Privacidad',
+    terms: 'Términos',
+    licenses: 'Licencias',
+  },
+  legal: {
+    updated: 'Última actualización: {date}',
+    draft:
+      'Borrador pendiente de revisión legal. Este texto aún puede cambiar antes del lanzamiento público.',
+    reference: 'Esta es la versión de referencia del texto.',
+  },
+  licensesPage: {
+    title: 'Licencias y atribuciones',
+    description: 'Las licencias de los modelos 3D, el software y las fuentes que usa RoomForge.',
+    intro:
+      'RoomForge está hecho con software de código abierto y con modelos 3D propios. Esta página se genera a partir del manifiesto del catálogo y del informe de dependencias, así que siempre coincide con lo que publica la aplicación.',
+    modelsTitle: 'Modelos 3D del catálogo',
+    modelsIntro: 'Cada modelo del catálogo, con su autor y su licencia.',
+    ownLicense: 'Modelo original de RoomForge, todos los derechos reservados',
+    modelColumns: {
+      name: 'Modelo',
+      author: 'Autor',
+      license: 'Licencia',
+      attribution: 'Atribución',
+    },
+    softwareTitle: 'Software de código abierto',
+    softwareIntro:
+      'Los paquetes que la aplicación envía a tu navegador, y todo aquello de lo que dependen, con sus licencias.',
+    softwareColumns: { name: 'Paquete', version: 'Versión', license: 'Licencia' },
+    fontsTitle: 'Fuentes tipográficas',
+    fonts: [
+      'Inter, de Rasmus Andersson, con licencia SIL Open Font License 1.1 (paquete @fontsource-variable/inter).',
+      'Geist, de Vercel, con licencia SIL Open Font License 1.1, en la imagen para redes sociales.',
+    ],
   },
 };
 
