@@ -45,7 +45,10 @@ describe('ObjectProperties: what it shows', () => {
     expect(field('X')).toHaveValue('200');
     expect(field('Z')).toHaveValue('150');
     expect(field('Elevation')).toHaveValue('0');
-    expect(field('Elevation')).toHaveAttribute('readonly');
+    expect(field('Elevation')).not.toHaveAttribute('readonly');
+    // Room 2.6 m high, desk 75 cm tall.
+    expect(field('Elevation')).toHaveAttribute('aria-valuemin', '0');
+    expect(field('Elevation')).toHaveAttribute('aria-valuemax', '185');
     expect(field('Rotation')).toHaveValue('0');
   });
 
@@ -73,6 +76,8 @@ describe('ObjectProperties: what it shows', () => {
     expect(field('X')).toHaveValue('0');
     expect(field('Z')).toHaveValue('-20');
     expect(field('Elevation')).toHaveValue('75');
+    // Its height comes from what it stands on (P3-13).
+    expect(field('Elevation')).toHaveAttribute('readonly');
   });
 });
 
@@ -126,6 +131,40 @@ describe('ObjectProperties: editing', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('It does not fit inside the room');
     expect(field('X')).toHaveAccessibleDescription('It does not fit inside the room');
     expect(session.getState().document).toBe(before);
+  });
+
+  it('typing an elevation raises the object in one entry that undo reverts (P3-16)', async () => {
+    await userEvent.clear(field('Elevation'));
+    await userEvent.type(field('Elevation'), '120{Enter}');
+    expect(desk()?.transform.position).toEqual([2, 1.2, 1.5]);
+    expect(history()).toMatchObject({ canUndo: true, undoLabel: 'Change elevation' });
+    act(() => {
+      session.undo();
+    });
+    expect(desk()?.transform.position).toEqual([2, 0, 1.5]);
+    expect(history().canUndo).toBe(false);
+  });
+
+  it('refuses an elevation above the ceiling with the range, and changes nothing', async () => {
+    const before = session.getState().document;
+    await userEvent.clear(field('Elevation'));
+    await userEvent.type(field('Elevation'), '200{Enter}');
+    expect(field('Elevation')).toHaveAttribute('aria-invalid', 'true');
+    expect(field('Elevation')).toHaveAccessibleDescription('Enter a value from 0 to 185 cm');
+    expect(session.getState().document).toBe(before);
+  });
+
+  it('arrow keys and scrubbing change the elevation but stop at the ends of the range', async () => {
+    await userEvent.click(field('Elevation'));
+    await userEvent.keyboard('{ArrowDown}');
+    expect(history().canUndo).toBe(false); // already on the floor
+    await userEvent.keyboard('{Shift>}{ArrowUp}{ArrowUp}{/Shift}{ArrowUp}');
+    expect(desk()?.transform.position[1]).toBeCloseTo(0.21);
+    const label = screen.getByText('Elevation');
+    fireEvent.pointerDown(label, { button: 0, clientX: 100, pointerId: 1 });
+    fireEvent.pointerMove(label, { clientX: 2000, pointerId: 1 });
+    fireEvent.pointerUp(label, { button: 0, clientX: 2000, pointerId: 1 });
+    expect(desk()?.transform.position[1]).toBeCloseTo(1.85);
   });
 
   it('turns the object when the rotation changes', async () => {
@@ -195,7 +234,7 @@ describe('ObjectProperties: actions', () => {
 
 describe('ObjectProperties: following a drag in the scene', () => {
   it('shows the live X, Z and rotation of the dragged object, then the committed ones', () => {
-    let pose: { id: string; x: number; z: number; rotationY: number } | null = null;
+    let pose: { id: string; x: number; y: number; z: number; rotationY: number } | null = null;
     const listeners = new Set<() => void>();
     const live: LiveTransform = {
       read: () => pose,
@@ -210,16 +249,17 @@ describe('ObjectProperties: following a drag in the scene', () => {
       for (const listener of listeners) listener();
     };
     act(() => {
-      pose = { id: DESK, x: 1.234, z: 0.8, rotationY: Math.PI / 2 };
+      pose = { id: DESK, x: 1.234, y: 0.5, z: 0.8, rotationY: Math.PI / 2 };
       notify();
     });
     expect(field('X')).toHaveValue('123.4');
     expect(field('Z')).toHaveValue('80');
+    expect(field('Elevation')).toHaveValue('50');
     expect(field('Rotation')).toHaveValue('90');
 
     // Another object's drag does not touch this panel.
     act(() => {
-      pose = { id: 'other', x: 3, z: 3, rotationY: 0 };
+      pose = { id: 'other', x: 3, y: 0, z: 3, rotationY: 0 };
       notify();
     });
     expect(field('X')).toHaveValue('200');

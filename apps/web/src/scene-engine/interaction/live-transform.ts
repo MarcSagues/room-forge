@@ -9,6 +9,7 @@ export interface LiveTransform {
   read(): {
     readonly id: string;
     readonly x: number;
+    readonly y: number;
     readonly z: number;
     readonly rotationY: number;
   } | null;

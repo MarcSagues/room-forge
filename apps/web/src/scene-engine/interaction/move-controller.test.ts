@@ -3,6 +3,7 @@ import {
   type EditorSession,
   type ObjectId,
   type SceneDocument,
+  setObjectElevations,
 } from '@roomforge/core';
 import { buildDocument, createFixtureCatalog } from '@roomforge/core/testing';
 import { Object3D, Ray, Vector3 } from 'three';
@@ -122,6 +123,20 @@ describe('MoveController', () => {
     controller.update(down(0.65, 1.5), true); // 5 cm from the wall: no snap with Alt
     expect(desk.rotation.y).toBe(0);
     expect(desk.position.x).toBeCloseTo(0.65);
+  });
+
+  it('keeps the elevation of a raised object and slides it at that height (P3-16)', () => {
+    session.execute(setObjectElevations([{ id: DESK, elevation: 1 }]));
+    desk.position.y = 1;
+    // A slanted ray (45°) that passes through the desk's centre at its height: x = 2 at y = 1.
+    const slanted = (x: number) =>
+      new Ray(new Vector3(x - 1, 2, 1.5), new Vector3(1, -1, 0).normalize());
+    expect(controller.begin(DESK, slanted(2))).toBe(true);
+    expect(transient.drag()).toMatchObject({ y: 1 });
+    controller.update(slanted(2.5), false);
+    expect(desk.position.x).toBeCloseTo(2.5); // no parallax: the grab point stays under the ray
+    controller.end();
+    expect(session.getState().document.objects[DESK]?.transform.position).toEqual([2.5, 1, 1.5]);
   });
 
   it('only drags objects standing on a room, never stacked or locked ones', () => {

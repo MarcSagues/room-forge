@@ -369,6 +369,7 @@ export const en = {
   'properties.nameTooLong': 'The name is too long',
   'properties.refused': 'That value is not allowed here',
   'properties.outsideRoom': 'It does not fit inside the room',
+  'properties.outOfRange': 'Enter a value from {min} to {max} {unit}',
   'properties.sizeValue': '{width} × {depth} × {height} cm',
   'materials.title': 'Room materials',
   'materials.surface': 'Surface',

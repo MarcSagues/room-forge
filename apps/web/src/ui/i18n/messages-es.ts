@@ -376,6 +376,7 @@ export const es: Record<MessageKey, string> = {
   'properties.nameTooLong': 'El nombre es demasiado largo',
   'properties.refused': 'Ese valor no está permitido aquí',
   'properties.outsideRoom': 'No cabe dentro de la habitación',
+  'properties.outOfRange': 'Escribe un valor entre {min} y {max} {unit}',
   'properties.sizeValue': '{width} × {depth} × {height} cm',
   'materials.title': 'Materiales de la habitación',
   'materials.surface': 'Superficie',
