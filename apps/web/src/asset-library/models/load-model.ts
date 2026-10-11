@@ -1,4 +1,11 @@
-import { type BufferGeometry, type Material, Matrix4, type Mesh, type Object3D } from 'three';
+import {
+  BufferAttribute,
+  type BufferGeometry,
+  type Material,
+  Matrix4,
+  type Mesh,
+  type Object3D,
+} from 'three';
 
 /** One mesh of a catalog model: its geometry and the colour slot it is drawn with. */
 export interface ModelPart {
@@ -35,12 +42,34 @@ export function modelParts(root: Object3D): ModelPart[] {
   root.traverse((node) => {
     const mesh = node as Mesh;
     if (!mesh.isMesh) return;
+    toFloat(mesh.geometry);
     if (!mesh.matrixWorld.equals(IDENTITY)) mesh.geometry.applyMatrix4(mesh.matrixWorld);
     const materials: Material[] = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
     parts.push({ slot: materials[0]?.name || mesh.name, geometry: mesh.geometry });
     for (const material of materials) disposeMaterial(material);
   });
   return parts;
+}
+
+/**
+ * Catalog files are quantised (P4-03): int16 positions inside a box the node's transform scales
+ * back to metres, int16 normals, uint16 UVs. Baking the transform, stretching an LED strip or any
+ * other edit needs plain floats, so every attribute that is not one is copied into a Float32Array.
+ */
+function toFloat(geometry: BufferGeometry): void {
+  for (const [name, attribute] of Object.entries(geometry.attributes)) {
+    const plain =
+      attribute.array instanceof Float32Array &&
+      !attribute.normalized &&
+      !('isInterleavedBufferAttribute' in attribute);
+    if (plain) continue;
+    const { count, itemSize } = attribute;
+    const values = new Float32Array(count * itemSize);
+    for (let i = 0; i < count; i += 1) {
+      for (let c = 0; c < itemSize; c += 1) values[i * itemSize + c] = attribute.getComponent(i, c);
+    }
+    geometry.setAttribute(name, new BufferAttribute(values, itemSize));
+  }
 }
 
 function disposeMaterial(material: Material): void {

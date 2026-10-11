@@ -19,12 +19,16 @@ export const appCatalog: AppCatalog = {
 };
 
 const ENTRIES: readonly CatalogEntry[] = [
-  ...modelCatalog.entries().map((item) => ({
-    id: item.id,
-    name: item.name,
-    size: item.size,
-    color: modelCatalog.colorOf(item.id) ?? '#7aa2d6',
-  })),
+  ...modelCatalog.entries().map((item) => {
+    const thumbnail = modelCatalog.thumbnailUrlOf(item.id);
+    return {
+      id: item.id,
+      name: item.name,
+      size: item.size,
+      color: modelCatalog.colorOf(item.id) ?? '#7aa2d6',
+      ...(thumbnail ? { thumbnail } : {}),
+    };
+  }),
   ...stubEntries(),
 ];
 

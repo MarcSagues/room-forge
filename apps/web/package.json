@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "dev": "next dev",
-    "build": "next build && node scripts/write-og-image.mjs && node scripts/write-headers.mjs",
+    "build": "next build && node scripts/write-og-image.mjs && node scripts/write-headers.mjs && node scripts/write-vercel-config.mjs",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
     "build:e2e": "NEXT_PUBLIC_E2E=1 next build && node scripts/write-og-image.mjs && node scripts/write-headers.mjs",
