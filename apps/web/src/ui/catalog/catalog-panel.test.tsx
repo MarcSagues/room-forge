@@ -168,3 +168,70 @@ describe('CatalogPanel: dragging an item into the viewport', () => {
     expect(placement.move).toHaveBeenCalledTimes(1); // only the move before unmounting
   });
 });
+
+describe('CatalogPanel: the Structure tab (doors and windows)', () => {
+  const OPENINGS: CatalogPanelItem[] = [
+    { id: 'door.single', name: 'Door', color: '#b88a55', size: { w: 0.9, h: 2.1, d: 0.1 } },
+    {
+      id: 'window.large',
+      name: 'Large window',
+      color: '#cfe3ee',
+      size: { w: 1.8, h: 1.4, d: 0.1 },
+    },
+  ];
+
+  function setupTabs() {
+    const placement = {
+      begin: vi.fn(() => true),
+      move: vi.fn(),
+      end: vi.fn(() => true),
+      cancel: vi.fn(),
+    };
+    const structure = {
+      items: OPENINGS,
+      placement: {
+        begin: vi.fn(() => true),
+        move: vi.fn(),
+        end: vi.fn(() => true),
+        cancel: vi.fn(),
+      },
+      onPlace: vi.fn(() => true),
+    };
+    render(
+      <CatalogPanel
+        items={ITEMS}
+        placement={placement}
+        onPlace={vi.fn(() => true)}
+        structure={structure}
+      />,
+    );
+    return { placement, structure };
+  }
+
+  it('opens on the objects; the Structure tab lists doors and windows by width × height', async () => {
+    setupTabs();
+    expect(screen.getByRole('list', { name: 'Catalog items' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('tab', { name: 'Structure' }));
+    const list = screen.getByRole('list', { name: 'Doors and windows' });
+    expect(within(list).getAllByRole('listitem')).toHaveLength(2);
+    expect(screen.getByRole('button', { name: /Large window/ })).toHaveTextContent('180 × 140 cm');
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+  });
+
+  it('places a door with Enter and drags a window through the structure placement', async () => {
+    const { placement, structure } = setupTabs();
+    await userEvent.click(screen.getByRole('tab', { name: 'Structure' }));
+    screen.getByRole('button', { name: /Door/ }).focus();
+    await userEvent.keyboard('{Enter}');
+    expect(structure.onPlace).toHaveBeenCalledWith('door.single');
+    expect(await screen.findByText('Door placed.')).toBeInTheDocument();
+
+    const window = screen.getByRole('button', { name: /Large window/ });
+    fireEvent.pointerDown(window, { button: 0, clientX: 10, clientY: 10 });
+    fireEvent.pointerMove(globalThis.window, { clientX: 300, clientY: 200 });
+    fireEvent.pointerUp(globalThis.window, { clientX: 300, clientY: 200 });
+    expect(structure.placement.begin).toHaveBeenCalledWith('window.large');
+    expect(structure.placement.end).toHaveBeenCalledWith(300, 200);
+    expect(placement.begin).not.toHaveBeenCalled();
+  });
+});

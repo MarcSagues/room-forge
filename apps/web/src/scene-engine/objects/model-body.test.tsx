@@ -1,5 +1,10 @@
 import ReactThreeTestRenderer from '@react-three/test-renderer';
-import { createEditorSession, type PlacedObject, type SceneDocument } from '@roomforge/core';
+import {
+  createEditorSession,
+  type PlacedObject,
+  type SceneDocument,
+  setLight,
+} from '@roomforge/core';
 import { buildDocument, buildObject, buildRoom } from '@roomforge/core/testing';
 import { BufferGeometry, type Mesh, type MeshStandardMaterial } from 'three';
 import { describe, expect, it, vi } from 'vitest';
@@ -118,9 +123,35 @@ describe('ModelBody', () => {
       expect(new Set(found.map((mesh) => mesh.material)).size).toBe(1);
       return found[0]?.material as MeshStandardMaterial;
     };
-    expect(material(1).emissive.getHex()).toBe(material(1).color.getHex());
+    expect(material(1).emissive.getHex()).toBe(0xffd9a0); // the item's light colour
     expect(material(1).toneMapped).toBe(false);
     expect(material(0).emissive.getHex()).toBe(0);
+  });
+
+  it('makes the light slot follow the light state: colour, intensity and off', async () => {
+    const model = parts();
+    const lamp = (id: string, x: number) => ({ ...desk(id, x), catalogId: LAMP });
+    const { meshes, session } = await mount([lamp('a', 1), lamp('b', 3)], async () => model);
+    await act(async () => {});
+    const glowOf = (index: number) => {
+      const found = meshes().filter((mesh) => mesh.geometry === model[1]?.geometry);
+      return found[index]?.material as MeshStandardMaterial;
+    };
+    const set = (ids: string[], patch: Parameters<typeof setLight>[1]) =>
+      act(async () => {
+        const result = session.execute(setLight(ids as never[], patch));
+        if (!result.ok) throw new Error(result.error.message);
+      });
+
+    await set(['a'], { color: '#00ff00', intensity: 0.5 });
+    expect(glowOf(0).emissive.getHex()).toBe(0x008000);
+    expect(glowOf(1).emissive.getHex()).toBe(0xffd9a0); // b is untouched
+    await set(['a'], { on: false });
+    expect(glowOf(0).emissive.getHex()).toBe(0);
+    expect(glowOf(0).toneMapped).toBe(false); // same kind of material: no new shader
+    // Two lamps in the same state share one material again.
+    await set(['a'], { on: true, color: '#ffd9a0', intensity: 1 });
+    expect(glowOf(0)).toBe(glowOf(1));
   });
 
   it('keeps the placeholder when the model cannot be loaded', async () => {

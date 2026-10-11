@@ -40,10 +40,13 @@ describe('installTestHook', () => {
       'addObject',
       'addOpening',
       'createRoom',
+      'moveObjects',
       'moveOpening',
       'removeObjects',
       'removeOpenings',
       'resizeRoom',
+      'setAllLights',
+      'setLight',
       'setSurfaceMaterial',
     ]);
     expect(hook?.info()).toEqual(info);
@@ -52,6 +55,7 @@ describe('installTestHook', () => {
   it('reports no render info until the canvas is mounted', () => {
     installTestHook(window, { session, getScene: () => null }, true);
     expect(window.__RF__?.info()).toBeNull();
+    expect(window.__RF__?.lights()).toBeNull();
   });
 
   it('forwards camera calls to the mounted scene and is inert before that', () => {
