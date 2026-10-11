@@ -1,13 +1,21 @@
 import '@fontsource-variable/inter';
 import './globals.css';
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
-import { Providers, translate } from '@/ui';
+import { Providers, siteMessages } from '@/ui';
+import { OG_IMAGE } from './seo';
+import { site } from './site-config';
 
 export const metadata: Metadata = {
-  title: translate('en', 'app.name'),
-  description: 'Design rooms, offices and gaming setups in 3D with LED/RGB lighting.',
+  metadataBase: new URL(site.url),
+  title: 'RoomForge',
+  applicationName: 'RoomForge',
+  description: siteMessages.en.meta.description,
+  openGraph: { type: 'website', siteName: 'RoomForge', images: [OG_IMAGE] },
+  twitter: { card: 'summary_large_image', images: [OG_IMAGE] },
 };
+
+export const viewport: Viewport = { themeColor: '#0b0d12', colorScheme: 'dark light' };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (

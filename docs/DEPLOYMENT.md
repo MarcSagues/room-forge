@@ -156,6 +156,7 @@ Las actualizaciones de `three`/`@react-three/*`/`react` se tratan como **riesgo*
 | `CLOUDFLARE_ACCOUNT_ID` | idem | Propietario | P1-08 |
 | `NEXT_PUBLIC_E2E` | Solo en jobs E2E | CI | P1-07 |
 | `NEXT_PUBLIC_APP_VERSION` | Build (commit SHA/tag) | CI | P1-04 |
+| `SITE_URL` | Build de producción: origen público (p. ej. `https://<dominio>`). Da las URL canónicas, `hreflang`, Open Graph y el `sitemap.xml`. **Sin ella** el build es una *preview*: URL de marcador (`https://roomforge.example`) y `robots.txt` con `Disallow: /` | Propietario (variable del workflow de producción, no es secreto) | P8-03 |
 
 Reglas: **nunca** secretos en el repositorio; rotación si se exponen; los agentes de IA no leen ni escriben secretos.
 

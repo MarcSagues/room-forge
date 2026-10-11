@@ -348,6 +348,7 @@ flowchart LR
 ### 6.4 Next.js + R3F
 
 - El editor es **client-only** (`'use client'` + `dynamic(..., { ssr: false })`); la landing no carga three.
+- **Sitio público (P8-01):** la landing (`/`, `/es/`) y las páginas públicas son *server components* sin JS propio (`ui/site/`); sus textos viven en `ui/site/site-messages.ts` (EN/ES, fuera del diccionario de la app, así no llegan al bundle del editor). `app/seo.ts` genera metadatos, `robots.txt` y `sitemap.xml` en el build a partir de `SITE_URL` (`app/site-config.ts`); la imagen social `/og.png` la dibuja `scripts/write-og-image.mjs` tras el build con `next/og` (como script y no como ruta: un módulo asíncrono en la app añade su runtime a todas las páginas).
 - Los enlaces del editor y del visor a otras rutas (`/`, `/projects/`) llevan `prefetch={false}`: si no, Next descarga el JS de la pantalla de proyectos mientras el editor arranca (≈ 19 kB gz que compiten con three por la red). Navegar desde el editor es raro y la ruta destino es ligera.
 - `next.config`: `output: 'export'`, `images: { unoptimized: true }`, `trailingSlash: true`.
 - El código de `scene-engine` no importa nada de `next/*`.
