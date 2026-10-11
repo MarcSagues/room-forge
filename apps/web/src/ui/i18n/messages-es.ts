@@ -219,6 +219,31 @@ export const es: Record<MessageKey, string> = {
   'history.nothingToUndo': 'Nada que deshacer',
   'history.nothingToRedo': 'Nada que rehacer',
   'shortcuts.open': 'Atajos de teclado',
+  'tutorial.open': 'Ver el recorrido',
+  'tutorial.close': 'Cerrar el recorrido',
+  'tutorial.progress': 'Paso {step} de {total}',
+  'tutorial.next': 'Siguiente',
+  'tutorial.back': 'Atrás',
+  'tutorial.done': 'Hecho',
+  'tutorial.skip': 'Saltar el recorrido',
+  'tutorial.place.title': 'Añade muebles',
+  'tutorial.place.body':
+    'Arrastra un elemento del catálogo a la habitación, o selecciónalo y pulsa Intro para colocarlo en el centro de la vista.',
+  'tutorial.move.title': 'Mueve y gira',
+  'tutorial.move.body':
+    'Arrastra un objeto para moverlo: cerca de una pared, se pone de espaldas a ella. Pulsa R para girar la selección y Mayús+R para girarla al otro lado.',
+  'tutorial.view.title': 'Vista e imán',
+  'tutorial.view.body':
+    'El imán mantiene los objetos en una cuadrícula (G lo activa o desactiva). Cambia entre perspectiva y vista cenital, y baja las paredes para ver dentro.',
+  'tutorial.colour.title': 'Colores y materiales',
+  'tutorial.colour.body':
+    'Selecciona un objeto, o el suelo y las paredes, y cambia aquí su material y su color.',
+  'tutorial.light.title': 'Enciende las luces',
+  'tutorial.light.body':
+    'Lámparas, tiras LED, barras y paneles de luz dan luz de color real. Las plantillas las muestran encendidas de noche.',
+  'tutorial.keep.title': 'Guarda, exporta, comparte',
+  'tutorial.keep.body':
+    'Tu trabajo se guarda solo en este navegador. Exporta una copia o comparte un enlace de solo lectura.',
   'shortcuts.title': 'Atajos de teclado',
   'shortcuts.description':
     'Estos atajos funcionan en cualquier sitio salvo al escribir en un campo.',
