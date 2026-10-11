@@ -6,6 +6,7 @@ import {
   type OpeningId,
   removeObjects,
   removeOpenings,
+  setLightingMode,
 } from '@roomforge/core';
 import type { ShortcutDef } from './registry';
 
@@ -16,7 +17,7 @@ export interface EditorShortcutDeps {
 }
 
 /**
- * The editor's own shortcuts (DESIGN_SYSTEM §4): history, selection and the view. Each acts on the
+ * The editor's own shortcuts (DESIGN_SYSTEM §4): history, selection, the view and day or night. Each acts on the
  * session, or on the camera through `fit`. Shortcuts that belong to another module (the panels,
  * the help dialog, moving and turning objects) are registered by that module.
  */
@@ -134,6 +135,17 @@ export function editorShortcuts({ session, fit }: EditorShortcutDeps): ShortcutD
       category: 'view',
       description: 'shortcut.ceiling',
       handler: () => session.setShowCeiling(!session.getState().showCeiling),
+    },
+    {
+      id: 'view.dayNight',
+      keys: [{ key: 'n' }],
+      category: 'view',
+      description: 'shortcut.dayNight',
+      // A document setting (it is saved with the project), so one undo step.
+      handler: () => {
+        const mode = session.getState().document.lighting.mode;
+        session.execute(setLightingMode(mode === 'day' ? 'night' : 'day'));
+      },
     },
   ];
 }

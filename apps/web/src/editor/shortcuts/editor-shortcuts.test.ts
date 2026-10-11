@@ -144,6 +144,18 @@ describe('editor shortcuts: the view', () => {
     expect(session.getState().showCeiling).toBe(!ceiling);
   });
 
+  it('N switches day and night as one undoable document change', () => {
+    expect(session.getState().document.lighting.mode).toBe('day');
+    expect(press('n')).toBe(true);
+    expect(session.getState().document.lighting.mode).toBe('night');
+    expect(press('n')).toBe(true);
+    expect(session.getState().document.lighting.mode).toBe('day');
+    session.undo();
+    expect(session.getState().document.lighting.mode).toBe('night');
+    expect(press('n', {}, document.createElement('input'))).toBe(false);
+    expect(press('n', { ctrlKey: true })).toBe(false);
+  });
+
   it('G turns snap off and on again, and is left alone while typing', () => {
     expect(press('g')).toBe(true);
     expect(session.getState().snap.enabled).toBe(false);
@@ -186,6 +198,7 @@ describe('editor shortcuts: the list', () => {
       'view.fit',
       'view.walls',
       'view.ceiling',
+      'view.dayNight',
     ]);
   });
 });

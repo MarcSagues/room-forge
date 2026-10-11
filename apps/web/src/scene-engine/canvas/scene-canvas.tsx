@@ -25,6 +25,7 @@ import { OpeningPlaceController } from '../interaction/opening-place-controller'
 import { PlaceController } from '../interaction/place-controller';
 import { createPlacementApi, type PlacementApi } from '../interaction/placement-api';
 import { createTransientStore } from '../interaction/transient-store';
+import type { DayNightInfo } from '../lighting/day-night-driver';
 import type { GlobalLightingReport } from '../lighting/global-lights-view';
 import type { LightPoolInfo } from '../lighting/light-pool';
 import type { LightPoolDriver } from '../lighting/light-pool-driver';
@@ -75,6 +76,8 @@ export interface SceneHandle {
    * three.js lights the whole scene has, which must never change (ADR-0006).
    */
   lights(): LightPoolInfo & { sceneLights: number };
+  /** Day or night as drawn right now (mid-transition too); `null` until the lights are mounted. */
+  dayNight(): DayNightInfo | null;
   /** How many times the sun's static shadow map was asked to redraw (0 before the lights mount). */
   shadowRefreshes(): number;
   /** Run a direct three.js mutation and request a frame. */
@@ -246,6 +249,7 @@ function ReadyReporter(props: {
         ...(lightPool.current?.info() ?? { points: 0, spots: 0, lit: [] }),
         sceneLights: countLights(scene),
       }),
+      dayNight: () => lighting.current?.dayNight() ?? null,
       shadowRefreshes: () => lighting.current?.shadowRefreshes() ?? 0,
       roomDisplay: (roomId) => readRoomDisplay(scene, roomId),
       project: (id, local) => projectEntity(registry.get(id), get().camera, gl.domElement, local),

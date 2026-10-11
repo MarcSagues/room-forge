@@ -255,6 +255,7 @@ export const es: Record<MessageKey, string> = {
   'shortcut.fit': 'Encuadrar la habitación',
   'shortcut.walls': 'Alternar las paredes: arriba, corte, abajo',
   'shortcut.ceiling': 'Mostrar u ocultar el techo',
+  'shortcut.dayNight': 'Alternar entre día y noche',
   'shortcut.snap': 'Activar o desactivar el imán',
   'shortcut.leftPanel': 'Mostrar u ocultar el panel de catálogo',
   'shortcut.rightPanel': 'Mostrar u ocultar el panel de propiedades',

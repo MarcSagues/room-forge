@@ -2,6 +2,7 @@ import inspector from 'node:inspector';
 import {
   addOpening,
   createEditorSession,
+  DAY_NIGHT_TRANSITION_MS,
   type ObjectId,
   type OpeningId,
   type PlacementInput,
@@ -10,10 +11,13 @@ import {
   solvePlacement,
 } from '@roomforge/core';
 import { buildDocument, createFixtureCatalog } from '@roomforge/core/testing';
-import { Object3D, PerspectiveCamera, Ray, Vector3 } from 'three';
+import { MeshStandardMaterial, Object3D, PerspectiveCamera, Ray, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
+import { DayNightDriver } from '../lighting/day-night-driver';
+import { createGlobalLightRig } from '../lighting/global-lights';
 import { createLightPool } from '../lighting/light-pool';
 import { createLightPoolDriver } from '../lighting/light-pool-driver';
+import { createShadowRefresh } from '../lighting/shadow-refresh';
 import { createEntityRegistry } from '../objects/entity-registry';
 import { LiveWall } from '../room/live-wall';
 import { WALL_THICKNESS } from '../room/room-geometry';
@@ -366,6 +370,32 @@ describe('hot path: no allocations per step', () => {
         driver.watch(camera); // schedules one
         expectQuiet(await largeBytesPerCall(() => driver.watch(camera)));
         driver.dispose();
+      },
+      SLOW,
+    );
+  });
+
+  describe('DayNightDriver.step (every frame of a day/night transition)', () => {
+    it(
+      'easing back and forth between day and night, and requesting shadow redraws',
+      async () => {
+        const rig = createGlobalLightRig('medium');
+        const driver = new DayNightDriver(
+          { rig, scene: { environmentIntensity: 1 }, glass: new MeshStandardMaterial() },
+          DAY_NIGHT_TRANSITION_MS,
+          'day',
+        );
+        const shadowMap = { needsUpdate: false };
+        const shadows = createShadowRefresh(shadowMap);
+        let mode: 'day' | 'night' = 'night';
+        expectQuiet(
+          await largeBytesPerCall(() => {
+            if (!driver.step(mode, 16)) mode = mode === 'day' ? 'night' : 'day';
+            shadows.request();
+            shadows.beforeRender();
+            shadowMap.needsUpdate = false;
+          }),
+        );
       },
       SLOW,
     );

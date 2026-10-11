@@ -1,33 +1,39 @@
 'use client';
 
-import { useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import {
-  createLook,
+  DAY_NIGHT_TRANSITION_MS,
   type DeepReadonly,
-  LIGHTING_LOOKS,
   type LightQuality,
   roomsBounds,
   type SceneDocument,
 } from '@roomforge/core';
-import { type RefObject, useEffect, useLayoutEffect, useMemo } from 'react';
+import { type RefObject, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { PCFShadowMap, type Scene, type WebGLRenderer } from 'three';
+import { prefersReducedMotion } from '../camera/reduced-motion';
 import { useSceneSession, useTransientStore } from '../canvas/scene-context';
 import { openingResources } from '../room/opening-resources';
 import { WALL_THICKNESS } from '../room/room-geometry';
+import { DayNightDriver, type DayNightInfo } from './day-night-driver';
 import { createEnvironment } from './environment';
-import { applyLook, createGlobalLightRig, frameSun } from './global-lights';
+import { createGlobalLightRig, frameSun } from './global-lights';
 import type { ShadowRefresh } from './shadow-refresh';
+
+/** Longest step a transition takes in one frame: the first frame after idling still animates. */
+const MAX_STEP_MS = 50;
 
 /** What the scene handle reads from the global lighting. */
 export interface GlobalLightingReport {
   /** How many frames redrew the sun's shadow map since the canvas started. */
   shadowRefreshes(): number;
+  dayNight(): DayNightInfo;
 }
 
 /**
  * The global lighting (P5-06): a hemisphere light, the sun (the scene's only shadow caster, with a
- * static shadow map) and a procedural environment, made once per quality level. Daylight for now;
- * night and the switch between them come next.
+ * static shadow map) and a procedural environment, made once per quality level. The document's
+ * `lighting.mode` picks day or night and the driver eases towards it, asking for frames only while
+ * it moves; then the canvas is idle again.
  */
 export function GlobalLighting({
   quality,
@@ -44,20 +50,16 @@ export function GlobalLighting({
   const scene = useThree((state) => state.scene);
   const invalidate = useThree((state) => state.invalidate);
   const rig = useMemo(() => createGlobalLightRig(quality), [quality]);
-
-  useLayoutEffect(() => {
-    const look = Object.assign(createLook(), LIGHTING_LOOKS.day);
-    applyLook({ rig, scene, glass: openingResources().materials.glass }, look);
-  }, [rig, scene]);
-
-  useEffect(() => {
-    if (!report) return;
-    const made: GlobalLightingReport = { shadowRefreshes: () => shadows.count() };
-    report.current = made;
-    return () => {
-      if (report.current === made) report.current = null;
-    };
-  }, [report, shadows]);
+  const driver = useMemo(
+    () =>
+      new DayNightDriver(
+        { rig, scene, glass: openingResources().materials.glass },
+        prefersReducedMotion() ? 0 : DAY_NIGHT_TRANSITION_MS,
+        session.store.getState().document.lighting.mode,
+      ),
+    [rig, scene, session],
+  );
+  const transitioning = useRef(false);
 
   useShadowMap(gl, scene, shadows);
   useEnvironment(gl, scene, shadows, invalidate);
@@ -93,6 +95,28 @@ export function GlobalLighting({
       offTransient();
     };
   }, [session, transient, rig, shadows, invalidate]);
+
+  useEffect(() => {
+    if (!report) return;
+    const made: GlobalLightingReport = {
+      shadowRefreshes: () => shadows.count(),
+      dayNight: () => ({
+        mode: session.store.getState().document.lighting.mode,
+        level: driver.level,
+        transitioning: transitioning.current,
+      }),
+    };
+    report.current = made;
+    return () => {
+      if (report.current === made) report.current = null;
+    };
+  }, [report, session, driver, shadows]);
+
+  useFrame((state, delta) => {
+    const mode = session.store.getState().document.lighting.mode;
+    transitioning.current = driver.step(mode, Math.min(delta * 1000, MAX_STEP_MS));
+    if (transitioning.current) state.invalidate();
+  });
 
   return <primitive object={rig.group} dispose={null} />;
 }

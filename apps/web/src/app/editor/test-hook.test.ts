@@ -47,6 +47,7 @@ describe('installTestHook', () => {
       'resizeRoom',
       'setAllLights',
       'setLight',
+      'setLightingMode',
       'setSurfaceMaterial',
     ]);
     expect(hook?.info()).toEqual(info);
@@ -56,6 +57,7 @@ describe('installTestHook', () => {
     installTestHook(window, { session, getScene: () => null }, true);
     expect(window.__RF__?.info()).toBeNull();
     expect(window.__RF__?.lights()).toBeNull();
+    expect(window.__RF__?.dayNight()).toBeNull();
     expect(window.__RF__?.shadowRefreshes()).toBeNull();
     expect(() => window.__RF__?.invalidate()).not.toThrow();
   });

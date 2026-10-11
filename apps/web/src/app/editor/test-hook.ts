@@ -12,10 +12,12 @@ import {
   resizeRoom,
   setAllLights,
   setLight,
+  setLightingMode,
   setSurfaceMaterial,
 } from '@roomforge/core';
 import type { Autosave, SaveState } from '@/persistence';
 import type {
+  DayNightInfo,
   LightPoolInfo,
   RenderInfo,
   RoomDisplay,
@@ -43,11 +45,14 @@ export interface RoomForgeTestHook {
     setSurfaceMaterial: typeof setSurfaceMaterial;
     setLight: typeof setLight;
     setAllLights: typeof setAllLights;
+    setLightingMode: typeof setLightingMode;
   };
   /** Renderer counters; `null` until the canvas is mounted. */
   info(): RenderInfo | null;
   /** The light pool (size, luminaires lit) and the scene's light count; `null` until mounted. */
   lights(): (LightPoolInfo & { sceneLights: number }) | null;
+  /** Day or night as drawn (mode, level 0–1, transition); `null` until mounted. */
+  dayNight(): DayNightInfo | null;
   /** Redraws of the sun's static shadow map asked for so far; `null` until mounted. */
   shadowRefreshes(): number | null;
   /** Asks the canvas for one frame (e.g. to read the counters of a frame without shadow pass). */
@@ -98,9 +103,11 @@ export function installTestHook(
       setSurfaceMaterial,
       setLight,
       setAllLights,
+      setLightingMode,
     },
     info: () => deps.getScene()?.renderInfo() ?? null,
     lights: () => deps.getScene()?.lights() ?? null,
+    dayNight: () => deps.getScene()?.dayNight() ?? null,
     shadowRefreshes: () => deps.getScene()?.shadowRefreshes() ?? null,
     invalidate: () => deps.getScene()?.invalidate(),
     camera: {
