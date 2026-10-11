@@ -12,7 +12,7 @@ import {
   type SceneDocument,
   type WallId,
 } from '../domain';
-import { footprintInside, GEOMETRY_TOLERANCE } from '../geometry';
+import { footprintInside, GEOMETRY_TOLERANCE, maxElevation } from '../geometry';
 import type { CatalogProvider } from '../ports';
 
 /**
@@ -131,7 +131,10 @@ function stackingViolations(doc: Doc): InvariantViolation[] {
   return violations;
 }
 
-/** I3: the rotated, scaled footprint of a floor object stays inside its (rectangular) room. */
+/**
+ * I3: a floor object stays inside its (rectangular) room: its rotated, scaled footprint, and its
+ * height between the floor and the ceiling (P3-16).
+ */
 function footprintViolations(doc: Doc, catalog: CatalogProvider): InvariantViolation[] {
   const violations: InvariantViolation[] = [];
   for (const [id, object] of Object.entries(doc.objects)) {
@@ -140,8 +143,8 @@ function footprintViolations(doc: Doc, catalog: CatalogProvider): InvariantViola
     const room = doc.rooms[object.roomId];
     if (!item || !room || item.placement.surfaces[0] !== 'floor') continue;
 
-    const [x, , z] = object.transform.position;
-    const [sx, , sz] = object.transform.scale ?? [1, 1, 1];
+    const [x, y, z] = object.transform.position;
+    const [sx, sy, sz] = object.transform.scale ?? [1, 1, 1];
     const w = item.size.w * sx;
     const d = item.size.d * sz;
     if (!footprintInside(room.shape, x, z, w, d, object.transform.rotationY)) {
@@ -149,6 +152,14 @@ function footprintViolations(doc: Doc, catalog: CatalogProvider): InvariantViola
         invariant: 'I3',
         path: ['objects', id, 'transform'],
         message: `"${id}" does not fit inside room "${room.id}"`,
+      });
+    }
+    const t = GEOMETRY_TOLERANCE;
+    if (y < -t || y > maxElevation(room.height, item.size.h, sy) + t) {
+      violations.push({
+        invariant: 'I3',
+        path: ['objects', id, 'transform', 'position'],
+        message: `"${id}" must stay between the floor and the ceiling of room "${room.id}"`,
       });
     }
   }

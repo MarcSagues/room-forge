@@ -24,6 +24,7 @@ import {
   removeObjects,
   reorderObject,
   rotateObjects,
+  setObjectElevations,
   setObjectProps,
 } from './object';
 
@@ -258,6 +259,97 @@ describe('object/move and object/rotate', () => {
   });
 });
 
+describe('object/setElevation', () => {
+  // Room 2.6 m high, desk 0.75 m tall: its base may go from 0 to 1.85 m.
+  it('raises a floor object, keeping x, z and its turn', () => {
+    const { session, doc } = setup();
+    const result = session.execute(setObjectElevations([{ id: DESK, elevation: 1.2 }]));
+    expect(result.ok).toBe(true);
+    expect(doc().objects[DESK]?.transform).toEqual({ position: [2, 1.2, 1.5], rotationY: 0 });
+  });
+
+  it('refuses an elevation above the ceiling or below the floor, leaving the document', () => {
+    const { session, doc } = setup();
+    const before = doc();
+    for (const elevation of [1.9, -0.1]) {
+      const result = session.execute(setObjectElevations([{ id: DESK, elevation }]));
+      expect(result).toMatchObject({ ok: false, error: { code: 'invariant' } });
+      if (!result.ok) expect(result.error.violations?.[0]?.invariant).toBe('I3');
+    }
+    expect(doc()).toBe(before);
+  });
+
+  it('clamps into the room when asked to (keyboard steps)', () => {
+    const { session, doc } = setup();
+    session.execute(setObjectElevations([{ id: DESK, elevation: 5 }], { clamp: true }));
+    expect(doc().objects[DESK]?.transform.position[1]).toBeCloseTo(1.85);
+    session.execute(setObjectElevations([{ id: DESK, elevation: -5 }], { clamp: true }));
+    expect(doc().objects[DESK]?.transform.position[1]).toBe(0);
+  });
+
+  it('records nothing when the clamped value is the current one', () => {
+    const { session } = setup();
+    const result = session.execute(
+      setObjectElevations([{ id: DESK, elevation: -1 }], { clamp: true }),
+    );
+    expect(result.ok && result.patches).toEqual([]);
+    expect(session.getState().history.canUndo).toBe(false);
+  });
+
+  it('coalesces a burst of changes into one undo step', () => {
+    const { session, clock, doc } = setup();
+    session.execute(setObjectElevations([{ id: DESK, elevation: 0.1 }]));
+    clock.advance(100);
+    session.execute(setObjectElevations([{ id: DESK, elevation: 0.2 }]));
+    expect(doc().objects[DESK]?.transform.position[1]).toBe(0.2);
+    session.undo();
+    expect(doc().objects[DESK]?.transform.position[1]).toBe(0);
+    expect(session.getState().history.canUndo).toBe(false);
+  });
+
+  it('moves what stands on the object with it (local positions)', () => {
+    const { session, doc } = setup();
+    session.execute(setObjectElevations([{ id: DESK, elevation: 0.5 }]));
+    expect(doc().objects[MONITOR]?.transform.position).toEqual([0, 0.75, -0.2]);
+  });
+
+  it('refuses objects standing on another, non-finite values and unknown ids', () => {
+    const { session } = setup();
+    expect(session.execute(setObjectElevations([{ id: MONITOR, elevation: 1 }]))).toMatchObject({
+      ok: false,
+      error: { code: 'invalid' },
+    });
+    expect(
+      session.execute(setObjectElevations([{ id: DESK, elevation: Number.NaN }])),
+    ).toMatchObject({ ok: false, error: { code: 'invalid' } });
+    expect(
+      session.execute(setObjectElevations([{ id: 'nope' as ObjectId, elevation: 1 }])),
+    ).toMatchObject({ ok: false, error: { code: 'not-found' } });
+  });
+
+  it('stays inside the room after any clamped change (property)', () => {
+    fc.assert(
+      fc.property(
+        fc.array(fc.double({ min: -10, max: 10, noNaN: true }), { maxLength: 15 }),
+        fc.double({ min: 0.5, max: 2, noNaN: true }),
+        (elevations, scaleY) => {
+          const { session, doc } = setup();
+          session.execute(setObjectProps([DESK], { scale: [1, scaleY, 1] }));
+          for (const elevation of elevations) {
+            expect(
+              session.execute(setObjectElevations([{ id: DESK, elevation }], { clamp: true })).ok,
+            ).toBe(true);
+            const y = doc().objects[DESK]?.transform.position[1] ?? Number.NaN;
+            expect(y).toBeGreaterThanOrEqual(0);
+            expect(y + 0.75 * scaleY).toBeLessThanOrEqual(2.6 + 1e-9);
+          }
+          expect(checkInvariants(doc(), catalog)).toEqual([]);
+        },
+      ),
+    );
+  });
+});
+
 describe('object/setProps', () => {
   it('sets name, locked, hidden, scale and merges params', () => {
     const { session, doc } = setup();
@@ -438,6 +530,12 @@ describe('object command sequences (property)', () => {
       hidden: fc.boolean(),
       scale: fc.double({ min: 0.5, max: 2, noNaN: true }),
     }),
+    fc.record({
+      kind: fc.constant('elevate' as const),
+      target: pick,
+      y: fc.double({ min: -1, max: 4, noNaN: true }),
+      clamp: fc.boolean(),
+    }),
     fc.record({ kind: fc.constant('remove' as const), target: pick }),
     fc.record({ kind: fc.constant('duplicate' as const), target: pick }),
     fc.record({ kind: fc.constant('undo' as const) }),
@@ -472,6 +570,10 @@ describe('object command sequences (property)', () => {
             command = setObjectProps([target], {
               hidden: step.hidden,
               scale: [step.scale, 1, step.scale],
+            });
+          else if (step.kind === 'elevate')
+            command = setObjectElevations([{ id: target, elevation: step.y }], {
+              clamp: step.clamp,
             });
           else if (step.kind === 'remove') command = removeObjects([target]);
           else if (step.kind === 'duplicate') command = duplicateObjects([target]);

@@ -11,6 +11,7 @@ export {
   snapAngle,
   snapToGrid,
 } from './basics';
+export { clampElevation, maxElevation } from './elevation';
 export {
   intersectRayWall,
   type OpeningOffsetInput,

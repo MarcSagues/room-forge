@@ -10,7 +10,7 @@ import {
   type Vec3,
   Vec3Schema,
 } from '../domain';
-import { normalizeAngle, solvePlacement } from '../geometry';
+import { clampElevation, maxElevation, normalizeAngle, solvePlacement } from '../geometry';
 import type { CatalogProvider } from '../ports';
 import type { Command, CommandError } from '../session';
 
@@ -197,6 +197,46 @@ export function rotateObjects(rotations: readonly { id: ObjectId; rotationY: num
         const angle = finite.safeParse(rotation.rotationY);
         if (!angle.success) return invalid(describeIssues(angle.error));
         (found[index] as Draft<PlacedObject>).transform.rotationY = normalizeAngle(angle.data);
+      }
+    },
+  };
+}
+
+// ── object/setElevation ─────────────────────────────────────────
+
+/**
+ * `object/setElevation` (P3-16): absolute heights of the base of floor objects, in metres. Objects
+ * standing on another take their height from it and are refused. Out-of-room values are rejected
+ * by I3 like a move, unless `clamp` keeps them between the floor and the ceiling (keyboard
+ * steps). Coalesces per objects, so typing, scrubbing or a held key is one undo step.
+ */
+export function setObjectElevations(
+  changes: readonly { id: ObjectId; elevation: number }[],
+  options: { clamp?: boolean } = {},
+): Command {
+  const ids = changes.map((change) => change.id);
+  return {
+    type: 'object/setElevation',
+    label: 'Change elevation',
+    mergeKey: mergeKeyFor('object/setElevation', ids),
+    apply(draft, ctx) {
+      const found = targets(draft, ids);
+      if (!Array.isArray(found)) return found;
+      for (const [index, change] of changes.entries()) {
+        const target = found[index] as Draft<PlacedObject>;
+        if (target.parentId !== null) {
+          return invalid(`"${target.id}" stands on another object, which sets its height`);
+        }
+        const parsed = finite.safeParse(change.elevation);
+        if (!parsed.success) return invalid(describeIssues(parsed.error));
+        let elevation = parsed.data;
+        if (options.clamp) {
+          const height = draft.rooms[target.roomId]?.height ?? 0;
+          const item = ctx.catalog.getItem(target.catalogId);
+          const scaleY = target.transform.scale?.[1] ?? 1;
+          elevation = clampElevation(elevation, maxElevation(height, item?.size.h ?? 0, scaleY));
+        }
+        target.transform.position[1] = elevation;
       }
     },
   };
