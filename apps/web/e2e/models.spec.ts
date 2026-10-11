@@ -100,7 +100,10 @@ test('a model placed from the catalog panel loads lazily, is shared, and is free
     (base) => (window.__RF__?.info()?.triangles ?? 0) > base + 4000,
     empty.triangles,
   );
-  expect(requests).toEqual(['/assets/models/chair.gaming.racing.glb']);
+  // The name carries the file's content hash (P4-03).
+  expect(requests).toEqual([
+    expect.stringMatching(/^\/assets\/models\/chair\.gaming\.racing\.[0-9a-f]{10}\.glb$/),
+  ]);
   const [placed] = await page.evaluate(() =>
     Object.keys(window.__RF__?.session.getState().document.objects ?? {}),
   );
