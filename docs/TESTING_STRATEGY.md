@@ -68,6 +68,7 @@ Reglas:
 - **Aislamiento:** cada test crea un contexto nuevo (IndexedDB limpia). Sin dependencias entre tests.
 - **Selectores:** `getByRole`/`getByLabel`; `data-testid` solo para el canvas y elementos sin rol. Patrón `EditorPage` (page object).
 - **Interacción con el canvas:** se calcula la posición de pantalla de un objeto desde `__RF__` (proyección de su posición mundial) y se usa el ratón de Playwright; los resultados se verifican contra la sesión, no contra píxeles.
+- **Móvil (P7-06):** `e2e/mobile.spec.ts` usa descriptores de dispositivo (Pixel 7, iPhone 14 vertical y horizontal) en Chromium, sin instalar WebKit. Los dedos son `Input.dispatchTouchEvent` por CDP (llegan como *pointer events* `touch`); se comprueba la cámara (`snapshot()`) y que el documento no cambie. Tras un deslizamiento por CDP, Chromium emulado no genera el `click` del siguiente toque (pasa también en una página vacía): los botones se pulsan antes de los gestos. FPS reales y Safari: [MOBILE_CHECKLIST.md](MOBILE_CHECKLIST.md).
 - **Reintentos:** 1 en CI; trazas/vídeo/captura solo en fallo.
 
 ## 6. Flujos críticos E2E

@@ -29,5 +29,5 @@ export {
 } from './resilience';
 export { RoomSizePanel } from './room';
 export { formatBytes, SettingsButton, type StorageInfo } from './settings/settings-dialog';
-export { EditorShell } from './shell';
+export { EditorShell, type ShellMode, useShellMode } from './shell';
 export { ThemeToggle } from './theme-toggle';

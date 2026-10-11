@@ -286,6 +286,8 @@ export const en = {
   'bar.view': 'View',
   'bar.perspective': 'Perspective',
   'bar.top': 'Top',
+  'bar.frame': 'Frame',
+  'bar.frameHint': 'Frame the room (or double-tap it)',
   'bar.walls': 'Walls: {mode}',
   'bar.wallsMenu': 'Walls',
   'bar.wall.up': 'Up',

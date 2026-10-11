@@ -52,6 +52,7 @@ export function EditorShell({
   shortcuts,
   onPanelError,
   sharedView,
+  onFrame,
 }: {
   viewport?: ReactNode;
   /** Content of the Properties tab (the app passes the selection details); a hint by default. */
@@ -71,6 +72,8 @@ export function EditorShell({
    * the banner, the viewport and the view controls, and no editing chrome.
    */
   sharedView?: ReactNode;
+  /** Frames the room; the viewer shows a button for it (touch has no `F` key). */
+  onFrame?: () => void;
 }) {
   const { mode, wide } = useShellMode();
   const fallback = useMemo(() => (shortcuts ? null : createShortcutRegistry()), [shortcuts]);
@@ -90,10 +93,17 @@ export function EditorShell({
   const guardedScene = guard(t('shell.scene'), scene);
 
   let shell: ReactNode;
-  if (sharedView !== undefined) {
-    shell = <ViewerShell viewport={guardedViewport} banner={sharedView} session={session} />;
-  } else if (mode === 'viewer') shell = <ViewerShell viewport={guardedViewport} />;
-  else if (mode === 'full') {
+  if (sharedView !== undefined || mode === 'viewer') {
+    shell = (
+      <ViewerShell
+        viewport={guardedViewport}
+        banner={sharedView}
+        session={session}
+        onFrame={onFrame}
+        touch={mode === 'viewer'}
+      />
+    );
+  } else if (mode === 'full') {
     shell = (
       <DockedShell
         wide={wide}
@@ -260,27 +270,41 @@ function DrawerShell({
 }
 
 /**
- * < 768 px: view-only, no panels or editing chrome (DESIGN_SYSTEM §3). Also a shared link's viewer
- * at any width, with its own banner and the view controls.
+ * < 768 px (or a phone on its side): view-only, no panels or editing chrome (DESIGN_SYSTEM §3). Also
+ * a shared link's viewer at any width, with its own banner. Both show the view controls, as 44 px
+ * touch targets on a phone (`touch`). The page itself never scrolls or zooms under a finger: the
+ * viewport takes every gesture, the bars allow a deliberate pinch but not the double-tap zoom. Safe-area insets keep the bars clear
+ * of notches and the home indicator (the routes set `viewport-fit=cover`).
  */
 function ViewerShell(props: {
   viewport: ReactNode;
   banner?: ReactNode;
   session?: EditorSession | undefined;
+  onFrame?: (() => void) | undefined;
+  touch: boolean;
 }) {
-  const { viewport, banner, session } = props;
+  const { viewport, banner, session, onFrame, touch } = props;
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-background">
-      {banner ?? (
-        <p role="status" className="shrink-0 border-b bg-card px-4 py-2 text-center text-fg-muted">
-          {t('shell.viewerBanner')}
-        </p>
-      )}
-      <Viewport>{viewport}</Viewport>
-      {banner && session ? (
+    <div className="flex h-dvh flex-col overflow-hidden overscroll-none bg-background pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)]">
+      <div className="shrink-0 touch-manipulation bg-card pt-[env(safe-area-inset-top)]">
+        {banner ?? (
+          <p role="status" className="border-b px-4 py-2 text-center text-fg-muted">
+            {t('shell.viewerBanner')}
+          </p>
+        )}
+      </div>
+      <div className="flex min-h-0 flex-1 touch-none">
+        <Viewport>{viewport}</Viewport>
+      </div>
+      {session ? (
         <TooltipProvider delayDuration={400}>
-          <footer className="flex h-11 shrink-0 items-center gap-1 overflow-x-auto border-t bg-card px-3">
-            <ViewControls session={session} />
+          <footer
+            className={cn(
+              'flex shrink-0 touch-manipulation items-center gap-1 overflow-x-auto border-t bg-card pb-[env(safe-area-inset-bottom)]',
+              touch ? 'min-h-14 px-1.5' : 'min-h-11 px-3',
+            )}
+          >
+            <ViewControls session={session} touch={touch} onFrame={onFrame} />
           </footer>
         </TooltipProvider>
       ) : null}

@@ -6,15 +6,26 @@ import { useSyncExternalStore } from 'react';
  * How the editor shell lays itself out (DESIGN_SYSTEM §3 "Responsive"):
  * - `full`    ≥ 1024 px: side panels docked and resizable (narrower defaults below 1280 px).
  * - `compact` 768–1023 px: panels become drawers over the viewport.
- * - `viewer`  < 768 px: viewport only plus a banner (mobile is view-only in the MVP).
+ * - `viewer`  < 768 px, or a phone on its side: viewport, view controls and a banner (mobile is
+ *   view-only in the MVP).
  */
 export type ShellMode = 'full' | 'compact' | 'viewer';
 
 export const SHELL_BREAKPOINTS = { viewer: 768, full: 1024, wide: 1280 } as const;
 
+/**
+ * Below this height a touch screen is a phone on its side (P7-06): wide enough for the drawers but
+ * far too short to edit in, so it stays the viewer. A mouse keeps the editor in a short window.
+ */
+export const PHONE_LANDSCAPE_MAX_HEIGHT = 539;
+
+/** Wide enough, and either tall enough or driven by a mouse. */
+const atLeast = (width: number) =>
+  `(min-width: ${width}px) and (min-height: ${PHONE_LANDSCAPE_MAX_HEIGHT + 1}px), (min-width: ${width}px) and (pointer: fine)`;
+
 const QUERIES = {
-  full: `(min-width: ${SHELL_BREAKPOINTS.full}px)`,
-  compact: `(min-width: ${SHELL_BREAKPOINTS.viewer}px)`,
+  full: atLeast(SHELL_BREAKPOINTS.full),
+  compact: atLeast(SHELL_BREAKPOINTS.viewer),
   wide: `(min-width: ${SHELL_BREAKPOINTS.wide}px)`,
 } as const;
 

@@ -9,7 +9,7 @@ import {
   WALL_IDS,
   type WallId,
 } from '@roomforge/core';
-import { type RefObject, useEffect, useMemo, useRef } from 'react';
+import { type RefObject, useEffect, useMemo, useRef, useState } from 'react';
 import {
   type Light,
   type Material,
@@ -32,6 +32,7 @@ import { createEntityRegistry, type EntityRegistry } from '../objects/entity-reg
 import { ModelsProvider } from '../resources/models-context';
 import { roomObjectName } from '../room/room-mesh';
 import { watchContext } from './context-events';
+import { detectGraphicsProfile } from './graphics-profile';
 import { connectInvalidate } from './invalidate-bridge';
 import { createMutate, type Mutate } from './mutate';
 import { formatRenderInfo, type RenderInfo, readRenderInfo } from './render-info';
@@ -95,8 +96,16 @@ export interface SceneCanvasProps {
   onContextRestored?: () => void;
   /** Dev overlay with renderer counters. Defaults to on outside production builds. */
   showStats?: boolean;
-  /** Graphics quality: the size of the light pool (P5-05). Defaults to medium until P5-10. */
+  /**
+   * Graphics quality: the size of the light pool (P5-05). Defaults to the device's profile: low on
+   * phones and tablets, medium elsewhere until P5-10.
+   */
   quality?: LightQuality;
+  /**
+   * Look, do not touch (P7-06): taps and clicks neither select, hover nor drag; the camera still
+   * moves. For a shared link's viewer and the editor on a phone.
+   */
+  viewOnly?: boolean;
 }
 
 const showStatsByDefault = process.env.NODE_ENV !== 'production';
@@ -114,19 +123,29 @@ export function SceneCanvas(props: SceneCanvasProps) {
     onContextLost,
     onContextRestored,
     showStats = showStatsByDefault,
-    quality = 'medium',
+    viewOnly = false,
   } = props;
+  // Read once: the kind of device does not change while the page is open.
+  const [profile] = useState(() =>
+    detectGraphicsProfile(typeof window === 'undefined' ? undefined : window.matchMedia),
+  );
+  const quality = props.quality ?? profile.quality;
+  const viewOnlyRef = useRef(viewOnly);
+  viewOnlyRef.current = viewOnly;
   const statsRef = useRef<HTMLPreElement>(null);
   const cameraRef = useRef<CameraHandle | null>(null);
   const lightPoolRef = useRef<LightPoolDriver | null>(null);
   const registry = useMemo(() => createEntityRegistry(), []);
   const transient = useMemo(() => createTransientStore(), []);
   return (
-    <div className="relative size-full">
+    // `touch-none` here, not only on the canvas: camera-controls clears the canvas's touch-action
+    // whenever one of the two controls is disabled (always one, both during a view switch), and
+    // then a finger would scroll or zoom the page instead of moving the camera.
+    <div className="relative size-full touch-none select-none">
       {/* The camera rig owns the cameras (R3F's default one is replaced as soon as it mounts). */}
       <Canvas
         frameloop="demand"
-        dpr={[1, 2]}
+        dpr={[1, profile.maxDpr]}
         gl={{ antialias: true, powerPreference: 'high-performance' }}
         onCreated={({ gl }) => {
           gl.toneMapping = NeutralToneMapping;
@@ -138,6 +157,7 @@ export function SceneCanvas(props: SceneCanvasProps) {
           {...(catalog ? { catalog } : {})}
         >
           <SessionBridge />
+          <ViewOnlyGuard viewOnly={viewOnly} />
           <ContextWatcher onLost={onContextLost} onRestored={onContextRestored} />
           <CameraRig handleRef={cameraRef} />
           <ReadyReporter
@@ -149,7 +169,12 @@ export function SceneCanvas(props: SceneCanvasProps) {
           {showStats && <StatsWriter target={statsRef} />}
           <MaterialsProvider>
             <ModelsProvider>
-              <SceneContent registry={registry} quality={quality} lightPool={lightPoolRef} />
+              <SceneContent
+                registry={registry}
+                quality={quality}
+                lightPool={lightPoolRef}
+                viewOnly={viewOnlyRef}
+              />
             </ModelsProvider>
           </MaterialsProvider>
         </SceneSessionProvider>
@@ -169,6 +194,17 @@ function SessionBridge() {
   const session = useSceneSession();
   const invalidate = useThree((state) => state.invalidate);
   useEffect(() => connectInvalidate(session, invalidate), [session, invalidate]);
+  return null;
+}
+
+/** Turning view-only drops the selection and hover: nothing can act on them any more. */
+function ViewOnlyGuard({ viewOnly }: { viewOnly: boolean }) {
+  const session = useSceneSession();
+  useEffect(() => {
+    if (!viewOnly) return;
+    session.setHover(null);
+    if (session.getState().selection.length > 0) session.select([]);
+  }, [session, viewOnly]);
   return null;
 }
 

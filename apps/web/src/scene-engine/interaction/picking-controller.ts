@@ -30,6 +30,11 @@ export interface HandleHandlers extends DragHandlers {
 export interface PickingDeps {
   /** The canvas element: pointer events are listened to here. */
   element: HTMLElement;
+  /**
+   * Read on every press and move (optional, default on): while false the pointer neither hovers,
+   * selects nor drags, and the camera has the gestures to itself (view-only, P7-06).
+   */
+  enabled?: () => boolean;
   /** Object under normalised device coordinates (-1..1, y up), or null. */
   pick(ndcX: number, ndcY: number): EntityId | null;
   /** Called only when the hovered object changes. */
@@ -126,7 +131,13 @@ export function attachPicking(deps: PickingDeps): () => void {
     element.style.cursor = handleHovered ? 'grab' : '';
   };
 
+  const off = () => deps.enabled?.() === false;
+
   const onMove = (event: PointerEvent) => {
+    if (!dragging && off()) {
+      setHovered(null);
+      return;
+    }
     pointerX = event.clientX;
     pointerY = event.clientY;
     alt = event.altKey;
@@ -154,7 +165,7 @@ export function attachPicking(deps: PickingDeps): () => void {
   };
 
   const onDown = (event: PointerEvent) => {
-    if (event.button !== 0) return;
+    if (event.button !== 0 || off()) return;
     downX = event.clientX;
     downY = event.clientY;
     const handle = deps.rotate && toNdc(downX, downY, ndc) ? deps.rotate.hit(ndc.x, ndc.y) : null;

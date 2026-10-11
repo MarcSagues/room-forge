@@ -13,6 +13,7 @@ import {
   type CameraHandle,
   createCameraDirector,
 } from './camera-director';
+import { attachDoubleTap } from './double-tap';
 import { prefersReducedMotion } from './reduced-motion';
 import { bindShiftToPan } from './shift-pan';
 
@@ -40,6 +41,7 @@ export function CameraRig({ handleRef }: { handleRef: RefObject<CameraHandle | n
   const get = useThree((state) => state.get);
   const set = useThree((state) => state.set);
   const invalidate = useThree((state) => state.invalidate);
+  const element = useThree((state) => state.gl.domElement);
   const size = useThree((state) => state.size);
   const sizeRef = useRef(size);
 
@@ -67,14 +69,17 @@ export function CameraRig({ handleRef }: { handleRef: RefObject<CameraHandle | n
     director.current = created;
     handleRef.current = created;
     const unbindShift = bindShiftToPan(perspective, window);
+    // Touch has no `F` key: a double tap frames the room (P7-06).
+    const unbindDoubleTap = attachDoubleTap({ element, onDoubleTap: () => created.fit() });
     return () => {
       unbindShift();
+      unbindDoubleTap();
       created.dispose();
       director.current = null;
       if (handleRef.current === created) handleRef.current = null;
       set({ camera: previousCamera });
     };
-  }, [session, cameras, get, set, invalidate, handleRef]);
+  }, [session, cameras, get, set, invalidate, handleRef, element]);
 
   // The camera does not orbit or pan while an object is being dragged.
   useEffect(

@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { attachPicking, CLICK_SLOP_PX } from './picking-controller';
 
 /** A 200 × 100 element at the page origin; the left half "contains" object a. */
-function setup() {
+function setup(enabled?: () => boolean) {
   const element = document.createElement('div');
   element.getBoundingClientRect = () =>
     ({ left: 0, top: 0, width: 200, height: 100, right: 200, bottom: 100 }) as DOMRect;
@@ -28,6 +28,7 @@ function setup() {
   };
   const detach = attachPicking({
     element,
+    ...(enabled ? { enabled } : {}),
     pick,
     onHover,
     onClick,
@@ -295,5 +296,32 @@ describe('attachPicking: turning while dragging an object', () => {
     window.dispatchEvent(key);
     expect(key.defaultPrevented).toBe(false);
     expect(ctx.drag.turn).not.toHaveBeenCalled();
+  });
+});
+
+describe('attachPicking: view-only', () => {
+  it('neither hovers, selects nor drags while disabled, and resumes when enabled', () => {
+    ctx.detach();
+    let on = false;
+    ctx = setup(() => on);
+    ctx.pointer('pointermove', 20);
+    ctx.flush();
+    ctx.pointer('pointerdown', 20, { button: 0 });
+    ctx.pointer('pointermove', 20 + CLICK_SLOP_PX * 4);
+    ctx.flush();
+    ctx.pointer('pointerup', 20 + CLICK_SLOP_PX * 4, { button: 0 });
+    ctx.pointer('pointerdown', 20, { button: 0 });
+    ctx.pointer('pointerup', 20, { button: 0 });
+    ctx.pointer('pointerdown', 190, { button: 0 });
+    expect(ctx.pick).not.toHaveBeenCalled();
+    expect(ctx.onHover).not.toHaveBeenCalled();
+    expect(ctx.onClick).not.toHaveBeenCalled();
+    expect(ctx.drag.start).not.toHaveBeenCalled();
+    expect(ctx.rotate.start).not.toHaveBeenCalled();
+
+    on = true;
+    ctx.pointer('pointerdown', 20, { button: 0 });
+    ctx.pointer('pointerup', 20, { button: 0 });
+    expect(ctx.onClick).toHaveBeenCalledWith('a', false);
   });
 });
