@@ -78,7 +78,12 @@ export function CameraRig({ handleRef }: { handleRef: RefObject<CameraHandle | n
 
   // The camera does not orbit or pan while an object is being dragged.
   useEffect(
-    () => transient.subscribe(() => director.current?.setInputBlocked(transient.drag() !== null)),
+    () =>
+      transient.subscribe(() =>
+        director.current?.setInputBlocked(
+          transient.drag() !== null || transient.opening() !== null,
+        ),
+      ),
     [transient],
   );
 

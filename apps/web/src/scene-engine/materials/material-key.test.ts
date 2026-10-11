@@ -49,6 +49,15 @@ describe('materialKey', () => {
     );
   });
 
+  it('tells glow colours apart (case aside), and ignores a glow on a material that does not glow', () => {
+    const base = resolveMaterial({ presetId: 'paint.satin' });
+    const glow = (colour: string, emissive = true) =>
+      materialKey({ ...base, glow: colour }, false, emissive);
+    expect(glow('#FF0000')).toBe(glow('#ff0000'));
+    expect(glow('#ff0000')).not.toBe(glow('#000000'));
+    expect(glow('#ff0000', false)).toBe(materialKey(base, false));
+  });
+
   it('never lets two different looks collide', () => {
     const refs: MaterialRef[] = [
       { presetId: 'wood.oak' },

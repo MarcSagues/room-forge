@@ -3,7 +3,7 @@
 import { type DeepReadonly, type MaterialRef, resolveMaterial } from '@roomforge/core';
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { MeshStandardMaterial } from 'three';
-import type { MaterialLease } from './material-factory';
+import type { MaterialLease, MaterialLook } from './material-factory';
 import { useMaterialFactory } from './materials-context';
 
 /**
@@ -11,23 +11,27 @@ import { useMaterialFactory } from './materials-context';
  * lease is taken in a layout effect, which re-renders before anything is painted). When `ref`
  * changes the lease is updated: in place if this component is the only user, so a colour being
  * dragged changes one material and compiles nothing; otherwise it moves to another material.
- * `options` must not change during the component's life.
+ * `options` must not change during the component's life; `glow` (an emissive material's glow
+ * colour) may, and follows the same path as the look.
  */
 export function useMaterial(
   ref: DeepReadonly<MaterialRef>,
   options: { transparent?: boolean; shared?: boolean; emissive?: boolean } = {},
+  glow?: string,
 ): MeshStandardMaterial | null {
   const factory = useMaterialFactory();
   const { presetId, tint, roughness, metalness } = ref;
-  const look = useMemo(
-    () =>
-      resolveMaterial({
+  const look = useMemo<MaterialLook>(
+    () => ({
+      ...resolveMaterial({
         presetId,
         ...(tint !== undefined ? { tint } : {}),
         ...(roughness !== undefined ? { roughness } : {}),
         ...(metalness !== undefined ? { metalness } : {}),
       }),
-    [presetId, tint, roughness, metalness],
+      ...(glow !== undefined ? { glow } : {}),
+    }),
+    [presetId, tint, roughness, metalness, glow],
   );
   const latest = useRef(look);
   latest.current = look;
