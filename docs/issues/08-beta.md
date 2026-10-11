@@ -190,10 +190,12 @@ Checklist de lanzamiento (calidad, rendimiento, seguridad, legal, soporte), gene
 
 ### Requisitos
 - Checklist archivada en `docs/releases/v0.1.0-beta.md`.
+- Habitaciones con forma libre ([P10-09](10-home.md) y [P10-10](10-home.md)) cerradas antes de publicar: decisión del propietario del 2026-10-11. No figura como dependencia formal porque esas issues son del hito M10.
 - PR `develop → main` fusionado por el propietario; despliegue lanzado manualmente por el propietario (`deploy-production`).
 
 ### Criterios de aceptación
 - [ ] Todos los puntos de la checklist marcados o con excepción justificada.
+- [ ] Una sala en L o en U se puede crear y editar en la versión publicada.
 - [ ] Tag y release de GitHub publicados.
 - [ ] Simulacro de rollback documentado.
 

@@ -37,6 +37,7 @@ flowchart LR
   F6 --> F7["Fase 7<br/>Testing + optimización"]
   F5 --> F7
   F7 --> F8["Fase 8<br/>Beta pública"]
+  POLY["P10-09 + P10-10<br/>salas en L/U/T"] --> F8
   F8 --> F9["Fase 9<br/>IA + monetización"]
   style F9 stroke-dasharray: 5 5
 ```
@@ -135,7 +136,7 @@ El factor esperado cubre integración, bugs, revisiones y desconocidos (assets y
 ### Fase 8 — Beta pública (M8)
 - **Objetivo:** validar hipótesis con usuarios reales.
 - **Funcionalidades:** landing/SEO/legal/analítica sin cookies; plantillas y tutorial; producción con aprobación manual; feedback; PWA (P2); release v0.1.0-beta.
-- **Dependencias:** Fase 7; dominio y cuenta (humano).
+- **Dependencias:** Fase 7; habitaciones con forma libre (P10-09, P10-10, hito M10 pero obligatorias para la release P8-06: el propietario decidió el 2026-10-11 que las salas en L/U/T entren antes de la beta); dominio y cuenta (humano).
 - **Riesgos:** R12 términos de hosting, R18 diferenciación, R20 privacidad, R10 flujo.
 - **Criterios de aceptación:** URL pública con cabeceras; 10 usuarios externos completan el flujo en <10 min; rollback ensayado.
 - **Estimación:** 6 d.
@@ -143,7 +144,7 @@ El factor esperado cubre integración, bugs, revisiones y desconocidos (assets y
 
 ### Fase 9 — IA y monetización (M9, post-MVP)
 - **Objetivo:** crecer según lo aprendido en la beta.
-- **Funcionalidades:** backend/auth/BD; cuentas y sync; enlaces alojados; IA de distribuciones; planes y pagos; marketplace; colaboración; salas poligonales y plantas; selección múltiple, medición y recorrido.
+- **Funcionalidades:** backend/auth/BD; cuentas y sync; enlaces alojados; IA de distribuciones; planes y pagos; marketplace; colaboración; varias plantas (las salas poligonales pasan a P10-09/P10-10, antes de la beta); selección múltiple, medición y recorrido.
 - **Dependencias:** datos de la beta; decisiones en ADR.
 - **Riesgos:** coste de IA, cumplimiento fiscal/RGPD, complejidad de sync/colaboración.
 - **Criterios de aceptación:** definidos por issue; el spike P9-01 y P9-03 deciden el resto.
