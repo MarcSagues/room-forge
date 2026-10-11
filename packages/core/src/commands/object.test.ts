@@ -7,6 +7,7 @@ import {
   type RoomId,
   type SceneDocument,
 } from '../domain';
+import { roomToSupport, supportToRoom } from '../geometry';
 import { type Command, checkInvariants, createEditorSession } from '../session';
 import {
   buildDocument,
@@ -23,6 +24,7 @@ import {
   moveObjects,
   removeObjects,
   reorderObject,
+  reparentObject,
   rotateObjects,
   setObjectProps,
 } from './object';
@@ -116,7 +118,7 @@ describe('object/add', () => {
     expect(doc().objects['ghost' as ObjectId]?.transform.position).toEqual([9, 0, 9]);
   });
 
-  it('places an object on a parent (local transform, no floor clamp)', () => {
+  it('places an object on a parent: local transform, on its surface and inside it', () => {
     const { session, doc } = setup();
     const result = session.execute(
       addObject({
@@ -124,12 +126,26 @@ describe('object/add', () => {
         catalogId: 'monitor.27',
         roomId: ROOM,
         parentId: DESK,
-        position: [0.4, 0.75, 0],
+        position: [0.4, 0, 0.1],
         rotationY: 0,
       }),
     );
     expect(result.ok).toBe(true);
-    expect(doc().objects['lamp' as ObjectId]?.parentId).toBe(DESK);
+    const lamp = doc().objects['lamp' as ObjectId];
+    expect(lamp?.parentId).toBe(DESK);
+    // Desk top 1.2 × 0.6 at 0.75 m: the 0.62 m wide monitor is pulled back onto it.
+    expect(lamp?.transform.position[0]).toBeCloseTo(0.29);
+    expect(lamp?.transform.position.slice(1)).toEqual([0.75, 0.1]);
+  });
+
+  it('refuses to stand an item on an object without a surface or that it cannot stand on', () => {
+    const { session } = setup();
+    const on = (catalogId: string, parentId: ObjectId) =>
+      session.execute(
+        addObject({ catalogId, roomId: ROOM, parentId, position: [0, 0.75, 0], rotationY: 0 }),
+      );
+    expect(on('chair.office', DESK)).toMatchObject({ ok: false, error: { code: 'invalid' } });
+    expect(on('monitor.27', MONITOR)).toMatchObject({ ok: false, error: { code: 'invalid' } });
   });
 
   it('rejects unknown rooms and parents, and duplicate ids', () => {
@@ -255,6 +271,108 @@ describe('object/move and object/rotate', () => {
       false,
     );
     expect(session.execute(rotateObjects([{ id: DESK, rotationY: Infinity }])).ok).toBe(false);
+  });
+});
+
+describe('object/reparent', () => {
+  it('moves a child from its desk to the floor in one entry', () => {
+    const { session, doc } = setup();
+    const result = session.execute(
+      reparentObject({ id: MONITOR, parentId: null, position: [0.5, 0, 0.5], rotationY: 1 }),
+    );
+    expect(result.ok).toBe(true);
+    expect(doc().objects[MONITOR]).toMatchObject({
+      parentId: null,
+      transform: { position: [0.5, 0, 0.5], rotationY: 1 },
+    });
+    session.undo();
+    expect(doc()).toEqual(buildDocument());
+    expect(session.getState().history.canUndo).toBe(false);
+  });
+
+  it('puts a floor object on a desk', () => {
+    const { session, doc } = setup();
+    session.execute(
+      addObject({
+        id: 'm2',
+        catalogId: 'monitor.27',
+        roomId: ROOM,
+        position: [3, 0, 2.5],
+        rotationY: 0,
+      }),
+    );
+    const result = session.execute(
+      reparentObject({
+        id: 'm2' as ObjectId,
+        parentId: DESK,
+        position: [0.2, 0.75, 0.1],
+        rotationY: 0,
+      }),
+    );
+    expect(result.ok).toBe(true);
+    expect(doc().objects['m2' as ObjectId]?.parentId).toBe(DESK);
+  });
+
+  it('refuses what the invariants refuse, and unknown or self parents', () => {
+    const { session, doc } = setup();
+    const before = copy(doc());
+    const run = (parentId: ObjectId | null, position: [number, number, number], id = MONITOR) =>
+      session.execute(reparentObject({ id, parentId, position, rotationY: 0 }));
+    // Off the desk top, onto a floor object without a surface, onto itself, a desk on a desk.
+    expect(run(DESK, [0.5, 0.75, 0]).ok).toBe(false);
+    expect(run(MONITOR, [0, 0.75, 0]).ok).toBe(false);
+    expect(run('nope' as ObjectId, [0, 0.75, 0])).toMatchObject({ error: { code: 'not-found' } });
+    expect(run(DESK, [0, 0.75, 0], 'nope' as ObjectId)).toMatchObject({
+      error: { code: 'not-found' },
+    });
+    expect(run(DESK, [0, 0.75, 0], DESK).ok).toBe(false);
+    expect(doc()).toEqual(before);
+  });
+
+  it('keeps the world position of the drop (property)', () => {
+    fc.assert(
+      fc.property(
+        fc.double({ min: -Math.PI, max: Math.PI, noNaN: true }),
+        fc.double({ min: -0.29, max: 0.29, noNaN: true }),
+        fc.double({ min: -0.2, max: 0.2, noNaN: true }),
+        (deskTurn, lx, lz) => {
+          const { session, doc } = setup();
+          session.execute(rotateObjects([{ id: DESK, rotationY: deskTurn }]));
+          const desk = doc().objects[DESK];
+          if (!desk) throw new Error('no desk');
+          const frame = {
+            x: desk.transform.position[0],
+            y: 0,
+            z: desk.transform.position[2],
+            rotationY: desk.transform.rotationY,
+            sx: 1,
+            sy: 1,
+            sz: 1,
+          };
+          // Where the user drops it, in the room; the controller turns it into the desk's frame.
+          const world = supportToRoom(frame, lx, lz, [0, 0]);
+          const local = roomToSupport(frame, world[0], world[1], [0, 0]);
+          session.execute(
+            reparentObject({ id: MONITOR, parentId: null, position: [1, 0, 1], rotationY: 0 }),
+          );
+          const result = session.execute(
+            reparentObject({
+              id: MONITOR,
+              parentId: DESK,
+              position: [local[0], 0.75, local[1]],
+              rotationY: 0,
+            }),
+          );
+          expect(result.ok).toBe(true);
+          const [x, , z] = doc().objects[MONITOR]?.transform.position ?? [0, 0, 0];
+          const back = supportToRoom(frame, x, z, [0, 0]);
+          expect(back[0]).toBeCloseTo(world[0], 9);
+          expect(back[1]).toBeCloseTo(world[1], 9);
+          expect(checkInvariants(doc(), catalog)).toEqual([]);
+        },
+      ),
+      { numRuns: 100 },
+    );
   });
 });
 
@@ -438,6 +556,13 @@ describe('object command sequences (property)', () => {
       hidden: fc.boolean(),
       scale: fc.double({ min: 0.5, max: 2, noNaN: true }),
     }),
+    fc.record({
+      kind: fc.constant('reparent' as const),
+      target: pick,
+      parent: fc.option(pick, { nil: null }),
+      x: fc.double({ min: -1, max: 5, noNaN: true }),
+      z: fc.double({ min: -1, max: 4, noNaN: true }),
+    }),
     fc.record({ kind: fc.constant('remove' as const), target: pick }),
     fc.record({ kind: fc.constant('duplicate' as const), target: pick }),
     fc.record({ kind: fc.constant('undo' as const) }),
@@ -473,7 +598,16 @@ describe('object command sequences (property)', () => {
               hidden: step.hidden,
               scale: [step.scale, 1, step.scale],
             });
-          else if (step.kind === 'remove') command = removeObjects([target]);
+          else if (step.kind === 'reparent') {
+            const parent =
+              step.parent === null ? null : (ids[step.parent % ids.length] as ObjectId);
+            command = reparentObject({
+              id: target,
+              parentId: parent ?? null,
+              position: parent ? [step.x - 2, 0.75, step.z - 1.5] : [step.x, 0, step.z],
+              rotationY: 0,
+            });
+          } else if (step.kind === 'remove') command = removeObjects([target]);
           else if (step.kind === 'duplicate') command = duplicateObjects([target]);
           if (command) session.execute(command);
           else session.undo();

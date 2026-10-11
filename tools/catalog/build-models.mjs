@@ -46,8 +46,7 @@ const CATEGORY = { desk: 'desk', chair: 'seating', monitor: 'computing' };
 
 /**
  * Luminaires (P4-10): the kind of light and its weight in the light budget (ADR-0006, P2-11); the
- * default colour is the one of the model's glowing slot. Then where they may go: the floor first,
- * which is all the editor places on until surface placement (P3-13).
+ * default colour is the one of the model's glowing slot. Then where they may go, the default first.
  */
 const LIGHTS = {
   'led-strip': ['strip', 2, ['floor', 'wall', 'tabletop']],
@@ -57,6 +56,16 @@ const LIGHTS = {
   'lamp-desk': ['spot', 1, ['floor', 'tabletop']],
   'neon-wave': ['neon', 1, ['floor', 'wall']],
 };
+
+/** Where the other items may go (P3-13): monitors stand on the floor or on a desk. */
+const SURFACES = { monitor: ['floor', 'tabletop'] };
+
+/**
+ * What `tabletop` items stand on (P3-13): a desk's whole top, at its height. The generator makes
+ * the top a `w × d` board whose upper face is the top of the item's box.
+ */
+const supportsOf = (family, [w, h, d]) =>
+  family === 'desk' ? [{ y: h, rect: { x: 0, z: 0, w, d } }] : undefined;
 
 /** Open surfaces seen from both sides: their faces are doubled, since app materials are one-sided. */
 const DOUBLE_SIDED = { 'monitor-wide': ['body'], 'lamp-floor': ['shade'], 'lamp-desk': ['shade'] };
@@ -160,7 +169,10 @@ export async function buildModels() {
       category: meta.category,
       tags: meta.tags,
       size: { w, h, d },
-      placement: { surfaces: light?.[2] ?? ['floor'] },
+      placement: { surfaces: light?.[2] ?? SURFACES[variant.family] ?? ['floor'] },
+      ...(supportsOf(variant.family, variant.size) && {
+        supports: supportsOf(variant.family, variant.size),
+      }),
       slots: generator.slots[variant.family].map((slot) => {
         const material = materials.get(slot.id);
         return {

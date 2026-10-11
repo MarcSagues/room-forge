@@ -69,7 +69,7 @@ function gapTo(wall: WallId, x: number, z: number, room: PlacementInput['room'])
   return room.width - (x + ex);
 }
 
-function emptyResult(): PlacementResult {
+export function emptyResult(): PlacementResult {
   return { position: [0, 0], rotationY: 0, valid: true, reason: null, wall: null, guides: [] };
 }
 
@@ -177,7 +177,12 @@ function fitsTurned(size: PlacementInput['size'], rotation: number, room: Placem
  * Clamps into `[min, max]`; with a grid, to the nearest grid value inside the range when there is
  * one, so the result is still on the grid and solving it again does not move it.
  */
-function clampOnGrid(value: number, min: number, max: number, step: number | undefined): number {
+export function clampOnGrid(
+  value: number,
+  min: number,
+  max: number,
+  step: number | undefined,
+): number {
   const clamped = Math.min(Math.max(value, min), max);
   if (step === undefined || clamped === value) return clamped;
   const low = snapToGrid(Math.ceil((min - GEOMETRY_TOLERANCE) / step) * step, step);

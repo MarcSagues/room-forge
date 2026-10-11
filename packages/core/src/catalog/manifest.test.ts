@@ -52,9 +52,17 @@ const filesOf =
 const codes = (input: ReturnType<typeof manifest>, files = filesOf(input)) =>
   validateCatalogManifest(input, files).map((issue) => issue.code);
 
+/** The top of the 1.4 × 0.7 m desk the fixture item describes. */
+const DESK_TOP = { y: 0.74, rect: { x: 0, z: 0, w: 1.4, d: 0.7 } };
+
 describe('CatalogManifestSchema', () => {
   it('accepts a complete item', () => {
     expect(CatalogManifestSchema.safeParse(manifest(item('desk.office.140'))).success).toBe(true);
+  });
+
+  it('accepts an item with a support surface', () => {
+    const input = manifest(item('desk.office.140', { supports: [DESK_TOP] }));
+    expect(CatalogManifestSchema.safeParse(input).success).toBe(true);
   });
 
   it.each([
@@ -94,6 +102,9 @@ describe('CatalogManifestSchema', () => {
         ],
       },
     ],
+    ['a support with no area', { supports: [{ y: 0.74, rect: { x: 0, z: 0, w: 0, d: 0.7 } }] }],
+    ['a support below the floor', { supports: [{ y: -0.1, rect: { x: 0, z: 0, w: 1, d: 0.7 } }] }],
+    ['more than four supports', { supports: Array.from({ length: 5 }, () => DESK_TOP) }],
   ])('rejects %s', (_, overrides) => {
     expect(
       CatalogManifestSchema.safeParse(manifest(item('desk.office.140', overrides))).success,
@@ -185,6 +196,15 @@ describe('validateCatalogManifest', () => {
     ]);
   });
 
+  it('keeps support surfaces on top of the item and inside its footprint', () => {
+    const desk = (rect: typeof DESK_TOP.rect, y = 0.74) =>
+      manifest(item('desk.office.140', { supports: [{ y, rect }] }));
+    expect(codes(desk(DESK_TOP.rect))).toEqual([]);
+    expect(codes(desk({ x: 0.1, z: 0, w: 1.4, d: 0.7 }))).toEqual(['support']);
+    expect(codes(desk({ x: 0, z: 0, w: 1, d: 0.8 }))).toEqual(['support']);
+    expect(codes(desk(DESK_TOP.rect, 0.8))).toEqual(['support']);
+  });
+
   it('never throws, whatever it is given', () => {
     fc.assert(
       fc.property(fc.anything(), (input) => {
@@ -209,6 +229,15 @@ describe('toCatalogItem', () => {
         { id: 'top', default: { presetId: 'paint.satin', tint: '#c6a47d', roughness: 0.65 } },
       ],
     });
+  });
+
+  it('keeps the support surfaces', () => {
+    const parsed = CatalogManifestSchema.parse(
+      manifest(item('desk.office.140', { supports: [DESK_TOP] })),
+    );
+    const entry = parsed.items[0];
+    if (!entry) throw new Error('no item');
+    expect(toCatalogItem(entry).supports).toEqual([DESK_TOP]);
   });
 
   it('keeps the light and which slot glows', () => {

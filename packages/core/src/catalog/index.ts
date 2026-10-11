@@ -7,6 +7,7 @@ export {
   CatalogManifestItemSchema,
   CatalogManifestSchema,
   CatalogSlotSchema,
+  CatalogSupportSchema,
   toCatalogItem,
 } from './manifest';
 export {
