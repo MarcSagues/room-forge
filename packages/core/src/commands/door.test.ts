@@ -133,6 +133,10 @@ describe('opening/setOpen', () => {
       ok: false,
       error: { code: 'blocked' },
     });
+    // A toggle opens it as far as the wall lets it: sin(angle) = 2 / 2.4.
+    expect(session.execute(toggleDoor(DOOR)).ok).toBe(true);
+    expect(doc().openings[DOOR]?.open).toBeCloseTo(Math.asin(2 / 2.4) / (Math.PI / 2), 9);
+    session.undo();
     // Ajar is fine (2.4 × sin 45° ≈ 1.7 m), and opening outwards crosses nothing.
     expect(session.execute(setDoorOpen(DOOR, 0.5)).ok).toBe(true);
     expect(session.execute(setDoorSwing(DOOR, { swing: 'out' })).ok).toBe(true);
@@ -162,6 +166,14 @@ describe('opening/setOpen', () => {
 });
 
 describe('opening/setSwing', () => {
+  it('names only the fields that changed in its patches', () => {
+    const { session } = setup();
+    const result = session.execute(setDoorOpen(DOOR, 1));
+    expect(result.ok && result.patches.map((patch) => patch.path)).toEqual([
+      ['openings', DOOR, 'open'],
+    ]);
+  });
+
   it('changes swing and hinge as one undoable family', () => {
     const { session, doc } = setup();
     const before = doc();

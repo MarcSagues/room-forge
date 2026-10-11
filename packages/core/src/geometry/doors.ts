@@ -56,6 +56,18 @@ export function doorSweepFits(room: RoomBox, door: DoorShape): boolean {
   return doorSweepDepth(door) <= roomDepthFrom(room, door.wall) + GEOMETRY_TOLERANCE;
 }
 
+/**
+ * The widest `open` (0…1) whose sweep still fits (see `doorSweepFits`): 1 unless the leaf is
+ * longer than the room is deep, then the angle at which it would touch the opposite wall.
+ */
+export function doorMaxOpen(room: RoomBox, door: DoorShape): number {
+  if (door.swing === 'out') return 1;
+  const leaf = door.width / doorLeafCount(door.variant);
+  const depth = roomDepthFrom(room, door.wall);
+  if (leaf <= depth) return 1;
+  return Math.asin(depth / leaf) / DOOR_MAX_ANGLE;
+}
+
 /** An axis-aligned box on the floor, in room-local metres. */
 export interface FloorBox {
   minX: number;

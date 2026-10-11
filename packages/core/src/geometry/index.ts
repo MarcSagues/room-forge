@@ -16,6 +16,7 @@ export {
   type DoorShape,
   doorAngle,
   doorLeafCount,
+  doorMaxOpen,
   doorSweepBox,
   doorSweepDepth,
   doorSweepFits,

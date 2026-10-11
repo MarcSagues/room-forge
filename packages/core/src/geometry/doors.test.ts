@@ -6,6 +6,7 @@ import {
   type DoorShape,
   doorAngle,
   doorLeafCount,
+  doorMaxOpen,
   doorSweepBox,
   doorSweepDepth,
   doorSweepFits,
@@ -74,6 +75,17 @@ describe('door swing', () => {
         },
       ),
     );
+  });
+
+  it('opens as far as the opposite wall allows', () => {
+    const room = { width: 4, depth: 2 };
+    expect(doorMaxOpen(room, door({ width: 1.5 }))).toBe(1);
+    expect(doorMaxOpen(room, door({ width: 2.5, swing: 'out' }))).toBe(1);
+    const widest = doorMaxOpen(room, door({ width: 2.5 }));
+    expect(widest).toBeGreaterThan(0);
+    expect(widest).toBeLessThan(1);
+    expect(doorSweepFits(room, door({ width: 2.5, open: widest }))).toBe(true);
+    expect(doorSweepFits(room, door({ width: 2.5, open: widest + 0.01 }))).toBe(false);
   });
 
   it('sweeps nothing inside when opening outwards', () => {

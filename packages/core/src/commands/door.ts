@@ -9,7 +9,13 @@ import {
   OpeningSchema,
   type SceneDocument,
 } from '../domain';
-import { doorSweepBox, doorSweepFits, type FloorBox, footprintExtents } from '../geometry';
+import {
+  doorMaxOpen,
+  doorSweepBox,
+  doorSweepFits,
+  type FloorBox,
+  footprintExtents,
+} from '../geometry';
 import type { CatalogProvider } from '../ports';
 import type { Command, CommandError } from '../session';
 
@@ -39,7 +45,8 @@ function updateDoor(
   if (!doorSweepFits(room.shape, parsed.data)) {
     return { code: 'blocked', message: 'The door leaf would cross the opposite wall' };
   }
-  draft.openings[id] = parsed.data;
+  // Field by field, so the patches name what changed (`openings.<id>.open`), not the whole door.
+  Object.assign(current, parsed.data);
   return undefined;
 }
 
@@ -56,14 +63,21 @@ export function setDoorOpen(id: OpeningId, open: number): Command {
   };
 }
 
-/** `opening/setOpen` that closes an open door and opens a closed one fully. */
+/**
+ * `opening/setOpen` that closes an open door and opens a closed one as far as it goes: fully, or
+ * up to the opposite wall in a room shallower than the leaf, so a toggle is never refused.
+ */
 export function toggleDoor(id: OpeningId): Command {
   return {
     type: 'opening/setOpen',
     label: 'Open or close door',
     mergeKey: `opening/setOpen:${id}`,
     apply: (draft) =>
-      updateDoor(draft, id, (door) => ({ ...door, open: (door.open ?? 0) > 0 ? 0 : 1 })),
+      updateDoor(draft, id, (door) => {
+        const room = draft.rooms[door.roomId];
+        const widest = room ? doorMaxOpen(room.shape, door) : 1;
+        return { ...door, open: (door.open ?? 0) > 0 ? 0 : widest };
+      }),
   };
 }
 
