@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Input } from '@/ui/components/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/components/tabs';
 import { type MessageKey, translate } from '@/ui/i18n';
 import { cn } from '@/ui/lib/utils';
 import { PanelHint } from '@/ui/shell/side-panel';
@@ -41,6 +42,40 @@ export interface CatalogPanelProps {
   placement: CatalogPlacement;
   /** Click or Enter: place the item in the middle of the view; true when it was placed. */
   onPlace(id: string): boolean;
+  /**
+   * Doors and windows (P3-12), shown in a Structure tab next to the objects: dragged onto a wall,
+   * or put on the wall in front of the view. Their `size.h` is the height of the opening.
+   */
+  structure?: {
+    items: readonly CatalogPanelItem[];
+    placement: CatalogPlacement;
+    onPlace(id: string): boolean;
+  };
+}
+
+/**
+ * The catalog panel: the objects, and when `structure` is given a Structure tab with the doors
+ * and windows. The real catalog panel with categories and thumbnails replaces this in P4-06.
+ */
+export function CatalogPanel({ items, placement, onPlace, structure }: CatalogPanelProps) {
+  const objects = <CatalogList items={items} placement={placement} onPlace={onPlace} />;
+  if (!structure) return objects;
+  return (
+    <Tabs defaultValue="objects" className="min-h-0 flex-1 gap-0">
+      <div className="flex h-10 shrink-0 items-center px-2">
+        <TabsList variant="line">
+          <TabsTrigger value="objects">{t('catalog.tabObjects')}</TabsTrigger>
+          <TabsTrigger value="structure">{t('catalog.tabStructure')}</TabsTrigger>
+        </TabsList>
+      </div>
+      <TabsContent value="objects" className="flex min-h-0 flex-col">
+        {objects}
+      </TabsContent>
+      <TabsContent value="structure" className="flex min-h-0 flex-col">
+        <CatalogList {...structure} structure />
+      </TabsContent>
+    </Tabs>
+  );
 }
 
 interface Press {
@@ -51,12 +86,16 @@ interface Press {
 }
 
 /**
- * The catalog panel (P3-06): search box and a list of items. Dragging an item into the viewport
- * places it where it is dropped; clicking it, or pressing Enter on it, places it in the middle of
- * the view. The outcome is announced to assistive technology. The real catalog panel with
- * categories and thumbnails replaces this in P4-06.
+ * A list of items (P3-06): a search box (objects only) and the items. Dragging an item into the
+ * viewport places it where it is dropped; clicking it, or pressing Enter on it, places it in the
+ * middle of the view. The outcome is announced to assistive technology.
  */
-export function CatalogPanel({ items, placement, onPlace }: CatalogPanelProps) {
+function CatalogList({
+  items,
+  placement,
+  onPlace,
+  structure = false,
+}: Omit<CatalogPanelProps, 'structure'> & { structure?: boolean }) {
   const [query, setQuery] = useState('');
   const [announcement, setAnnouncement] = useState('');
   // The drag lives in refs: pointer moves must not re-render the panel.
@@ -145,18 +184,25 @@ export function CatalogPanel({ items, placement, onPlace }: CatalogPanelProps) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2 p-2">
-      <Input
-        type="search"
-        aria-label={t('catalog.search')}
-        placeholder={t('catalog.searchPlaceholder')}
-        value={query}
-        onChange={(event) => setQuery(event.target.value)}
-      />
-      <p className="px-1 text-fg-subtle text-xs">{t('catalog.hint')}</p>
+      {structure ? null : (
+        <Input
+          type="search"
+          aria-label={t('catalog.search')}
+          placeholder={t('catalog.searchPlaceholder')}
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+        />
+      )}
+      <p className="px-1 text-fg-subtle text-xs">
+        {t(structure ? 'catalog.structureHint' : 'catalog.hint')}
+      </p>
       {shown.length === 0 ? (
         <PanelHint>{t('catalog.empty', { query: query.trim() })}</PanelHint>
       ) : (
-        <ul aria-label={t('catalog.list')} className="flex min-h-0 flex-col gap-1 overflow-y-auto">
+        <ul
+          aria-label={t(structure ? 'catalog.structureList' : 'catalog.list')}
+          className="flex min-h-0 flex-col gap-1 overflow-y-auto"
+        >
           {shown.map((item) => (
             <li key={item.id}>
               <button
@@ -177,10 +223,15 @@ export function CatalogPanel({ items, placement, onPlace }: CatalogPanelProps) {
                 <span className="flex min-w-0 flex-col">
                   <span className="truncate font-medium text-fg">{item.name}</span>
                   <span className="text-fg-muted text-xs">
-                    {t('catalog.dimensions', {
-                      width: Math.round(item.size.w * 100),
-                      depth: Math.round(item.size.d * 100),
-                    })}
+                    {structure
+                      ? t('catalog.openingDimensions', {
+                          width: Math.round(item.size.w * 100),
+                          height: Math.round(item.size.h * 100),
+                        })
+                      : t('catalog.dimensions', {
+                          width: Math.round(item.size.w * 100),
+                          depth: Math.round(item.size.d * 100),
+                        })}
                   </span>
                 </span>
               </button>

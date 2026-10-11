@@ -6,8 +6,9 @@ const isCI = Boolean(process.env.CI);
 const BASE_URL = `http://127.0.0.1:${PORT}`;
 
 /**
- * Every test starts with the storage toasts (P6-09) already dealt with, so a toast never covers what
- * a test clicks; `storage-care.spec.ts` starts from an empty storage to test them.
+ * Every test starts with the storage toasts (P6-09) and the first-run tour (P8-02) already dealt
+ * with, so neither covers what a test clicks; `storage-care.spec.ts` and `tutorial.spec.ts` start
+ * without them to test them.
  */
 const SEEN_STORAGE_TOASTS = {
   cookies: [],
@@ -17,6 +18,7 @@ const SEEN_STORAGE_TOASTS = {
       localStorage: [
         { name: 'roomforge.storageWarningShown', value: '1' },
         { name: 'roomforge.backupReminder', value: '{"edits":0,"since":null,"never":true}' },
+        { name: 'roomforge.tutorialSeen', value: '1' },
       ],
     },
   ],

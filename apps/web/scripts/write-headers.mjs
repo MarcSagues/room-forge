@@ -2,7 +2,7 @@
 // Usage: node scripts/write-headers.mjs [out-dir]
 import { readdir, readFile, writeFile } from 'node:fs/promises';
 import { join, relative, resolve } from 'node:path';
-import { renderHeaders } from './headers.mjs';
+import { analyticsConnectSources, renderHeaders } from './headers.mjs';
 
 const root = resolve(process.argv[2] ?? 'out');
 
@@ -21,5 +21,6 @@ for (const file of await htmlFiles(root)) {
   pages.set(relative(root, file), await readFile(file, 'utf8'));
 }
 if (pages.size === 0) throw new Error(`no HTML pages in ${root}: run next build first`);
-await writeFile(join(root, '_headers'), renderHeaders(pages));
+const connectSources = analyticsConnectSources(process.env.NEXT_PUBLIC_ANALYTICS_ENDPOINT);
+await writeFile(join(root, '_headers'), renderHeaders(pages, { connectSources }));
 console.log(`_headers written for ${pages.size} pages in ${root}`);

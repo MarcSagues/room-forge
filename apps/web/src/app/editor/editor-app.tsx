@@ -1,6 +1,6 @@
 'use client';
 
-import type { SceneDocument } from '@roomforge/core';
+import { OPENING_VARIANTS, type SceneDocument } from '@roomforge/core';
 import {
   type RefObject,
   useCallback,
@@ -11,7 +11,13 @@ import {
   useState,
 } from 'react';
 import { appCatalog, catalogEntries } from '@/asset-library';
-import { createShortcutRegistry, type ErrorLog, editorShortcuts } from '@/editor';
+import {
+  createShortcutRegistry,
+  type ErrorLog,
+  editorShortcuts,
+  installAnalyticsTracking,
+  pageAnalytics,
+} from '@/editor';
 import {
   type Autosave,
   autosaveSourceOf,
@@ -31,6 +37,7 @@ import {
   type ContextState,
   EditorShell,
   LazySceneOutliner,
+  type MessageKey,
   ProjectUnavailable,
   ReadOnlyNotice,
   RoomMaterialsPanel,
@@ -58,6 +65,15 @@ const CATALOG_ITEMS: readonly CatalogPanelItem[] = catalogEntries().map((entry) 
   color: entry.color,
   size: entry.size,
 }));
+/** The Structure tab: the four door and window variants (P3-12), sized as their opening. */
+const OPENING_ITEMS: readonly CatalogPanelItem[] = Object.entries(OPENING_VARIANTS).map(
+  ([variant, size]) => ({
+    id: variant,
+    name: translate('en', `catalog.opening.${variant}` as MessageKey),
+    color: size.kind === 'door' ? '#b88a55' : '#cfe3ee',
+    size: { w: size.width, h: size.height, d: 0.1 },
+  }),
+);
 const ITEM_NAMES = new Map(CATALOG_ITEMS.map((item) => [item.id, item.name]));
 const itemName = (catalogId: string) => ITEM_NAMES.get(catalogId);
 
@@ -175,6 +191,23 @@ export function Workspace(props: {
     };
   }, [repository, project.id, session, journal, owner, autosaveRef]);
 
+  // Respectful analytics (ADR-0011): a no-op unless the build sets an endpoint. The viewer of a
+  // shared link reports nothing at all.
+  useEffect(() => {
+    if (viewer) return;
+    const analytics = pageAnalytics();
+    analytics.track('editor_opened');
+    return installAnalyticsTracking(
+      {
+        onDocumentChanged: (listener) => session.on('document:changed', listener),
+        ...(autosave
+          ? { onSaveStatus: (listener) => autosave.subscribe((state) => listener(state.status)) }
+          : {}),
+      },
+      analytics,
+    );
+  }, [viewer, session, autosave]);
+
   // The shortcuts are data: the editor's own go in here, the shell adds the panels and the help.
   const shortcuts = useMemo(() => {
     const registry = createShortcutRegistry();
@@ -190,6 +223,20 @@ export function Workspace(props: {
       move: (x: number, y: number, free: boolean) => scene.current?.placement.move(x, y, free),
       end: (x: number, y: number) => scene.current?.placement.end(x, y) ?? false,
       cancel: () => scene.current?.placement.cancel(),
+    }),
+    [],
+  );
+  const structure = useMemo(
+    () => ({
+      items: OPENING_ITEMS,
+      placement: {
+        begin: (id: string) => scene.current?.openingPlacement.begin(id) ?? false,
+        move: (x: number, y: number, free: boolean) =>
+          scene.current?.openingPlacement.move(x, y, free),
+        end: (x: number, y: number) => scene.current?.openingPlacement.end(x, y) ?? false,
+        cancel: () => scene.current?.openingPlacement.cancel(),
+      },
+      onPlace: (id: string) => scene.current?.openingPlacement.placeAtCenter(id) ?? false,
     }),
     [],
   );
@@ -217,6 +264,7 @@ export function Workspace(props: {
     const document = session.getState().document as SceneDocument;
     downloadFile(exportFileOf({ name: nameRef.current, document }, { appVersion: APP_VERSION }));
     reminder.recordExport();
+    pageAnalytics().track('export_json');
   }, [session, reminder]);
 
   // The browser may clear what it stores: warn once if it might, and suggest a copy now and then.
@@ -246,6 +294,7 @@ export function Workspace(props: {
     } catch {
       return { kind: 'copy-failed' };
     }
+    pageAnalytics().track('share_link_created');
     return { kind: 'copied', length: link.length, long: link.overTarget };
   }, [session]);
 
@@ -282,6 +331,7 @@ export function Workspace(props: {
             items={CATALOG_ITEMS}
             placement={placement}
             onPlace={(id) => scene.current?.placement.placeAtCenter(id) ?? false}
+            structure={structure}
           />
         }
         onPanelError={(error, panel) => errorLog?.record(error, { source: 'react', where: panel })}

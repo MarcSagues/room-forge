@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
+  analyticsConnectSources,
   contentSecurityPolicy,
   headersFor,
   inlineScripts,
@@ -146,4 +147,26 @@ test('headersFor joins equal headers from several rules and escapes patterns', (
 test('parseHeaders ignores comments and blank lines', () => {
   const rules = parseHeaders('# comment\n\n/x\n  A: b: c\n');
   assert.deepEqual(rules, [{ pattern: '/x', headers: [['A', 'b: c']] }]);
+});
+
+test('connect-src stays self-only unless an analytics endpoint on another origin is configured', () => {
+  assert.deepEqual(directives(contentSecurityPolicy([]))['connect-src'], ["'self'"]);
+  for (const endpoint of [
+    undefined,
+    '',
+    '/api/event',
+    'http://stats.test/e',
+    '//stats.test/e',
+    'nope',
+  ]) {
+    assert.deepEqual(analyticsConnectSources(endpoint), [], String(endpoint));
+  }
+  const sources = analyticsConnectSources('https://stats.test/api/event?x=1');
+  assert.deepEqual(sources, ['https://stats.test']);
+  assert.deepEqual(directives(contentSecurityPolicy([], sources))['connect-src'], [
+    "'self'",
+    'https://stats.test',
+  ]);
+  const headers = renderHeaders(new Map([['index.html', '<p>x</p>']]), { connectSources: sources });
+  assert.ok(headers.includes("connect-src 'self' https://stats.test;"));
 });

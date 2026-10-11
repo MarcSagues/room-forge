@@ -5,10 +5,11 @@ const thousandths = (value: number) => Math.round(value * 1000) / 1000;
 /**
  * What two materials must have in common to be the same one: the preset that is really drawn (an
  * unknown preset draws the default, so all of them share it), the tint, the surface values and
- * whether it is see-through or glows. Everything else about a material follows from these.
+ * whether it is see-through or glows, and in which colour. Everything else about a material
+ * follows from these.
  */
 export function materialKey(
-  material: ResolvedMaterial,
+  material: ResolvedMaterial & { readonly glow?: string },
   transparent: boolean,
   emissive = false,
 ): string {
@@ -21,6 +22,6 @@ export function materialKey(
     thousandths(material.roughness),
     thousandths(material.metalness),
     kind,
-    ...(emissive ? ['emissive'] : []),
+    ...(emissive ? ['emissive', material.glow?.toLowerCase() ?? '-'] : []),
   ].join('|');
 }

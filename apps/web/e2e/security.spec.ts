@@ -30,7 +30,16 @@ async function watch(page: Page) {
   };
 }
 
-const PAGES = ['/', '/projects/', '/editor/', '/view/'];
+const PAGES = [
+  '/',
+  '/es/',
+  '/privacy/',
+  '/es/terminos/',
+  '/licenses/',
+  '/projects/',
+  '/editor/',
+  '/view/',
+];
 
 test.describe('headers of every page', () => {
   for (const path of PAGES) {
@@ -75,13 +84,18 @@ test.describe('headers of every page', () => {
 });
 
 test.describe('the app works under the policy, with a clean console', () => {
-  test('the home page', async ({ page }) => {
-    const seen = await watch(page);
-    await page.goto('/');
-    await expect(page.getByRole('heading', { level: 1, name: 'RoomForge' })).toBeVisible();
-    expect(await seen.violations()).toEqual([]);
-    expect(seen.consoleErrors).toEqual([]);
-  });
+  for (const path of ['/', '/es/']) {
+    test(`the home page ${path}`, async ({ page }) => {
+      const seen = await watch(page);
+      await page.goto(path);
+      await expect(page.getByRole('heading', { level: 1, name: 'RoomForge' })).toBeVisible();
+      // Opening a question of the FAQ and following the skip link must not need any script.
+      await page.locator('summary').first().click();
+      await page.getByRole('link', { name: /skip to content|saltar al contenido/i }).focus();
+      expect(await seen.violations()).toEqual([]);
+      expect(seen.consoleErrors).toEqual([]);
+    });
+  }
 
   test('the projects screen, creating and exporting a project', async ({ page }) => {
     const seen = await watch(page);

@@ -334,6 +334,42 @@ describe('MaterialFactory: glowing materials (luminaires)', () => {
   });
 });
 
+describe('MaterialFactory: glow colours (luminaire light state)', () => {
+  const glowing = (glow: string) => ({ ...look('paint.satin', { tint: '#ffffff' }), glow });
+
+  it('glows in the given colour, black when off, and shares one material per colour', () => {
+    const factory = createMaterialFactory();
+    const red = factory.acquire(glowing('#ff0000'), { emissive: true });
+    const red2 = factory.acquire(glowing('#FF0000'), { emissive: true });
+    const off = factory.acquire(glowing('#000000'), { emissive: true });
+    expect(red.material).toBe(red2.material);
+    expect(red.material.emissive.getHex()).toBe(0xff0000);
+    expect(off.material).not.toBe(red.material);
+    expect(off.material.emissive.getHex()).toBe(0);
+    expect(off.material.toneMapped).toBe(false);
+  });
+
+  it('changes a glow in place when it is the only user, and never touches the shader', () => {
+    const factory = createMaterialFactory();
+    const lease = factory.acquire(glowing('#ff0000'), { emissive: true });
+    const { material } = lease;
+    const version = material.version;
+    expect(lease.update(glowing('#000000'))).toBe(false);
+    expect(lease.material).toBe(material);
+    expect(material.emissive.getHex()).toBe(0);
+    expect(material.version).toBe(version); // no needsUpdate: same program
+  });
+
+  it('moves a shared lease to its own glow, leaving the others lit', () => {
+    const factory = createMaterialFactory();
+    const a = factory.acquire(glowing('#ff0000'), { emissive: true });
+    const b = factory.acquire(glowing('#ff0000'), { emissive: true });
+    expect(a.update(glowing('#000000'))).toBe(true);
+    expect(a.material).not.toBe(b.material);
+    expect(b.material.emissive.getHex()).toBe(0xff0000);
+  });
+});
+
 describe('MaterialFactory: stopping', () => {
   it('dispose frees everything, and what leases are left do nothing', () => {
     const factory = createMaterialFactory();

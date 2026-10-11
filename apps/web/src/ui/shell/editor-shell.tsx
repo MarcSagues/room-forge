@@ -349,7 +349,13 @@ function CatalogSidebar({
   children?: ReactNode;
 }) {
   return (
-    <SidePanel id={LEFT_ID} label={t('shell.leftPanel')} hidden={hidden} className={className}>
+    <SidePanel
+      id={LEFT_ID}
+      label={t('shell.leftPanel')}
+      hidden={hidden}
+      className={className}
+      tour="catalog"
+    >
       <PanelHeader>{t('shell.catalog')}</PanelHeader>
       {children ?? <PanelHint>{t('shell.catalogHint')}</PanelHint>}
     </SidePanel>
@@ -368,7 +374,13 @@ function PropertiesPanel({
   children?: ReactNode;
 }) {
   return (
-    <SidePanel id={RIGHT_ID} label={t('shell.rightPanel')} hidden={hidden} className={className}>
+    <SidePanel
+      id={RIGHT_ID}
+      label={t('shell.rightPanel')}
+      hidden={hidden}
+      className={className}
+      tour="properties"
+    >
       <Tabs defaultValue="properties" className="min-h-0 flex-1 gap-0">
         <div className="flex h-10 shrink-0 items-center border-b px-2">
           <TabsList variant="line">
@@ -394,6 +406,7 @@ function Viewport({ children }: { children?: ReactNode }) {
       // biome-ignore lint/a11y/noNoninteractiveTabindex: the viewport will take keyboard input (P3-08).
       tabIndex={0}
       aria-label={t('shell.viewport')}
+      data-tour="viewport"
       className="relative flex h-full min-h-0 flex-1 items-center justify-center bg-canvas outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
     >
       {children ?? <p className="text-fg-subtle">{t('shell.viewportHint')}</p>}
