@@ -17,9 +17,10 @@
 | M7 | Fase 7 — Testing y optimización | 9 | 4 | 5 | 0 | 0 | 10,5 |
 | M8 | Fase 8 — Beta pública | 6 | 4 | 1 | 1 | 0 | 6 |
 | M9 | Fase 9 — IA y monetización | 9 | 0 | 0 | 4 | 5 | 28 |
-| **Total** | | **91** | | | | | **119,25** |
+| M10 | Fase 10 — HomeForge: la casa completa | 8 | 0 | 8 | 0 | 0 | 11,5 |
+| **Total** | | **99** | | | | | **130,75** |
 
-- **MVP + beta (M0–M8):** 91,25 días ideales. **Fase 9 (post-MVP):** 28 días ideales (muy incierto).
+- **MVP + beta (M0–M8):** 91,25 días ideales. **Fase 9 (post-MVP):** 39,5 días ideales (muy incierto).
 - **Ruta crítica del MVP:** P0-01 → P0-03 → P1-01 → P1-03 → P2-01 → P2-02 → P2-06 → P2-07 → P4-01 → P4-03 → P4-10 → P5-05 → P5-06 → P6-06 → P7-01 → P7-07 (20,25 días si no hay paralelismo humano; las issues fuera de la ruta se pueden intercalar).
 
 ## 2. Orden de implementación sugerido
@@ -120,6 +121,14 @@ La columna «Sprint» agrupa secuencialmente en bloques de 5 días ideales (≈ 
 | 89 | S25 | P9-06 | Catálogo premium y marketplace de packs | feature | P3 | XL | P9-05 |
 | 90 | S26 | P9-07 | Colaboración en tiempo real | feature | P3 | XL | P9-02 |
 | 91 | S27 | P9-08 | Habitaciones poligonales, varias plantas y otros tipos de vivienda | feature | P3 | XL | P8-06 |
+| 92 | S27 | P10-01 | docs: ADR HomeForge (modos Habitación/Casa y planes gratuito/premium) | task | P1 | S | — |
+| 93 | S28 | P10-02 | puertas que se abren y se cierran | feature | P1 | M | P10-01 |
+| 94 | S28 | P10-03 | core: varias habitaciones y pasillos en un plano | feature | P1 | L | P10-01 |
+| 95 | S28 | P10-04 | core + scene: puertas entre habitaciones | feature | P1 | M | P10-03, P10-02 |
+| 96 | S29 | P10-05 | scene: renderizar la casa | feature | P1 | L | P10-03 |
+| 97 | S29 | P10-06 | ui: editar la distribución de la casa | feature | P1 | L | P10-03, P10-05 |
+| 98 | S29 | P10-07 | planes gratuito y premium (límite local, sin pagos) | feature | P1 | M | P10-01, P10-06 |
+| 99 | S30 | P10-08 | renombrar RoomForge a HomeForge (producto y código) | task | P1 | L | P10-01 |
 
 ### Resumen por sprint
 
@@ -151,7 +160,10 @@ La columna «Sprint» agrupa secuencialmente en bloques de 5 días ideales (≈ 
 | S24 | 4 | P9-05 |
 | S25 | 4 | P9-06 |
 | S26 | 4 | P9-07 |
-| S27 | 4 | P9-08 |
+| S27 | 4,5 | P9-08, P10-01 |
+| S28 | 4 | P10-02, P10-03, P10-04 |
+| S29 | 5 | P10-05, P10-06, P10-07 |
+| S30 | 2 | P10-08 |
 
 ## 3. Por prioridad
 
@@ -218,10 +230,18 @@ La columna «Sprint» agrupa secuencialmente en bloques de 5 días ideales (≈ 
 - **P8-03** Producción: dominio, despliegue en Cloudflare, cabeceras y aprobación manual — _M8, M_
 - **P8-06** Release v0.1.0-beta: checklist, rollback y changelog — _M8, S_
 
-### P1 (19 issues, 21 días)
+### P1 (27 issues, 32,5 días)
 
 - **P1-07** Playwright con WebGL y tests e2e de humo en CI — _M1, S_
 - **P1-09** Activar la revisión con Codex y validar el flujo con un PR de prueba — _M1, S_
+- **P10-01** docs: ADR HomeForge (modos Habitación/Casa y planes gratuito/premium) — _M10, S_
+- **P10-02** puertas que se abren y se cierran — _M10, M_
+- **P10-03** core: varias habitaciones y pasillos en un plano — _M10, L_
+- **P10-04** core + scene: puertas entre habitaciones — _M10, M_
+- **P10-05** scene: renderizar la casa — _M10, L_
+- **P10-06** ui: editar la distribución de la casa — _M10, L_
+- **P10-07** planes gratuito y premium (límite local, sin pagos) — _M10, M_
+- **P10-08** renombrar RoomForge a HomeForge (producto y código) — _M10, L_
 - **P2-10** scene: modos de visibilidad de paredes (arriba, corte, abajo) y techo — _M2, M_
 - **P3-11** core: aperturas (puertas y ventanas): comandos y validación — _M3, M_
 - **P3-12** scene: aperturas en paredes (huecos, colocar y deslizar) — _M3, L_
@@ -269,6 +289,7 @@ La columna «Sprint» agrupa secuencialmente en bloques de 5 días ideales (≈ 
 - **E7** Épica: Testing y optimización — 9 issues, 10,5 días
 - **E8** Épica: Beta pública — 6 issues, 6 días
 - **E9** Épica: IA y monetización — 9 issues, 28 días
+- **E10** Épica: HomeForge, de la habitación a la casa — 8 issues, 11,5 días
 
 ## 5. Issues que requieren acción humana
 
