@@ -1,0 +1,68 @@
+name: deploy
+
+# Every merge into develop is published to https://home-forge.msagues.com (Vercel project
+# saguis-projects/home-forge). The static export is built here and uploaded as it is, with the
+# CSP and cache headers that write-vercel-config.mjs derives from `_headers`.
+# Needs the repository secret VERCEL_TOKEN (created by the owner); without it the job skips.
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  VERCEL_ORG_ID: team_VHltuYvgNHSQRS7HzZHANAIT
+  VERCEL_PROJECT_ID: prj_4iBQdwo3693lmJke7MdoXchmQIbu
+  SITE_URL: https://home-forge.msagues.com
+
+jobs:
+  deploy:
+    name: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: production
+      url: https://home-forge.msagues.com
+    steps:
+      - name: Skip without a Vercel token
+        id: token
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "VERCEL_TOKEN is not set: nothing is deployed." >> "$GITHUB_STEP_SUMMARY"
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.token.outputs.present == 'true'
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        if: steps.token.outputs.present == 'true'
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        if: steps.token.outputs.present == 'true'
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - if: steps.token.outputs.present == 'true'
+        run: pnpm install --frozen-lockfile
+      - if: steps.token.outputs.present == 'true'
+        run: pnpm build
+        env:
+          NEXT_PUBLIC_APP_VERSION: ${{ github.sha }}
+      - name: Deploy to production
+        if: steps.token.outputs.present == 'true'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          url=$(npx --yes vercel@53.4.0 deploy apps/web/out --prod --yes --token "$VERCEL_TOKEN")
+          echo "Deployed $url → $SITE_URL" >> "$GITHUB_STEP_SUMMARY"
