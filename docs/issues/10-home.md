@@ -265,7 +265,7 @@ Toca casi todos los ficheros: se hace cuando no haya PRs abiertos. Renombrar el 
 Una habitación deja de ser solo un rectángulo: su planta es un **polígono** de paredes rectas (formas en L, U, T…). El suelo, el techo, las paredes, los huecos de puertas y ventanas, la colocación de objetos, el imán a pared, la cámara y el pool de luces funcionan con cualquier forma.
 
 ### Contexto
-Decidido por el propietario (2026-10-11): «una habitación que hace forma de U se debe poder poner». El dominio ya lo previó ([DOMAIN_MODEL](../DOMAIN_MODEL.md) §8): `shape` es una unión discriminada y admitirá `{ kind: 'polygon', points }`; las paredes pasan a ser segmentos con IDs estables (migración v2). Va antes que varias habitaciones (P10-03), cuyas paredes compartidas se apoyan en estos segmentos.
+Decidido por el propietario (2026-10-11): «una habitación que hace forma de U se debe poder poner». El dominio ya lo previó ([DOMAIN_MODEL](../DOMAIN_MODEL.md) §8): `shape` es una unión discriminada y admitirá `{ kind: 'polygon', points }`; las paredes pasan a ser segmentos con IDs estables (migración v2). Va antes que varias habitaciones (P10-03), cuyas paredes compartidas se apoyan en estos segmentos. También va **antes de la beta** (decisión del propietario, 2026-10-11): la release P8-06 exige P10-09 y P10-10 cerradas.
 
 ### Requisitos
 - `core`: `shape` polígono simple (sin autointersecciones, sentido antihorario, lados ≥ mínimo, ángulos de 90° en esta primera versión, preparada para otros ángulos); paredes como segmentos con IDs estables; migración v1→v2 con *golden files* (un rectángulo pasa a un polígono de 4 lados sin cambiar de significado).
