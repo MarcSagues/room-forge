@@ -43,6 +43,7 @@ import {
   showStorageWarning,
   translate,
 } from '@/ui';
+import { beforeReload } from '../service-worker/before-reload';
 import type { BootedEditor } from './boot-editor';
 import { SaveNoticeBridge, SaveStatusBridge } from './save-bridge';
 import { installStorageCare } from './storage-care';
@@ -175,10 +176,13 @@ export function Workspace(props: {
       ...(journal ? { journal } : {}),
     });
     const removeLifecycle = installAutosaveLifecycle(instance, window);
+    // Accepting a new version (P8-05) waits for what is pending to be written.
+    const removeReloadTask = beforeReload(() => instance.flush());
     autosaveRef.current = instance;
     setAutosave(instance);
     return () => {
       removeLifecycle();
+      removeReloadTask();
       autosaveRef.current = null;
       setAutosave(null);
       void instance.dispose({ flush: true });

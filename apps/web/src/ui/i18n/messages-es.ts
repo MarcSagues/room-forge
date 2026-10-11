@@ -212,6 +212,9 @@ export const es: Record<MessageKey, string> = {
   'storageRisk.body':
     'No ha prometido conservarlos (ventana privada, poco espacio o ajustes del navegador). Exporta una copia para no perder tu trabajo.',
   'storageRisk.dismiss': 'Entendido',
+  'update.title': 'Actualización disponible',
+  'update.body': 'Hay una versión nueva de RoomForge. Tu trabajo se guarda antes de recargar.',
+  'update.reload': 'Recargar',
   'shell.undo': 'Deshacer',
   'shell.redo': 'Rehacer',
   'history.undoLabel': 'Deshacer: {label}',

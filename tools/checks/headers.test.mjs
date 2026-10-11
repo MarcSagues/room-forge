@@ -8,6 +8,7 @@ import {
   inlineScripts,
   parseHeaders,
   renderHeaders,
+  SERVICE_WORKER_POLICY,
   scriptHash,
   urlPathOf,
 } from '../../apps/web/scripts/headers.mjs';
@@ -112,6 +113,15 @@ test('every page also gets the common headers, and assets get long caching', () 
   assert.equal(headersFor(rules, '/editor/').get('cache-control'), undefined);
 });
 
+test('the service worker is always revalidated and may only fetch from its own origin', () => {
+  const rules = parseHeaders(renderHeaders(pages));
+  const worker = headersFor(rules, '/sw.js');
+  assert.equal(worker.get('cache-control'), 'no-cache');
+  assert.equal(worker.get('content-security-policy'), SERVICE_WORKER_POLICY);
+  assert.deepEqual(directives(SERVICE_WORKER_POLICY)['default-src'], ["'self'"]);
+  assert.deepEqual(directives(SERVICE_WORKER_POLICY)['script-src'], ["'none'"]);
+});
+
 test('the file is the same for the same pages, whatever order they came in', () => {
   const reversed = new Map([...pages].reverse());
   assert.equal(renderHeaders(pages), renderHeaders(reversed));
@@ -120,7 +130,7 @@ test('the file is the same for the same pages, whatever order they came in', () 
 test('equal scripts are hashed once, and a line stays under the host’s 2 000 character limit', () => {
   const html = `<script>same()</script><script>same()</script>${Array.from({ length: 12 }, (_, i) => `<script>s${i}()</script>`).join('')}`;
   const text = renderHeaders(new Map([['index.html', html]]));
-  const policy = text.split('\n').find((line) => line.includes('Content-Security-Policy'));
+  const policy = text.split('\n').find((line) => line.includes("script-src 'self'"));
   assert.equal(policy.split(scriptHash('same()')).length - 1, 1);
   assert.ok(policy.length < 2000, `the policy line has ${policy.length} characters`);
 });
