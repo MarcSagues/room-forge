@@ -1,20 +1,14 @@
-import Link from 'next/link';
-import { buttonVariants, translate } from '@/ui';
+import type { Metadata } from 'next';
+import { Landing, SitePage, siteMessages } from '@/ui';
+import { pageMetadata } from './seo';
 
-// Placeholder landing. The real landing (P8-01) must not load three.js.
+export const metadata: Metadata = pageMetadata('home', 'en', siteMessages.en.meta);
+
+// The landing page must not load three.js (ADR-0002): the editor is a separate route.
 export default function HomePage() {
   return (
-    <main className="mx-auto flex min-h-dvh max-w-3xl flex-col items-start justify-center gap-5 px-6">
-      <h1 className="font-semibold text-5xl tracking-tight">{translate('en', 'app.name')}</h1>
-      <p className="text-base text-fg-muted">{translate('en', 'home.tagline')}</p>
-      <div className="flex flex-wrap gap-3">
-        <Link href="/editor/" className={buttonVariants({ size: 'lg' })}>
-          {translate('en', 'home.openEditor')}
-        </Link>
-        <Link href="/projects/" className={buttonVariants({ size: 'lg', variant: 'outline' })}>
-          {translate('en', 'home.projects')}
-        </Link>
-      </div>
-    </main>
+    <SitePage locale="en" page="home">
+      <Landing locale="en" />
+    </SitePage>
   );
 }

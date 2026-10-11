@@ -23,12 +23,12 @@ describe('translate', () => {
   it('uses English by default, and Spanish once it is loaded', async () => {
     expect(DEFAULT_LOCALE).toBe('en');
     expect(LOCALES).toEqual(['en', 'es']);
-    expect(translate('en', 'home.openEditor')).toBe('Open the editor');
+    expect(translate('en', 'projects.new')).toBe('New project');
     // Until its dictionary arrives a locale falls back to English instead of failing.
-    expect(translate('es', 'home.openEditor')).toBe('Open the editor');
+    expect(translate('es', 'projects.new')).toBe('New project');
     await loadLocale('es');
     await loadLocale('es');
-    expect(translate('es', 'home.openEditor')).toBe('Abrir el editor');
+    expect(translate('es', 'projects.new')).toBe('Nuevo proyecto');
   });
 
   it('fills placeholders and leaves unknown ones untouched', () => {

@@ -27,8 +27,8 @@ const PRIORITIES = ['P0', 'P1', 'P2', 'P3'];
 const PRIORITY_LABEL = { P0: 'P0-critical', P1: 'P1-important', P2: 'P2-improvement', P3: 'P3-future' };
 const SIZE_DAYS = { XS: 0.25, S: 0.5, M: 1, L: 2, XL: 4 };
 const REQUIRED_SECTIONS = ['Descripción', 'Contexto', 'Requisitos', 'Criterios de aceptación', 'Tests esperados'];
-const ID_RE = /\b(E\d+|P\d-\d{2})\b/g;
-const HEADING_RE = /^## ISSUE ((?:E\d+)|(?:P\d-\d{2})) [—–-] (.+)$/;
+const ID_RE = /\b(E\d+|P\d{1,2}-\d{2})\b/g;
+const HEADING_RE = /^## ISSUE ((?:E\d+)|(?:P\d{1,2}-\d{2})) [—–-] (.+)$/;
 const META_RE = /^- \*\*(.+?):\*\*\s*(.*)$/;
 
 // ───────────────────────────── parseo ─────────────────────────────
@@ -126,7 +126,7 @@ function validate(issues) {
     if (!milestones.has(i.milestone)) err(i, `hito inexistente «${i.milestone}»`);
     if (i.title.length > 100) err(i, 'título > 100 caracteres');
 
-    const expectedMs = i.id.startsWith('E') ? `M${i.id.slice(1)}` : `M${i.id[1]}`;
+    const expectedMs = i.id.startsWith('E') ? `M${i.id.slice(1)}` : `M${i.id.slice(1, i.id.indexOf('-'))}`;
     if (i.milestone !== expectedMs) err(i, `el hito ${i.milestone} no coincide con el prefijo del ID (esperado ${expectedMs})`);
 
     if (i.type === 'epic') {
@@ -516,7 +516,7 @@ function fail(msg) {
 }
 
 function parseArgs(argv) {
-  const o = { _: [], apply: false, branch: 'develop', phases: [0, 9], delay: 1500 };
+  const o = { _: [], apply: false, branch: 'develop', phases: [0, 10], delay: 1500 };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--apply') o.apply = true;

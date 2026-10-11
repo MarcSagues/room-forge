@@ -71,10 +71,11 @@
       ],
       "source": {
         "kind": "glb",
-        "file": "models/desk.office.140.glb",
+        "file": "models/desk.office.140.476208087d.glb",
         "triangles": 3300,
-        "bytes": 98108
+        "bytes": 70564
       },
+      "thumbnail": "thumbnails/desk.office.140.36b10a9ea2.webp",
       "license": {
         "spdx": "LicenseRef-RoomForge-Proprietary",
         "author": "RoomForge",
@@ -152,10 +153,11 @@
       ],
       "source": {
         "kind": "glb",
-        "file": "models/desk.gaming.160.glb",
+        "file": "models/desk.gaming.160.a5303b2dd9.glb",
         "triangles": 2480,
-        "bytes": 75604
+        "bytes": 54684
       },
+      "thumbnail": "thumbnails/desk.gaming.160.66882131a8.webp",
       "license": {
         "spdx": "LicenseRef-RoomForge-Proprietary",
         "author": "RoomForge",
@@ -233,10 +235,11 @@
       ],
       "source": {
         "kind": "glb",
-        "file": "models/desk.studio.160.glb",
+        "file": "models/desk.studio.160.fafa04e498.glb",
         "triangles": 2560,
-        "bytes": 78896
+        "bytes": 56920
       },
+      "thumbnail": "thumbnails/desk.studio.160.0a7521fb67.webp",
       "license": {
         "spdx": "LicenseRef-RoomForge-Proprietary",
         "author": "RoomForge",
@@ -303,10 +306,11 @@
       ],
       "source": {
         "kind": "glb",
-        "file": "models/chair.gaming.racing.glb",
+        "file": "models/chair.gaming.racing.04a7926148.glb",
         "triangles": 4736,
-        "bytes": 145792
+        "bytes": 103652
       },
+      "thumbnail": "thumbnails/chair.gaming.racing.c34c07e39c.webp",
       "license": {
         "spdx": "LicenseRef-RoomForge-Proprietary",
         "author": "RoomForge",
@@ -373,10 +377,11 @@
       ],
       "source": {
         "kind": "glb",
-        "file": "models/chair.gaming.ergonomic.glb",
+        "file": "models/chair.gaming.ergonomic.a0b4368c43.glb",
         "triangles": 6276,
-        "bytes": 190404
+        "bytes": 146020
       },
+      "thumbnail": "thumbnails/chair.gaming.ergonomic.21a398c8a1.webp",
       "license": {
         "spdx": "LicenseRef-RoomForge-Proprietary",
         "author": "RoomForge",
@@ -443,10 +448,11 @@
       ],
       "source": {
         "kind": "glb",
-        "file": "models/chair.gaming.padded.glb",
+        "file": "models/chair.gaming.padded.fccd9ab3f2.glb",
         "triangles": 4436,
-        "bytes": 137216
+        "bytes": 97624
       },
+      "thumbnail": "thumbnails/chair.gaming.padded.faf7d867f3.webp",
       "license": {
         "spdx": "LicenseRef-RoomForge-Proprietary",
         "author": "RoomForge",
@@ -513,10 +519,11 @@
       ],
       "source": {
         "kind": "glb",
-        "file": "models/monitor.27.flat.glb",
+        "file": "models/monitor.27.flat.4888cde914.glb",
         "triangles": 1320,
-        "bytes": 43180
+        "bytes": 31876
       },
+      "thumbnail": "thumbnails/monitor.27.flat.69b352bebe.webp",
       "license": {
         "spdx": "LicenseRef-RoomForge-Proprietary",
         "author": "RoomForge",
@@ -583,10 +590,11 @@
       ],
       "source": {
         "kind": "glb",
-        "file": "models/monitor.ultrawide.34.curved.glb",
+        "file": "models/monitor.ultrawide.34.curved.2d0b889c07.glb",
         "triangles": 1260,
-        "bytes": 43948
+        "bytes": 32184
       },
+      "thumbnail": "thumbnails/monitor.ultrawide.34.curved.758d994f9f.webp",
       "license": {
         "spdx": "LicenseRef-RoomForge-Proprietary",
         "author": "RoomForge",
@@ -653,10 +661,11 @@
       ],
       "source": {
         "kind": "glb",
-        "file": "models/monitor.27.arm.glb",
+        "file": "models/monitor.27.arm.f6eb4af9ce.glb",
         "triangles": 1328,
-        "bytes": 43484
+        "bytes": 32104
       },
+      "thumbnail": "thumbnails/monitor.27.arm.1da59cbf9e.webp",
       "license": {
         "spdx": "LicenseRef-RoomForge-Proprietary",
         "author": "RoomForge",
@@ -716,10 +725,11 @@
       },
       "source": {
         "kind": "glb",
-        "file": "models/led.strip.1m.glb",
+        "file": "models/led.strip.1m.2fc72a82fe.glb",
         "triangles": 48,
-        "bytes": 5548
+        "bytes": 4804
       },
+      "thumbnail": "thumbnails/led.strip.1m.0f3e3a81e5.webp",
       "license": {
         "spdx": "LicenseRef-RoomForge-Proprietary",
         "author": "RoomForge",
@@ -779,10 +789,11 @@
       },
       "source": {
         "kind": "glb",
-        "file": "models/light.bars.pair.glb",
+        "file": "models/light.bars.pair.0bddc52bb5.glb",
         "triangles": 1296,
-        "bytes": 40884
+        "bytes": 29792
       },
+      "thumbnail": "thumbnails/light.bars.pair.4d0cd8cb94.webp",
       "license": {
         "spdx": "LicenseRef-RoomForge-Proprietary",
         "author": "RoomForge",
@@ -842,10 +853,11 @@
       },
       "source": {
         "kind": "glb",
-        "file": "models/panel.hex.cluster.glb",
+        "file": "models/panel.hex.cluster.3892a9763e.glb",
         "triangles": 240,
-        "bytes": 13072
+        "bytes": 9992
       },
+      "thumbnail": "thumbnails/panel.hex.cluster.0ddeb241f2.webp",
       "license": {
         "spdx": "LicenseRef-RoomForge-Proprietary",
         "author": "RoomForge",
@@ -918,10 +930,11 @@
       },
       "source": {
         "kind": "glb",
-        "file": "models/lamp.floor.cone.glb",
+        "file": "models/lamp.floor.cone.64e2152d1c.glb",
         "triangles": 352,
-        "bytes": 15864
+        "bytes": 12448
       },
+      "thumbnail": "thumbnails/lamp.floor.cone.f8c49a9d74.webp",
       "license": {
         "spdx": "LicenseRef-RoomForge-Proprietary",
         "author": "RoomForge",
@@ -994,10 +1007,11 @@
       },
       "source": {
         "kind": "glb",
-        "file": "models/lamp.desk.arm.glb",
+        "file": "models/lamp.desk.arm.d45d66cb49.glb",
         "triangles": 452,
-        "bytes": 20976
+        "bytes": 16008
       },
+      "thumbnail": "thumbnails/lamp.desk.arm.8873ba4997.webp",
       "license": {
         "spdx": "LicenseRef-RoomForge-Proprietary",
         "author": "RoomForge",
@@ -1057,10 +1071,11 @@
       },
       "source": {
         "kind": "glb",
-        "file": "models/neon.sign.wave.glb",
+        "file": "models/neon.sign.wave.2992ab0435.glb",
         "triangles": 1624,
-        "bytes": 44684
+        "bytes": 32872
       },
+      "thumbnail": "thumbnails/neon.sign.wave.c3914022fb.webp",
       "license": {
         "spdx": "LicenseRef-RoomForge-Proprietary",
         "author": "RoomForge",

@@ -20,6 +20,7 @@ const CATALOG_ID = /^[a-z][a-z0-9]*(\.[a-z0-9]+(-[a-z0-9]+)*)+$/;
 const SLOT_ID = /^[a-z][a-z0-9-]*$/;
 /** Relative to the public assets folder; no way out of it. */
 const MODEL_FILE = /^models\/[a-z0-9][a-z0-9.-]*\.glb$/;
+const THUMBNAIL_FILE = /^thumbnails\/[a-z0-9][a-z0-9.-]*\.webp$/;
 
 /** Trimmed, then 1 to `max` characters (`z.string().trim().min(1).max()` in classic zod). */
 const trimmed = (max: number) => z.string().check(z.trim(), z.minLength(1), z.maxLength(max));
@@ -83,6 +84,8 @@ export const CatalogManifestItemSchema = z.object({
     triangles: z.int().check(z.nonnegative()),
     bytes: z.int().check(z.positive()),
   }),
+  /** Picture of the model for the catalog panel (P4-03), relative to the public assets folder. */
+  thumbnail: z.exactOptional(z.string().check(z.regex(THUMBNAIL_FILE))),
   license: CatalogLicenseSchema,
 });
 
