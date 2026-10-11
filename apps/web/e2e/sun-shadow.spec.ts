@@ -46,11 +46,18 @@ async function loaded(page: Page) {
 
 /** Counters of a frame that only redraws (no shadow pass), so they are the cost of the picture. */
 async function plainFrame(page: Page) {
-  const before = (await info(page)).frame;
-  await page.evaluate(() => window.__RF__?.invalidate());
-  await page.waitForFunction((f) => (window.__RF__?.info()?.frame ?? 0) > f, before);
-  await settle(page);
-  return info(page);
+  const shadowDraws = () => page.evaluate(() => window.__RF__?.shadowRefreshes() ?? -1);
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    await settle(page);
+    const drawn = await shadowDraws();
+    const before = (await info(page)).frame;
+    await page.evaluate(() => window.__RF__?.invalidate());
+    await page.waitForFunction((f) => (window.__RF__?.info()?.frame ?? 0) > f, before);
+    await settle(page);
+    // A model arriving meanwhile would have redrawn the shadow map: try again.
+    if ((await shadowDraws()) === drawn) return info(page);
+  }
+  throw new Error('no frame without a shadow pass');
 }
 
 async function addObjects(page: Page) {
