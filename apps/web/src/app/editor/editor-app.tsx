@@ -41,6 +41,7 @@ import {
   showBackupReminder,
   showStorageWarning,
   translate,
+  useShellMode,
 } from '@/ui';
 import type { BootedEditor } from './boot-editor';
 import { SaveNoticeBridge, SaveStatusBridge } from './save-bridge';
@@ -135,6 +136,9 @@ export function Workspace(props: {
   const { editor, autosaveRef, owner, onTakeOver, errorLog, viewer } = props;
   const { session, project, repository, storage, journal } = editor;
   const [context, setContext] = useState<ContextState>('ok');
+  // A shared link, or a phone: look around, edit nothing (P7-06).
+  const shellMode = useShellMode().mode;
+  const viewOnly = Boolean(viewer) || shellMode === 'viewer';
   const scene = useRef<SceneHandle | null>(null);
   // Set once autosave is running. The save state is NOT read here: see SaveStatusBridge.
   const [autosave, setAutosave] = useState<Autosave | null>(null);
@@ -210,6 +214,8 @@ export function Workspace(props: {
     return () => clearTimeout(timer);
   }, [context]);
 
+  const frame = useCallback(() => scene.current?.camera.fit(), []);
+
   const reminder = useMemo(() => createBackupReminder({ storage: browserStorage() }), []);
 
   // A copy of what is on screen, not of what was last written: when saving fails, the work is here.
@@ -284,6 +290,7 @@ export function Workspace(props: {
             onPlace={(id) => scene.current?.placement.placeAtCenter(id) ?? false}
           />
         }
+        onFrame={frame}
         onPanelError={(error, panel) => errorLog?.record(error, { source: 'react', where: panel })}
         sharedView={viewer ? <SharedViewBanner name={name} onCopy={viewer.onCopy} /> : undefined}
         properties={
@@ -299,6 +306,7 @@ export function Workspace(props: {
             <SceneCanvas
               session={session}
               catalog={appCatalog}
+              viewOnly={viewOnly}
               onReady={(handle) => {
                 scene.current = handle;
               }}

@@ -17,6 +17,7 @@ import {
   MoonStarIcon,
   MousePointer2Icon,
   RotateCwIcon,
+  ScanIcon,
   SquareIcon,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -113,8 +114,23 @@ function SessionControls({ session }: { session: EditorSession }) {
   );
 }
 
-/** Perspective or top view, and how walls show: all a viewer of a shared room may change too. */
-export function ViewControls({ session }: { session: EditorSession }) {
+/** Touch targets of the viewer on phones: at least 44 px (DESIGN_SYSTEM §7, WCAG 2.5.5). */
+const TOUCH_TARGET = 'h-11 min-w-11 px-2.5';
+
+/**
+ * Perspective or top view, and how walls show: all a viewer of a shared room may change too.
+ * `touch` makes every control a 44 px target; `onFrame` adds a button that frames the room.
+ */
+export function ViewControls({
+  session,
+  touch = false,
+  onFrame,
+}: {
+  session: EditorSession;
+  touch?: boolean;
+  onFrame?: (() => void) | undefined;
+}) {
+  const target = touch ? TOUCH_TARGET : undefined;
   const { view, wallMode } = useStore(
     session.store,
     useShallow((state) => ({ view: state.view, wallMode: state.wallMode })),
@@ -126,6 +142,7 @@ export function ViewControls({ session }: { session: EditorSession }) {
         <Button
           variant={view === 'perspective' ? 'secondary' : 'ghost'}
           size="sm"
+          className={target}
           aria-pressed={view === 'perspective'}
           onClick={() => session.setView('perspective')}
         >
@@ -137,6 +154,7 @@ export function ViewControls({ session }: { session: EditorSession }) {
         <Button
           variant={view === 'top' ? 'secondary' : 'ghost'}
           size="sm"
+          className={target}
           aria-pressed={view === 'top'}
           onClick={() => session.setView('top')}
         >
@@ -147,7 +165,7 @@ export function ViewControls({ session }: { session: EditorSession }) {
       <ShortcutTooltip label={t('bar.wallsMenu')} shortcutId="view.walls">
         <DeferredDropdownMenu
           trigger={
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" className={target}>
               {t('bar.walls', { mode: wallName(wallMode) })}
               <ChevronDownIcon aria-hidden="true" />
             </Button>
@@ -161,7 +179,11 @@ export function ViewControls({ session }: { session: EditorSession }) {
                 onValueChange={(mode) => session.setWallMode(mode as WallMode)}
               >
                 {WALL_MODES.map((mode) => (
-                  <menu.DropdownMenuRadioItem key={mode} value={mode}>
+                  <menu.DropdownMenuRadioItem
+                    key={mode}
+                    value={mode}
+                    className={touch ? 'min-h-11' : undefined}
+                  >
                     {wallName(mode)}
                   </menu.DropdownMenuRadioItem>
                 ))}
@@ -170,6 +192,14 @@ export function ViewControls({ session }: { session: EditorSession }) {
           )}
         </DeferredDropdownMenu>
       </ShortcutTooltip>
+      {onFrame ? (
+        <ShortcutTooltip label={t('bar.frameHint')} shortcutId="view.fit">
+          <Button variant="ghost" size="sm" className={target} onClick={onFrame}>
+            <ScanIcon />
+            {t('bar.frame')}
+          </Button>
+        </ShortcutTooltip>
+      ) : null}
     </fieldset>
   );
 }

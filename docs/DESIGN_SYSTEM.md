@@ -124,7 +124,7 @@ Contrastes calculados (WCAG 2.x):
 | ≥ 1280 | Layout completo. |
 | 1024–1279 | Paneles más estrechos; el derecho se colapsa a pestañas si el viewport < 640 px. |
 | 768–1023 | Paneles como *drawers* superpuestos; edición posible pero no prioritaria. |
-| < 768 | **Modo visor**: viewport a pantalla completa, orbitar con táctil, selector de vista y día/noche, banner «Abre en un ordenador para editar». |
+| < 768 (o móvil en horizontal: puntero táctil y alto < 540) | **Modo visor**: viewport a pantalla completa, orbitar con táctil, selector de vista y día/noche, banner «Abre en un ordenador para editar». Controles de 44 px, *safe areas* y sin scroll/zoom de página sobre la escena (P7-06). |
 
 ## 4. Interacción en el viewport (lenguaje visual 3D)
 

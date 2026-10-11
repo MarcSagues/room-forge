@@ -290,6 +290,8 @@ export const es: Record<MessageKey, string> = {
   'bar.view': 'Vista',
   'bar.perspective': 'Perspectiva',
   'bar.top': 'Superior',
+  'bar.frame': 'Encuadrar',
+  'bar.frameHint': 'Encuadrar la habitación (o tócala dos veces)',
   'bar.walls': 'Paredes: {mode}',
   'bar.wallsMenu': 'Paredes',
   'bar.wall.up': 'Levantadas',

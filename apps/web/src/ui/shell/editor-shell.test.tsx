@@ -167,6 +167,25 @@ describe('EditorShell — viewer (< 768 px)', () => {
     expect(screen.queryByRole('complementary', { hidden: true })).not.toBeInTheDocument();
     expect(screen.queryByRole('contentinfo')).not.toBeInTheDocument();
   });
+
+  it('with a session, offers the view controls and framing as 44 px touch targets', async () => {
+    const session = createEditorSession({
+      initialDocument: createStarterDocument(),
+      catalog: { getItem: () => undefined },
+    });
+    const onFrame = vi.fn();
+    render(<EditorShell session={session} onFrame={onFrame} />);
+    expect(screen.getByRole('status')).toHaveTextContent('Open RoomForge on a computer to edit.');
+    expect(screen.queryByRole('button', { name: /undo/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /snap/i })).not.toBeInTheDocument();
+    for (const name of ['Perspective', 'Top', /Walls/, 'Frame']) {
+      expect(screen.getByRole('button', { name })).toHaveClass('h-11', 'min-w-11');
+    }
+    await userEvent.click(screen.getByRole('button', { name: 'Frame' }));
+    expect(onFrame).toHaveBeenCalledTimes(1);
+    await userEvent.click(screen.getByRole('button', { name: 'Top' }));
+    expect(session.getState().view).toBe('top');
+  });
 });
 
 describe('EditorShell — shared link viewer', () => {
@@ -184,6 +203,9 @@ describe('EditorShell — shared link viewer', () => {
     expect(screen.queryByRole('button', { name: /undo/i })).not.toBeInTheDocument();
     expect(screen.queryByText('Open RoomForge on a computer to edit.')).not.toBeInTheDocument();
 
+    // A mouse at a desk: the usual compact controls, and no framing button without `onFrame`.
+    expect(screen.getByRole('button', { name: 'Top' })).not.toHaveClass('h-11');
+    expect(screen.queryByRole('button', { name: 'Frame' })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Top' }));
     expect(session.getState().view).toBe('top');
   });
