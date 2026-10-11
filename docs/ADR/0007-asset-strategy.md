@@ -51,3 +51,11 @@ muestras propias y pide aplicarlas al editor. Queda aceptado:
   necesite, siempre con licencia y procedencia registradas en el manifiesto.
 - Presupuesto por modelo: ≤ 20 000 triángulos y ≤ 300 kB, 3–4 ranuras, carga perezosa del catálogo.
 - La evaluación con tres personas queda como seguimiento de la beta (P8-04), no bloquea la integración.
+
+**2026-10-11 — pipeline (P4-03, #51):** para los modelos propios el pipeline no usa
+`gltf-transform`: `@gltf-transform/functions` arrastra `sharp` (binarios nativos, libvips LGPL)
+para texturas que estos modelos no tienen. El generador ya suelda vértices y el exportador de three
+no deja nada que deduplicar o podar; la optimización es cuantización `KHR_mesh_quantization`
+(−27 % de bytes, sin decodificador ni `wasm-unsafe-eval`), con nombres con hash y miniaturas
+WebP. `gltf-transform` sigue siendo la opción cuando entren GLB de terceros con texturas.
+Véase [tools/catalog/README.md](../../tools/catalog/README.md).

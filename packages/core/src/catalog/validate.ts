@@ -48,7 +48,8 @@ export interface CatalogIssue {
 /**
  * Everything wrong with a catalog manifest (P4-02): its shape, unique ids, that each model exists
  * and is what the manifest says, budgets and licences. Empty means it can ship. `files` measures
- * a model by its manifest path and returns undefined when there is no such file.
+ * a model by its manifest path and returns undefined when there is no such file; for a thumbnail
+ * only whether it exists counts.
  */
 export function validateCatalogManifest(
   input: unknown,
@@ -93,6 +94,9 @@ function checkItems(
         'stats-mismatch',
         `${file} has ${actual.triangles} triangles and ${actual.bytes} bytes, the manifest says ${triangles} and ${bytes}`,
       );
+    }
+    if (item.thumbnail !== undefined && !files(item.thumbnail)) {
+      report('missing-file', `${item.thumbnail} does not exist`);
     }
     const budget = policy.budgets.byCategory?.[item.category] ?? policy.budgets.default;
     const measured = actual ?? { triangles, bytes };
