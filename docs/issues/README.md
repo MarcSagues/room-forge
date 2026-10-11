@@ -39,6 +39,7 @@ La **estimación** son *días ideales de desarrollo asistido por IA* (incluye te
 | [07-testing-optimization.md](07-testing-optimization.md) | M7 — Testing y optimización |
 | [08-beta.md](08-beta.md) | M8 — Beta pública |
 | [09-ai-monetization.md](09-ai-monetization.md) | M9 — IA y monetización (post-MVP) |
+| [10-home.md](10-home.md) | M10 — HomeForge: la casa completa |
 
 ## Uso del importador
 

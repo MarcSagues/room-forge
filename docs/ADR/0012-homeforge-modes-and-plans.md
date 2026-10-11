@@ -15,7 +15,7 @@ RoomForge nació para diseñar **una habitación** (PRD §2, §9: «viviendas» 
 
 El modelo ya lo prevé en parte: `SceneDocument.rooms`/`roomOrder` son un mapa y una lista, `Room.origin` existe y `LIMITS.maxRooms = 16` (DOMAIN_MODEL §8 «Vivienda completa»). Lo que falta: salas con forma libre (polígono), colocar varias salas en un plano, pasillos, paredes compartidas, puertas entre salas y puertas que se abren.
 
-Requisito añadido por el propietario el mismo día: las habitaciones **no son solo rectángulos**; una sala en L, U o T se debe poder dibujar, con paredes y esquinas editables (P10-09, P10-10). DOMAIN_MODEL §8 ya lo preveía (`shape` es una unión discriminada).
+Requisito añadido por el propietario el mismo día: las habitaciones **no son solo rectángulos**; una sala en L, U o T se debe poder dibujar, con paredes y esquinas editables (P10-09, P10-10). DOMAIN_MODEL §8 ya lo preveía (`shape` es una unión discriminada). Más tarde, ese mismo día, decidió que la forma libre llegue **antes de la beta pública**: la release P8-06 exige P10-09 y P10-10 cerradas.
 
 ## Decisión
 

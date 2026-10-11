@@ -110,7 +110,7 @@ roomforge/
 │  │  ├─ persistence/
 │  │  ├─ export/
 │  │  └─ ai/                   # vacío (puerto)
-│  ├─ public/assets/           # models/*.glb, thumbs/*.webp (hash en nombre)
+│  ├─ public/assets/           # models/*.glb, thumbnails/*.webp (hash en nombre)
 │  └─ e2e/                     # Playwright
 ├─ packages/core/
 │  └─ src/ domain/ geometry/ commands/ history/ session/ serialization/ ports/ testing/
@@ -348,7 +348,7 @@ flowchart LR
 ### 6.4 Next.js + R3F
 
 - El editor es **client-only** (`'use client'` + `dynamic(..., { ssr: false })`); la landing no carga three.
-- **Sitio público (P8-01):** la landing (`/`, `/es/`) y las páginas públicas son *server components* sin JS propio (`ui/site/`); sus textos viven en `ui/site/site-messages.ts` (EN/ES, fuera del diccionario de la app, así no llegan al bundle del editor). `app/seo.ts` genera metadatos, `robots.txt` y `sitemap.xml` en el build a partir de `SITE_URL` (`app/site-config.ts`); la imagen social `/og.png` la dibuja `scripts/write-og-image.mjs` tras el build con `next/og` (como script y no como ruta: un módulo asíncrono en la app añade su runtime a todas las páginas).
+- **Sitio público (P8-01):** la landing (`/`, `/es/`) y las páginas públicas son *server components* sin JS propio (`ui/site/`); sus textos viven en `ui/site/site-messages.ts` (EN/ES, fuera del diccionario de la app, así no llegan al bundle del editor). `app/seo.ts` genera metadatos, `robots.txt` y `sitemap.xml` en el build a partir de `SITE_URL` (`app/site-config.ts`); la imagen social `/og.png` la dibuja `scripts/write-og-image.mjs` tras el build con `next/og` (como script y no como ruta: un módulo asíncrono en la app añade su runtime a todas las páginas). Páginas legales (`/privacy/`, `/terms/`, `/licenses/` y sus versiones `/es/…`): textos en `ui/site/legal/` (la versión española es la de referencia; borradores con aviso visible hasta la revisión del propietario). `/licenses/` se genera del manifiesto del catálogo y de `ui/site/legal/dependencies.json`, que `pnpm licenses:report` escribe junto a [LICENSES.md](LICENSES.md); un test de `test:arch` comprueba que coinciden.
 - Los enlaces del editor y del visor a otras rutas (`/`, `/projects/`) llevan `prefetch={false}`: si no, Next descarga el JS de la pantalla de proyectos mientras el editor arranca (≈ 19 kB gz que compiten con three por la red). Navegar desde el editor es raro y la ruta destino es ligera.
 - `next.config`: `output: 'export'`, `images: { unoptimized: true }`, `trailingSlash: true`.
 - El código de `scene-engine` no importa nada de `next/*`.
@@ -436,9 +436,9 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-  SRC[Fuentes CC0 / creación propia / paramétrico] --> PIPE["tools/catalog: gltf-transform\n(dedupe, prune, meshopt, texturas WebP/KTX2)"]
+  SRC[Fuentes CC0 / creación propia / paramétrico] --> PIPE["tools/catalog: pnpm catalog:build\n(soldado, cuantización, hash, miniaturas)"]
   PIPE --> GLB["public/assets/models/*.glb (hash)"]
-  PIPE --> THUMB["miniaturas WebP"]
+  PIPE --> THUMB["public/assets/thumbnails/*.webp (hash)"]
   MAN["manifest/*.json (zod)"] --> VAL["pnpm catalog:validate\n(presupuestos, licencias, dimensiones)"]
   GLB --> VAL
   MAN --> PROV["CatalogProvider (implementa puerto de core)"]
@@ -451,6 +451,7 @@ flowchart LR
 - Carga **perezosa** por item; precarga solo de los 6 más usados; *placeholder* (caja con las dimensiones reales) mientras carga o si falla.
 - Cada item registra licencia (SPDX), autor y fuente → `ATTRIBUTION.md` generado y comprobado en CI.
 - **Implementado (P4-02):** schema zod y validador puro en `packages/core/src/catalog` (ids únicos, archivos existentes con los triángulos/bytes declarados, presupuestos por categoría —por defecto ≤ 20 000 triángulos y ≤ 300 kB, ADR-0007— y licencias permitidas: `CC0-1.0`, `CC-BY-4.0`, `LicenseRef-RoomForge-Proprietary`). Manifiesto en `apps/web/src/asset-library/manifest/catalog.json`, modelos en `apps/web/public/assets/models/<catalogId>.glb` y `docs/ATTRIBUTION.md`: los tres los genera `pnpm catalog:build` (`tools/catalog/build-models.mjs`, desde el código de `tools/catalog/models.mjs`). `pnpm catalog:validate` y `pnpm check` (`tools/checks/catalog-models.test.mjs` + `asset-library/manifest/manifest.test.ts`) fallan si algo no coincide. `modelCatalog` (`asset-library`) es el `CatalogProvider` real: por id, categoría y etiqueta.
+- **Implementado (P4-03):** `pnpm catalog:build` optimiza cada GLB con **cuantización `KHR_mesh_quantization`** (posiciones y normales int16, UV uint16; −27 % de bytes en el catálogo propio) sin dependencias nuevas y sin decodificador WebAssembly (la CSP sigue sin `wasm-unsafe-eval`); `loadModelParts` devuelve los atributos a float al cargar. Los archivos llevan **hash de contenido** en el nombre (`models/<id>.<hash>.glb`, `thumbnails/<id>.<hash>.webp`) y `_headers` los sirve con `Cache-Control: immutable`. Las **miniaturas** (WebP 256 px, fondo transparente, cámara y luces fijas) se dibujan con three en el Chromium de Playwright solo cuando cambia el modelo (`--thumbnails` las rehace todas); `--check` no dibuja: verifica que existen y que su nombre lleva su hash. El manifiesto las expone en `thumbnail` (`thumbnailUrlOf`, `CatalogEntry.thumbnail`) para el panel de P4-06. El build imprime un informe de presupuestos por modelo. Flujo para añadir un modelo: [`tools/catalog/README.md`](../tools/catalog/README.md).
 
 ## 8. Persistencia
 

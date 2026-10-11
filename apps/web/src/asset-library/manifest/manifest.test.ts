@@ -11,8 +11,28 @@ const assets = fileURLToPath(new URL('../../../public/assets/', import.meta.url)
 
 function measure(file: string) {
   const path = `${assets}${file}`;
-  return existsSync(path) ? glbStats(readFileSync(path)) : undefined;
+  if (!existsSync(path)) return undefined;
+  const bytes = readFileSync(path);
+  // Only whether a thumbnail exists counts for the validator.
+  return file.endsWith('.webp') ? { triangles: 0, bytes: bytes.length } : glbStats(bytes);
 }
+
+/** Width, height and whether it has transparency, from the VP8X header Chromium writes. */
+function webpHeader(bytes: Buffer) {
+  const text = (start: number, end: number) => bytes.toString('latin1', start, end);
+  if (text(0, 4) !== 'RIFF' || text(8, 16) !== 'WEBPVP8X') throw new Error('Not an extended WebP');
+  return {
+    width: bytes.readUIntLE(24, 3) + 1,
+    height: bytes.readUIntLE(27, 3) + 1,
+    alpha: ((bytes[20] ?? 0) & 0x10) !== 0,
+  };
+}
+
+const monitorFile = () => {
+  const item = manifest.items.find((entry) => entry.id === 'monitor.27.flat');
+  if (!item) throw new Error('monitor.27.flat is not in the manifest');
+  return `${assets}${item.source.file}`;
+};
 
 describe('the shipped catalog manifest', () => {
   it('is valid: schema, unique ids, real files with the stats it declares, budgets, licences', () => {
@@ -52,6 +72,18 @@ describe('the shipped catalog manifest', () => {
     }
   });
 
+  it('gives every model a content-hashed file and a 256 px transparent WebP thumbnail (P4-03)', () => {
+    for (const item of manifest.items) {
+      const pattern = (folder: string, extension: string) =>
+        new RegExp(`^${folder}/${item.id.replaceAll('.', '\\.')}\\.[0-9a-f]{10}\\.${extension}$`);
+      expect(item.source.file).toMatch(pattern('models', 'glb'));
+      expect(item.thumbnail).toMatch(pattern('thumbnails', 'webp'));
+      const picture = readFileSync(`${assets}${item.thumbnail}`);
+      expect(webpHeader(picture), item.id).toEqual({ width: 256, height: 256, alpha: true });
+      expect(picture.length, item.id).toBeLessThan(20_000);
+    }
+  });
+
   it('names items without brands', () => {
     const text = manifest.items.map((item) => `${item.name.en} ${item.name.es}`).join(' ');
     expect(text).not.toMatch(/\b(ikea|herman|steelcase|secretlab|dxracer|lg|samsung|dell)\b/i);
@@ -60,7 +92,7 @@ describe('the shipped catalog manifest', () => {
 
 describe('glbStats', () => {
   it('counts the triangles of a real model', () => {
-    const stats = glbStats(readFileSync(`${assets}models/monitor.27.flat.glb`));
+    const stats = glbStats(readFileSync(monitorFile()));
     expect(stats.triangles).toBe(1320);
     expect(stats.bytes).toBeGreaterThan(1000);
   });
@@ -69,7 +101,7 @@ describe('glbStats', () => {
     expect(() => glbStats(new TextEncoder().encode('{"asset":{}} padding pad'))).toThrow(
       'Not a GLB',
     );
-    const model = readFileSync(`${assets}models/monitor.27.flat.glb`);
+    const model = readFileSync(monitorFile());
     expect(() => glbStats(model.subarray(0, 100))).toThrow('Truncated');
   });
 });

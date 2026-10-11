@@ -9,6 +9,8 @@ export interface CatalogEntry {
   readonly size: { readonly w: number; readonly h: number; readonly d: number };
   /** Colour of the placeholder box that stands in for the model. */
   readonly color: string;
+  /** URL of the picture of the model (P4-03); stub boxes have none. */
+  readonly thumbnail?: string;
 }
 
 /** The five items of the stub manifest: coloured boxes, all standing on the floor. */
