@@ -13,7 +13,7 @@
 - **Depende de:** —
 
 ### Descripción
-Abrir y cerrar puertas; proyectos con varias habitaciones y pasillos conectados por puertas; modo Habitación (gratuito) y modo Casa (premium) con un plan local; y cambio de nombre del producto y del código a HomeForge.
+Abrir y cerrar puertas; habitaciones con forma libre (en L, U, T…); proyectos con varias habitaciones y pasillos conectados por puertas; modo Habitación (gratuito) y modo Casa (premium) con un plan local; y cambio de nombre del producto y del código a HomeForge.
 
 ### Contexto
 El modelo de dominio ya lo prevé ([DOMAIN_MODEL](../DOMAIN_MODEL.md) §«Vivienda completa»: el mapa `rooms`, `roomOrder` y `Room.origin` existen). Monetización real: [P9-05](09-ai-monetization.md).
@@ -95,7 +95,7 @@ Las puertas y sus hojas existen desde P3-12 (`WallOpeningsLayer`, `InstancedMesh
 - **Hito:** M10
 - **Estimación:** L
 - **Etiquetas:** area:core
-- **Depende de:** P10-01
+- **Depende de:** P10-01, P10-09
 
 ### Descripción
 Un proyecto puede contener varias habitaciones colocadas en un mismo plano (`Room.origin` real y rotación en múltiplos de 90°) y **pasillos** (habitaciones de tipo `corridor`, estrechas). Comandos para añadir, mover, redimensionar, renombrar y quitar salas.
@@ -250,3 +250,61 @@ Toca casi todos los ficheros: se hace cuando no haya PRs abiertos. Renombrar el 
 
 ### Tests esperados
 - E2E: datos sembrados con claves antiguas se migran; importar un archivo antiguo; abrir un enlace antiguo.
+
+## ISSUE P10-09 — core + scene: habitaciones con forma libre (polígono)
+
+- **Tipo:** feature
+- **Prioridad:** P1
+- **Épica:** E10
+- **Hito:** M10
+- **Estimación:** L
+- **Etiquetas:** area:core, area:scene
+- **Depende de:** P10-01
+
+### Descripción
+Una habitación deja de ser solo un rectángulo: su planta es un **polígono** de paredes rectas (formas en L, U, T…). El suelo, el techo, las paredes, los huecos de puertas y ventanas, la colocación de objetos, el imán a pared, la cámara y el pool de luces funcionan con cualquier forma.
+
+### Contexto
+Decidido por el propietario (2026-10-11): «una habitación que hace forma de U se debe poder poner». El dominio ya lo previó ([DOMAIN_MODEL](../DOMAIN_MODEL.md) §8): `shape` es una unión discriminada y admitirá `{ kind: 'polygon', points }`; las paredes pasan a ser segmentos con IDs estables (migración v2). Va antes que varias habitaciones (P10-03), cuyas paredes compartidas se apoyan en estos segmentos.
+
+### Requisitos
+- `core`: `shape` polígono simple (sin autointersecciones, sentido antihorario, lados ≥ mínimo, ángulos de 90° en esta primera versión, preparada para otros ángulos); paredes como segmentos con IDs estables; migración v1→v2 con *golden files* (un rectángulo pasa a un polígono de 4 lados sin cambiar de significado).
+- Invariantes: objetos y aperturas dentro de la planta / en su segmento; `solvePlacement` y la detección de pared con polígonos.
+- Escena: suelo y techo triangulados, paredes por segmento (esquinas interiores y exteriores correctas), modos de pared y encuadre con la envolvente del polígono; recursos compartidos y presupuestos de escena.
+
+### Criterios de aceptación
+- [ ] Un proyecto antiguo (sala rectangular) se abre igual tras la migración.
+- [ ] Una sala en U muestra suelo, techo y paredes correctos, admite puertas y ventanas en cualquier pared y los objetos se pegan a cualquier pared.
+- [ ] No se puede guardar una forma inválida (autointersección, lado demasiado corto).
+
+### Tests esperados
+- Unitarios y propiedades fast-check (polígonos válidos, migración, colocación dentro de la planta, imán a paredes de esquinas interiores).
+- E2E con una sala en U: `renderer.info` dentro del presupuesto.
+
+## ISSUE P10-10 — ui: editar la forma de la habitación
+
+- **Tipo:** feature
+- **Prioridad:** P1
+- **Épica:** E10
+- **Hito:** M10
+- **Estimación:** L
+- **Etiquetas:** area:ui, area:scene, area:a11y
+- **Depende de:** P10-09
+
+### Descripción
+Herramientas para dar forma a la sala: seleccionar una **pared** y arrastrarla hacia dentro o hacia fuera; **partir** una pared para crear una esquina nueva (así se forma una U o una L); seleccionar una **esquina** y moverla; y formas predefinidas (rectángulo, L, U, T) en el asistente de nueva habitación.
+
+### Contexto
+Como la altura de los objetos, cada edición se puede hacer con el ratón (en la vista superior y en 3D), escribiendo valores (longitud de pared, posición de la esquina) y con el teclado. El panel de tamaño de la sala (P3-10) pasa a mostrar las medidas de la pared seleccionada.
+
+### Requisitos
+- Un gesto = una entrada de historial; Esc cancela; imán a rejilla y a 90°.
+- Si la nueva forma deja fuera objetos o aperturas, se avisa con la lista y no se aplica (como al redimensionar).
+- Accesible: paredes y esquinas seleccionables desde el outliner y operables con teclado.
+
+### Criterios de aceptación
+- [ ] Una persona convierte la sala por defecto en una U en menos de un minuto.
+- [ ] Mover, partir y quitar esquinas funciona con ratón, con valores escritos y con teclado, y se deshace paso a paso.
+
+### Tests esperados
+- RTL de los controles; E2E: partir una pared, arrastrarla hasta formar una U, deshacer.
