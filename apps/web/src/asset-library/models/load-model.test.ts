@@ -12,6 +12,13 @@ const glb = (file: string) => {
   return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
 };
 
+/** The hashed file of a shipped model (P4-03), from the manifest. */
+const fileOf = (id: string) => {
+  const item = manifest.items.find((entry) => entry.id === id);
+  if (!item) throw new Error(`${id} is not in the manifest`);
+  return item.source.file;
+};
+
 afterEach(() => vi.unstubAllGlobals());
 
 describe('modelParts', () => {
@@ -45,7 +52,7 @@ describe('modelParts', () => {
 
 describe('the LED strip model (P4-10)', () => {
   it('is one section all along x, so stretching it from 0.5 to 3 m keeps the section exact', async () => {
-    const parts = await parseModelParts(glb('models/led.strip.1m.glb'));
+    const parts = await parseModelParts(glb(fileOf('led.strip.1m')));
     for (const length of [0.5, 1, 3]) {
       for (const part of parts) {
         const geometry = part.geometry.clone().scale(length, 1, 1);
@@ -74,17 +81,44 @@ describe('parseModelParts', () => {
       expect(triangles).toBe(item.source.triangles);
     },
   );
+
+  it.each(manifest.items.map((item) => [item.id, item]))(
+    'turns the quantised file (KHR_mesh_quantization) of %s back into float metres in its box',
+    async (_, item) => {
+      const parts = await parseModelParts(glb(item.source.file));
+      for (const part of parts) {
+        for (const attribute of Object.values(part.geometry.attributes)) {
+          expect(attribute.array).toBeInstanceOf(Float32Array);
+          expect(attribute.normalized).toBe(false);
+        }
+        part.geometry.computeBoundingBox();
+        const box = part.geometry.boundingBox;
+        const { w, h, d } = item.size;
+        const margin = 0.003;
+        expect(box?.min.y).toBeGreaterThanOrEqual(-margin);
+        expect(box?.max.y).toBeLessThanOrEqual(h + margin);
+        expect(Math.max(-(box?.min.x ?? 0), box?.max.x ?? 0)).toBeLessThanOrEqual(w / 2 + margin);
+        expect(Math.max(-(box?.min.z ?? 0), box?.max.z ?? 0)).toBeLessThanOrEqual(d / 2 + margin);
+        const normal = part.geometry.getAttribute('normal');
+        for (let i = 0; i < normal.count; i += 1) {
+          const length = Math.hypot(normal.getX(i), normal.getY(i), normal.getZ(i));
+          expect(length).toBeCloseTo(1, 3);
+        }
+      }
+    },
+  );
 });
 
 describe('loadModelParts', () => {
   it('downloads the file and parses it', async () => {
-    const data = glb('models/monitor.27.flat.glb');
+    const file = fileOf('monitor.27.flat');
+    const data = glb(file);
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => new Response(data)),
     );
-    expect(await loadModelParts('/assets/models/monitor.27.flat.glb')).toHaveLength(3);
-    expect(fetch).toHaveBeenCalledWith('/assets/models/monitor.27.flat.glb');
+    expect(await loadModelParts(`/assets/${file}`)).toHaveLength(3);
+    expect(fetch).toHaveBeenCalledWith(`/assets/${file}`);
   });
 
   it('fails on an HTTP error instead of parsing the error page', async () => {
