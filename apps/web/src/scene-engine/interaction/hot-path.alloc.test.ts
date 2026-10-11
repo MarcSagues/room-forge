@@ -1,5 +1,6 @@
 import inspector from 'node:inspector';
 import {
+  addObject,
   addOpening,
   createEditorSession,
   type ObjectId,
@@ -202,6 +203,52 @@ describe('hot path: no allocations per step', () => {
         );
       }
     }
+
+    // An LED strip on desk-1's top (world x 1.4..2.6 at z 1.5), swept on and off the desk, so the
+    // support search, the surface solve and the floor solve all run (P3-13).
+    for (const free of [false, true]) {
+      it(
+        `a child dragged on and off its desk top${free ? ' with Alt' : ''}`,
+        async () => {
+          const session = createEditorSession({
+            initialDocument: buildDocument(),
+            catalog: createFixtureCatalog(),
+          });
+          session.execute(
+            addObject({
+              id: 'strip',
+              catalogId: 'led.strip.1m',
+              roomId: 'room-1' as RoomId,
+              parentId: DESK,
+              position: [0, 0.75, 0.1],
+              rotationY: 0,
+            }),
+          );
+          const registry = createEntityRegistry();
+          for (const object of Object.values(session.getState().document.objects)) {
+            const node = new Object3D();
+            node.position.fromArray(object.transform.position);
+            registry.register(object.id, node);
+          }
+          const transient = createTransientStore();
+          transient.subscribe(() => {});
+          const controller = new MoveController({
+            session,
+            catalog: createFixtureCatalog(),
+            registry,
+            transient,
+            invalidate: () => {},
+          });
+          const list = sweep(600, 0.5, 3.5).map((x) => down(x, 1.6));
+          expect(controller.begin('strip' as ObjectId, down(2, 1.6))).toBe(true);
+          expectQuiet(
+            await largeBytesPerCall((i) => controller.update(list[i % list.length] as Ray, free)),
+          );
+          controller.cancel();
+        },
+        SLOW,
+      );
+    }
   });
 
   describe('rotation', () => {
@@ -319,6 +366,30 @@ describe('hot path: no allocations per step', () => {
         SLOW,
       );
     }
+
+    it(
+      'a tabletop item, over the desk top and the floor',
+      async () => {
+        const session = createEditorSession({
+          initialDocument: buildDocument(),
+          catalog: createFixtureCatalog(),
+        });
+        const transient = createTransientStore();
+        transient.subscribe(() => {});
+        const controller = new PlaceController({
+          session,
+          catalog: createFixtureCatalog(),
+          transient,
+          invalidate: () => {},
+        });
+        controller.begin('led.strip.1m');
+        expectQuiet(
+          await largeBytesPerCall((i) => controller.update(path[i % path.length] as Ray, false)),
+        );
+        controller.cancel();
+      },
+      SLOW,
+    );
   });
   describe('sliding an opening (OpeningController.update + the live wall it redraws)', () => {
     // Window-1 (0.9 wide) on the north wall of the 4 × 3 fixture room, plus a window at 2.5 so

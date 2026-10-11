@@ -13,7 +13,7 @@ const INFLATE = 1.01;
 
 /**
  * The ghost of an item being dragged in from the catalog: a translucent box in the item's own
- * colour with accent edges, at the floor position `PlaceController` solved; red when the item
+ * colour with accent edges, where `PlaceController` solved it (on the floor or a desk top); red when the item
  * cannot be placed there. Fill and edges are two shared-geometry objects stretched and moved every
  * rendered frame from the transient store, and shown or hidden with `visible` (AGENTS rule 7).
  */
@@ -65,7 +65,7 @@ export function PlacementGhost() {
       group.visible = false;
       return;
     }
-    group.position.set(ghost.x, 0, ghost.z);
+    group.position.set(ghost.x, ghost.y, ghost.z);
     group.rotation.y = ghost.rotationY;
     fill.scale.set(ghost.w, ghost.h, ghost.d);
     edges.scale.set(ghost.w * INFLATE, ghost.h * INFLATE, ghost.d * INFLATE);
