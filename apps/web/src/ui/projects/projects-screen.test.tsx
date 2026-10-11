@@ -1,5 +1,5 @@
 import { type ProjectSummary, RepositoryError } from '@roomforge/core';
-import { buildDocument, createSeqIdGen } from '@roomforge/core/testing';
+import { buildDocument, createFixtureCatalog, createSeqIdGen } from '@roomforge/core/testing';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -435,5 +435,47 @@ describe('ProjectsScreen: a room of the size you choose', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(createDocument).not.toHaveBeenCalled();
+  });
+});
+
+describe('ProjectsScreen: start from a template', () => {
+  const fixture = createFixtureCatalog();
+  const templateCatalog = async () => fixture;
+
+  it('offers no template choice without a catalog to build them with', async () => {
+    setup([summary('a', 'Office')]);
+    await screen.findByRole('list', { name: 'Your projects' });
+    expect(screen.queryByRole('button', { name: 'From a template…' })).not.toBeInTheDocument();
+  });
+
+  it('creates a new project named after the template, with the template room', async () => {
+    const { createDocument, repository } = setup([summary('a', 'Office')], { templateCatalog });
+    await screen.findByRole('list', { name: 'Your projects' });
+    await userEvent.click(screen.getByRole('button', { name: 'From a template…' }));
+    await userEvent.click(await screen.findByRole('radio', { name: 'Home office' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Create project' }));
+
+    await waitFor(() => expect(repository.save).toHaveBeenCalledTimes(1));
+    expect(createDocument).not.toHaveBeenCalled();
+    const saved = vi.mocked(repository.save).mock.calls[0]?.[0];
+    expect(saved?.name).toBe('Home office');
+    expect(Object.keys(saved?.document.openings ?? {})).toHaveLength(2);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(names()).toContain('Home office');
+  });
+
+  it('gives a second project from the same template its own name and ids', async () => {
+    const { repository } = setup([], { templateCatalog });
+    await screen.findByText('No projects yet');
+    for (let round = 0; round < 2; round += 1) {
+      const [open] = screen.getAllByRole('button', { name: 'From a template…' });
+      await userEvent.click(open as HTMLElement);
+      await screen.findAllByRole('radio');
+      await userEvent.click(screen.getByRole('button', { name: 'Create project' }));
+      await waitFor(() => expect(repository.save).toHaveBeenCalledTimes(round + 1));
+    }
+    const [first, second] = vi.mocked(repository.save).mock.calls.map(([input]) => input);
+    expect([first?.name, second?.name]).toEqual(['Gaming setup', 'Gaming setup 2']);
+    expect(first?.document.roomOrder[0]).not.toBe(second?.document.roomOrder[0]);
   });
 });

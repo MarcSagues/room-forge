@@ -219,6 +219,7 @@ const WallView = memo(function WallView(props: {
         meshRef={onSurface}
       />
       <primitive object={live.mesh} />
+      <primitive object={live.outline} />
       <primitive object={layer.group}>
         {openings.map((o) => (
           <OpeningAnchor

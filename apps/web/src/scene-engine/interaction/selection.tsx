@@ -20,6 +20,7 @@ import { FRAME_PROUD } from '../room/opening-parts';
 import { WALL_THICKNESS } from '../room/room-geometry';
 import { MoveController } from './move-controller';
 import { attachNudge } from './nudge-controller';
+import { OpeningController } from './opening-controller';
 import { outlineGeometry } from './outline-geometry';
 import { type PickProxy, pickEntity } from './pick';
 import { attachPicking } from './picking-controller';
@@ -101,6 +102,7 @@ export function Picking() {
     };
     const mover = new MoveController({ session, catalog, registry, transient, invalidate });
     const rotator = new RotateController({ session, catalog, registry, transient, invalidate });
+    const slider = new OpeningController({ session, registry, transient, invalidate });
     const handleCentre = new Vector3();
     return attachPicking({
       element,
@@ -112,16 +114,28 @@ export function Picking() {
       },
       drag: {
         start: (id, x, y) => {
-          if (!mover.begin(id as ObjectId, rayAt(x, y))) return false;
-          // Dragging an object selects it, so the outline follows it.
+          // Doors and windows slide along their wall; objects move over the floor.
+          const opening = Object.hasOwn(session.getState().document.openings, id);
+          const started = opening
+            ? slider.begin(id as OpeningId, rayAt(x, y))
+            : mover.begin(id as ObjectId, rayAt(x, y));
+          if (!started) return false;
+          // Dragging selects what is dragged, so the outline follows it.
           if (!session.getState().selection.includes(id)) session.select([id], 'replace');
           return true;
         },
-        move: (x, y, free) => mover.update(rayAt(x, y), free),
-        end: () => {
-          mover.end();
+        move: (x, y, free) => {
+          if (slider.active) slider.update(rayAt(x, y), free);
+          else mover.update(rayAt(x, y), free);
         },
-        cancel: () => mover.cancel(),
+        end: () => {
+          if (slider.active) slider.end();
+          else mover.end();
+        },
+        cancel: () => {
+          slider.cancel();
+          mover.cancel();
+        },
         turn: (steps, fine) =>
           mover.turnBy(steps, fine ? FINE_STEP_DEG : session.getState().snap.angleStepDeg),
       },
@@ -234,7 +248,9 @@ export function SelectionOutline() {
     const selectedId = selected[0] ?? null;
     // Red while the dragged pose is not legal (the drop would be refused).
     const drag = transient.drag();
-    lines.selection.material.color.copy(drag && !drag.valid ? lines.danger : lines.accent);
+    const opening = transient.opening();
+    const invalid = (drag !== null && !drag.valid) || (opening !== null && !opening.valid);
+    lines.selection.material.color.copy(invalid ? lines.danger : lines.accent);
     place(lines.selection, selectedId);
     place(lines.hover, hovered === selectedId ? null : hovered);
 
