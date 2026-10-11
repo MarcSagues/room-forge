@@ -8,7 +8,7 @@ import {
   createFixtureCatalog,
   FIXTURE_CATALOG_ITEMS,
 } from '../testing';
-import { collectLuminaires, lightStateOf, poolLightType } from './luminaires';
+import { collectLuminaires, glowColor, lightStateOf, NO_GLOW, poolLightType } from './luminaires';
 
 const DESK_LAMP: CatalogItem = {
   id: 'lamp.desk',
@@ -65,6 +65,15 @@ describe('lightStateOf', () => {
     };
     expect(lightStateOf({ light: own }, DESK_LAMP)).toEqual(own);
     expect(lightStateOf({}, undefined).color).toBe('#ffffff');
+  });
+});
+
+describe('glowColor', () => {
+  it('is the light colour scaled by its intensity, and black when off', () => {
+    expect(glowColor({ on: true, color: '#ff8040', intensity: 1 })).toBe('#ff8040');
+    expect(glowColor({ on: true, color: '#ff8040', intensity: 0.5 })).toBe('#804020');
+    expect(glowColor({ on: false, color: '#ff8040', intensity: 1 })).toBe(NO_GLOW);
+    expect(glowColor({ on: true, color: '#ff8040', intensity: 0 })).toBe(NO_GLOW);
   });
 });
 
