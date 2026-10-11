@@ -19,6 +19,18 @@ async function openEditor(page: Page) {
 const frame = (page: Page) => page.evaluate(() => window.__RF__?.info()?.frame ?? -1);
 const programs = (page: Page) => page.evaluate(() => window.__RF__?.info()?.programs ?? -1);
 
+/**
+ * Counters of a frame that only redraws: frames that redraw the sun's static shadow map (the
+ * first one, and the one after each change) also draw every shadow caster into it (P5-06).
+ */
+async function plainFrame(page: Page) {
+  await page.waitForTimeout(300);
+  const before = await frame(page);
+  await page.evaluate(() => window.__RF__?.invalidate());
+  await page.waitForFunction((f) => (window.__RF__?.info()?.frame ?? 0) > f, before);
+  return page.evaluate(() => window.__RF__?.info());
+}
+
 /** Runs a command on the live session, from inside the page. */
 function resizeFirstRoom(page: Page, width: number) {
   return page.evaluate((w) => {
@@ -70,10 +82,11 @@ test('a document change renders exactly one frame', async ({ page }) => {
 const geometries = (page: Page) => page.evaluate(() => window.__RF__?.info()?.geometries ?? -1);
 
 // P2-07: the default 4 × 4.5 m room is floor + ceiling + 4 walls (+ 2 grid layers). Since P2-10
-// the ceiling is hidden while editing: three.js neither draws it nor uploads its geometry.
+// the ceiling is hidden while editing: three.js neither draws it nor uploads its geometry. Read
+// from a plain frame: one that redraws the sun's shadow also draws the 4 walls into it.
 test('the default room draws as 7 calls and 50 triangles', async ({ page }) => {
   await openEditor(page);
-  const info = await page.evaluate(() => window.__RF__?.info());
+  const info = await plainFrame(page);
   expect(info?.calls).toBe(7);
   expect(info?.triangles).toBe(2 + 4 * 12);
   expect(info?.geometries).toBe(7);
@@ -90,11 +103,12 @@ test('resizing the room many times does not leak geometries', async ({ page }) =
   }
   await page.waitForTimeout(300);
   expect(await geometries(page)).toBe(baseline);
-  expect((await page.evaluate(() => window.__RF__?.info()))?.triangles).toBe(50);
+  expect((await plainFrame(page))?.triangles).toBe(50);
 });
 
 test('changing the document does not compile new shader programs', async ({ page }) => {
   await openEditor(page);
+  await page.waitForTimeout(500); // let the load finish its frames (and the first shadow map)
   const before = await programs(page);
   await resizeFirstRoom(page, 4.5);
   await page.waitForTimeout(500);

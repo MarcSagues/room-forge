@@ -12,6 +12,7 @@ import {
 import { useLayoutEffect } from 'react';
 import type { BufferGeometry, Material } from 'three';
 import { useSceneCatalog } from '../canvas/scene-context';
+import { useShadowRefresh } from '../lighting/shadow-refresh';
 import { useMaterial } from '../materials/use-material';
 import { useModel } from '../resources/models-context';
 import { useEntity } from './entity-hooks';
@@ -41,14 +42,19 @@ export function ModelBody(props: {
   const light = useEntity(id, (object) => object.light);
   const glow = item?.light ? glowColor(lightStateOf({ light }, item)) : undefined;
   const invalidate = useThree((state) => state.invalidate);
+  const shadows = useShadowRefresh();
   // The meshes changed outside any frame: ask for one once they are in the scene.
   useLayoutEffect(() => {
-    if (status !== 'loading') invalidate();
-  }, [status, invalidate]);
+    if (status === 'loading') return;
+    shadows.request(); // the model replaces the box in the sun's shadow too
+    invalidate();
+  }, [status, invalidate, shadows]);
   return (
     <>
       <mesh
         geometry={placeholder.geometry}
+        castShadow
+        receiveShadow
         material={placeholder.material}
         scale={[size.w, size.h, size.d]}
         visible={status !== 'ready'}
@@ -84,9 +90,12 @@ function SlotMesh({
 }) {
   const material = useMaterial(look, { emissive }, emissive ? glow : undefined);
   const invalidate = useThree((state) => state.invalidate);
+  const shadows = useShadowRefresh();
   useLayoutEffect(() => {
-    if (material) invalidate();
-  }, [material, invalidate]);
+    if (!material) return;
+    shadows.request(); // the part appears only now: it must be in the shadow map
+    invalidate();
+  }, [material, invalidate, shadows]);
   if (!material) return null;
-  return <mesh geometry={geometry} material={material} dispose={null} />;
+  return <mesh geometry={geometry} material={material} castShadow receiveShadow dispose={null} />;
 }

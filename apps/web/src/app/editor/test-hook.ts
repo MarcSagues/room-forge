@@ -48,6 +48,10 @@ export interface RoomForgeTestHook {
   info(): RenderInfo | null;
   /** The light pool (size, luminaires lit) and the scene's light count; `null` until mounted. */
   lights(): (LightPoolInfo & { sceneLights: number }) | null;
+  /** Redraws of the sun's static shadow map asked for so far; `null` until mounted. */
+  shadowRefreshes(): number | null;
+  /** Asks the canvas for one frame (e.g. to read the counters of a frame without shadow pass). */
+  invalidate(): void;
   /** Camera state and the same moves a user can make; inert until the canvas is mounted. */
   camera: SceneCamera;
   /** How a room is drawn (wall opacity and height, ceiling); `null` until it is drawn. */
@@ -97,6 +101,8 @@ export function installTestHook(
     },
     info: () => deps.getScene()?.renderInfo() ?? null,
     lights: () => deps.getScene()?.lights() ?? null,
+    shadowRefreshes: () => deps.getScene()?.shadowRefreshes() ?? null,
+    invalidate: () => deps.getScene()?.invalidate(),
     camera: {
       fit: () => deps.getScene()?.camera.fit(),
       snapshot: () => deps.getScene()?.camera.snapshot() ?? null,

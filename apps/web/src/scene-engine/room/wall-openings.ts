@@ -38,6 +38,9 @@ export class WallOpeningsLayer {
       mesh.visible = false;
       // The bounding sphere would be computed once and then go stale as openings move.
       mesh.frustumCulled = false;
+      // Frames and doors block the sun; the glass lets it through (P5-06).
+      mesh.castShadow = slot !== 'glass';
+      mesh.receiveShadow = slot !== 'glass';
       this.group.add(mesh);
       return mesh;
     };
