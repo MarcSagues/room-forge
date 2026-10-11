@@ -24,3 +24,13 @@ export {
   type RoomSize,
 } from './session/room-presets';
 export { createStarterDocument } from './session/starter-document';
+export {
+  createTemplateDocument,
+  isTemplateId,
+  STARTER_TEMPLATES,
+  type StarterTemplate,
+  TEMPLATE_IDS,
+  type TemplateId,
+  type TemplateObject,
+  type TemplateOpening,
+} from './session/templates';
