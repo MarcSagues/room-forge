@@ -10,16 +10,16 @@
 | M0 | Fase 0 — Investigación y arquitectura | 3 | 3 | 0 | 0 | 0 | 1,25 |
 | M1 | Fase 1 — Fundamentos del proyecto | 9 | 7 | 2 | 0 | 0 | 6,5 |
 | M2 | Fase 2 — Motor 3D | 11 | 10 | 1 | 0 | 0 | 10,5 |
-| M3 | Fase 3 — Editor interactivo | 15 | 10 | 4 | 1 | 0 | 20 |
+| M3 | Fase 3 — Editor interactivo | 16 | 10 | 5 | 1 | 0 | 21 |
 | M4 | Fase 4 — Catálogo de objetos | 10 | 8 | 2 | 0 | 0 | 14 |
 | M5 | Fase 5 — Materiales e iluminación | 10 | 8 | 2 | 0 | 0 | 12 |
 | M6 | Fase 6 — Persistencia y exportación | 9 | 6 | 2 | 1 | 0 | 10,5 |
 | M7 | Fase 7 — Testing y optimización | 9 | 4 | 5 | 0 | 0 | 10,5 |
 | M8 | Fase 8 — Beta pública | 6 | 4 | 1 | 1 | 0 | 6 |
 | M9 | Fase 9 — IA y monetización | 9 | 0 | 0 | 4 | 5 | 28 |
-| **Total** | | **91** | | | | | **119,25** |
+| **Total** | | **92** | | | | | **120,25** |
 
-- **MVP + beta (M0–M8):** 91,25 días ideales. **Fase 9 (post-MVP):** 28 días ideales (muy incierto).
+- **MVP + beta (M0–M8):** 92,25 días ideales. **Fase 9 (post-MVP):** 28 días ideales (muy incierto).
 - **Ruta crítica del MVP:** P0-01 → P0-03 → P1-01 → P1-03 → P2-01 → P2-02 → P2-06 → P2-07 → P4-01 → P4-03 → P4-10 → P5-05 → P5-06 → P6-06 → P7-01 → P7-07 (20,25 días si no hay paralelismo humano; las issues fuera de la ruta se pueden intercalar).
 
 ## 2. Orden de implementación sugerido
@@ -67,59 +67,60 @@ La columna «Sprint» agrupa secuencialmente en bloques de 5 días ideales (≈ 
 | 36 | S8 | P3-15 | ui: panel de escena (outliner) | feature | P1 | M | P3-07 |
 | 37 | S8 | P3-12 | scene: aperturas en paredes (huecos, colocar y deslizar) | feature | P1 | L | P3-11, P2-07, P3-04 |
 | 38 | S8 | P3-13 | core + scene: colocación sobre superficies (objetos sobre escritorios) | feature | P1 | L | P3-04 |
-| 39 | S9 | P3-14 | scene: avisos de colisión y fuera de límites | task | P2 | M | P3-04 |
-| 40 | S9 | P4-02 | catalog: schema del manifiesto, validador, licencias y atribuciones | feature | P0 | M | P4-01, P2-01 |
-| 41 | S9 | P4-04 | scene: carga y reutilización de modelos (caché, clonado, placeholders, dispose) | feature | P0 | M | P4-02, P2-09 |
-| 42 | S9 | P4-06 | ui: panel de catálogo completo (categorías, búsqueda, miniaturas) | feature | P0 | M | P4-02, P3-06 |
-| 43 | S10 | P4-03 | catalog: pipeline de optimización de assets y miniaturas | task | P0 | L | P4-01 |
-| 44 | S10 | P4-10 | content: lote D — luminarias (6 items) | task | P0 | M | P4-03 |
-| 45 | S10 | P4-07 | content: lote A — escritorios y asientos (5 items) | task | P0 | L | P4-03, P4-04 |
-| 46 | S11 | P4-08 | content: lote B — informática y audio (9 items) | task | P0 | L | P4-07 |
-| 47 | S11 | P4-05 | scene: constructor de objetos paramétricos | feature | P1 | M | P4-01, P4-04 |
-| 48 | S11 | P4-09 | content: lote C — almacenamiento, entretenimiento y decoración (10 items) | task | P1 | L | P4-07 |
-| 49 | S12 | P5-01 | core: modelo de materiales, presets y comandos de material | feature | P0 | M | P2-04, P3-02 |
-| 50 | S12 | P5-02 | scene: MaterialFactory compartido y texturas (UV en espacio mundo) | feature | P0 | M | P5-01, P2-07 |
-| 51 | S12 | P5-03 | ui: panel de materiales y color | feature | P0 | M | P5-02, P3-07 |
-| 52 | S12 | P5-04 | core: modelo de luminarias (estado de luz, efectos) y comandos | feature | P0 | M | P3-02 |
-| 53 | S13 | P5-05 | scene: pool fijo de luces, asignador por presupuesto y visuales emisivos | feature | P0 | L | P5-04, P4-10, P2-11 |
-| 54 | S13 | P5-06 | scene: modo día/noche (entorno procedural, sol con sombras, ventanas) | feature | P0 | L | P5-05 |
-| 55 | S13 | P5-09 | ui: controles de iluminación (día/noche, luminaria RGB, presets de ambiente) | feature | P0 | M | P5-04, P5-06 |
-| 56 | S14 | P5-10 | scene + ui: ajustes de calidad gráfica y calidad adaptativa | feature | P0 | M | P5-05, P5-06 |
-| 57 | S14 | P5-07 | scene: resplandor (bloom) selectivo según calidad | feature | P1 | M | P5-05 |
-| 58 | S14 | P5-08 | scene: efectos RGB animados con bucle de invalidación limitado | feature | P1 | M | P5-05 |
-| 59 | S14 | P6-01 | core: formato de archivo versionado, migraciones y validación de importación | feature | P0 | M | P2-01 |
-| 60 | S14 | P6-02 | persistence: ProjectRepository sobre IndexedDB (idb) | feature | P0 | M | P6-01 |
-| 61 | S15 | P6-03 | persistence: autoguardado, estado de guardado y recuperación de sesión | feature | P0 | M | P6-02, P3-09 |
-| 62 | S15 | P6-04 | ui: pantalla de proyectos (listar, crear, renombrar, duplicar, borrar) | feature | P0 | M | P6-02 |
-| 63 | S15 | P6-05 | persistence: importar y exportar JSON | feature | P0 | M | P6-01, P6-04 |
-| 64 | S15 | P6-06 | export: exportar PNG (resolución, fondo, calidad) | feature | P0 | L | P5-06, P3-09 |
-| 65 | S16 | P6-07 | export: miniaturas de proyecto | task | P1 | S | P6-06, P6-03 |
-| 66 | S16 | P6-08 | persistence: compartir por enlace (fragmento de URL) y modo visor | feature | P1 | L | P6-01, P2-08 |
-| 67 | S16 | P6-09 | persistence: robustez del almacenamiento (cuota, persist, multi-pestaña, recordatorio de copia) | task | P2 | M | P6-03 |
-| 68 | S16 | P7-09 | seguridad: fuzz de importación, CSP y auditoría de dependencias | task | P0 | S | P6-05 |
-| 69 | S16 | P7-08 | resiliencia: ErrorBoundary, pérdida de contexto WebGL y pantalla de fallo | task | P0 | M | P6-03 |
-| 70 | S17 | P7-01 | e2e: flujos críticos del MVP con Playwright | feature | P0 | L | P6-05, P6-06 |
-| 71 | S17 | P7-04 | perf: pasada de profiling y optimización (renders, GC, fugas de memoria) | task | P0 | L | P5-10 |
-| 72 | S17 | P7-02 | testing: regresión visual determinista de la escena | task | P1 | M | P1-07, P5-06 |
-| 73 | S18 | P7-03 | quality gates: cobertura, presupuesto de bundle y de escena en CI | task | P1 | M | P1-07, P4-07 |
-| 74 | S18 | P7-05 | a11y: teclado, foco, contraste, reduced-motion y alternativa textual | task | P1 | M | P3-15 |
-| 75 | S18 | P7-06 | mobile: modo visor táctil y comprobación en móviles | feature | P1 | M | P6-08 |
-| 76 | S18 | P7-07 | compat: pruebas cross-browser y degradación sin WebGL | task | P1 | M | P7-01 |
-| 77 | S18 | P8-01 | Landing, SEO, páginas legales y analítica respetuosa | feature | P0 | M | P1-08 |
-| 78 | S19 | P8-03 | Producción: dominio, despliegue en Cloudflare, cabeceras y aprobación manual | task | P0 | M | P1-08, P7-09 |
-| 79 | S19 | P8-02 | Plantillas de inicio y tutorial de primera ejecución | feature | P0 | L | P6-04, P4-10 |
-| 80 | S19 | P8-06 | Release v0.1.0-beta: checklist, rollback y changelog | task | P0 | S | P8-02, P8-03, P7-01 |
-| 81 | S19 | P8-04 | Feedback in-app y proceso de triage de la beta | task | P1 | S | P8-01 |
-| 82 | S19 | P8-05 | PWA / offline: service worker para los assets del editor | feature | P2 | M | P8-03 |
-| 83 | S20 | P9-01 | Spike: backend, autenticación y base de datos (decisión + ADR) | spike | P2 | M | P8-06 |
-| 84 | S20 | P9-03 | Spike: diseño del generador de distribuciones con IA | spike | P2 | M | P8-06 |
-| 85 | S21 | P9-02 | Cuentas, sincronización en la nube y enlaces alojados | feature | P2 | XL | P9-01 |
-| 86 | S22 | P9-04 | Generador de distribuciones con IA (texto → comandos con vista previa) | feature | P2 | XL | P9-03, P9-02 |
-| 87 | S23 | P9-09 | Selección múltiple, medición y recorrido en primera persona | feature | P3 | L | P8-06 |
-| 88 | S24 | P9-05 | Planes, límites y pagos (Stripe) | feature | P3 | XL | P9-02 |
-| 89 | S25 | P9-06 | Catálogo premium y marketplace de packs | feature | P3 | XL | P9-05 |
-| 90 | S26 | P9-07 | Colaboración en tiempo real | feature | P3 | XL | P9-02 |
-| 91 | S27 | P9-08 | Habitaciones poligonales, varias plantas y otros tipos de vivienda | feature | P3 | XL | P8-06 |
+| 39 | S9 | P3-16 | core + ui: controlar la altura (elevación) de los objetos | feature | P1 | M | P3-07, P3-13 |
+| 40 | S9 | P3-14 | scene: avisos de colisión y fuera de límites | task | P2 | M | P3-04 |
+| 41 | S9 | P4-02 | catalog: schema del manifiesto, validador, licencias y atribuciones | feature | P0 | M | P4-01, P2-01 |
+| 42 | S9 | P4-04 | scene: carga y reutilización de modelos (caché, clonado, placeholders, dispose) | feature | P0 | M | P4-02, P2-09 |
+| 43 | S9 | P4-06 | ui: panel de catálogo completo (categorías, búsqueda, miniaturas) | feature | P0 | M | P4-02, P3-06 |
+| 44 | S10 | P4-03 | catalog: pipeline de optimización de assets y miniaturas | task | P0 | L | P4-01 |
+| 45 | S10 | P4-10 | content: lote D — luminarias (6 items) | task | P0 | M | P4-03 |
+| 46 | S10 | P4-07 | content: lote A — escritorios y asientos (5 items) | task | P0 | L | P4-03, P4-04 |
+| 47 | S11 | P4-08 | content: lote B — informática y audio (9 items) | task | P0 | L | P4-07 |
+| 48 | S11 | P4-05 | scene: constructor de objetos paramétricos | feature | P1 | M | P4-01, P4-04 |
+| 49 | S11 | P4-09 | content: lote C — almacenamiento, entretenimiento y decoración (10 items) | task | P1 | L | P4-07 |
+| 50 | S12 | P5-01 | core: modelo de materiales, presets y comandos de material | feature | P0 | M | P2-04, P3-02 |
+| 51 | S12 | P5-02 | scene: MaterialFactory compartido y texturas (UV en espacio mundo) | feature | P0 | M | P5-01, P2-07 |
+| 52 | S12 | P5-03 | ui: panel de materiales y color | feature | P0 | M | P5-02, P3-07 |
+| 53 | S12 | P5-04 | core: modelo de luminarias (estado de luz, efectos) y comandos | feature | P0 | M | P3-02 |
+| 54 | S13 | P5-05 | scene: pool fijo de luces, asignador por presupuesto y visuales emisivos | feature | P0 | L | P5-04, P4-10, P2-11 |
+| 55 | S13 | P5-06 | scene: modo día/noche (entorno procedural, sol con sombras, ventanas) | feature | P0 | L | P5-05 |
+| 56 | S13 | P5-09 | ui: controles de iluminación (día/noche, luminaria RGB, presets de ambiente) | feature | P0 | M | P5-04, P5-06 |
+| 57 | S14 | P5-10 | scene + ui: ajustes de calidad gráfica y calidad adaptativa | feature | P0 | M | P5-05, P5-06 |
+| 58 | S14 | P5-07 | scene: resplandor (bloom) selectivo según calidad | feature | P1 | M | P5-05 |
+| 59 | S14 | P5-08 | scene: efectos RGB animados con bucle de invalidación limitado | feature | P1 | M | P5-05 |
+| 60 | S14 | P6-01 | core: formato de archivo versionado, migraciones y validación de importación | feature | P0 | M | P2-01 |
+| 61 | S14 | P6-02 | persistence: ProjectRepository sobre IndexedDB (idb) | feature | P0 | M | P6-01 |
+| 62 | S15 | P6-03 | persistence: autoguardado, estado de guardado y recuperación de sesión | feature | P0 | M | P6-02, P3-09 |
+| 63 | S15 | P6-04 | ui: pantalla de proyectos (listar, crear, renombrar, duplicar, borrar) | feature | P0 | M | P6-02 |
+| 64 | S15 | P6-05 | persistence: importar y exportar JSON | feature | P0 | M | P6-01, P6-04 |
+| 65 | S15 | P6-06 | export: exportar PNG (resolución, fondo, calidad) | feature | P0 | L | P5-06, P3-09 |
+| 66 | S16 | P6-07 | export: miniaturas de proyecto | task | P1 | S | P6-06, P6-03 |
+| 67 | S16 | P6-08 | persistence: compartir por enlace (fragmento de URL) y modo visor | feature | P1 | L | P6-01, P2-08 |
+| 68 | S16 | P6-09 | persistence: robustez del almacenamiento (cuota, persist, multi-pestaña, recordatorio de copia) | task | P2 | M | P6-03 |
+| 69 | S16 | P7-09 | seguridad: fuzz de importación, CSP y auditoría de dependencias | task | P0 | S | P6-05 |
+| 70 | S16 | P7-08 | resiliencia: ErrorBoundary, pérdida de contexto WebGL y pantalla de fallo | task | P0 | M | P6-03 |
+| 71 | S17 | P7-01 | e2e: flujos críticos del MVP con Playwright | feature | P0 | L | P6-05, P6-06 |
+| 72 | S17 | P7-04 | perf: pasada de profiling y optimización (renders, GC, fugas de memoria) | task | P0 | L | P5-10 |
+| 73 | S17 | P7-02 | testing: regresión visual determinista de la escena | task | P1 | M | P1-07, P5-06 |
+| 74 | S18 | P7-03 | quality gates: cobertura, presupuesto de bundle y de escena en CI | task | P1 | M | P1-07, P4-07 |
+| 75 | S18 | P7-05 | a11y: teclado, foco, contraste, reduced-motion y alternativa textual | task | P1 | M | P3-15 |
+| 76 | S18 | P7-06 | mobile: modo visor táctil y comprobación en móviles | feature | P1 | M | P6-08 |
+| 77 | S18 | P7-07 | compat: pruebas cross-browser y degradación sin WebGL | task | P1 | M | P7-01 |
+| 78 | S18 | P8-01 | Landing, SEO, páginas legales y analítica respetuosa | feature | P0 | M | P1-08 |
+| 79 | S19 | P8-03 | Producción: dominio, despliegue en Cloudflare, cabeceras y aprobación manual | task | P0 | M | P1-08, P7-09 |
+| 80 | S19 | P8-02 | Plantillas de inicio y tutorial de primera ejecución | feature | P0 | L | P6-04, P4-10 |
+| 81 | S19 | P8-06 | Release v0.1.0-beta: checklist, rollback y changelog | task | P0 | S | P8-02, P8-03, P7-01 |
+| 82 | S19 | P8-04 | Feedback in-app y proceso de triage de la beta | task | P1 | S | P8-01 |
+| 83 | S19 | P8-05 | PWA / offline: service worker para los assets del editor | feature | P2 | M | P8-03 |
+| 84 | S20 | P9-01 | Spike: backend, autenticación y base de datos (decisión + ADR) | spike | P2 | M | P8-06 |
+| 85 | S20 | P9-03 | Spike: diseño del generador de distribuciones con IA | spike | P2 | M | P8-06 |
+| 86 | S21 | P9-02 | Cuentas, sincronización en la nube y enlaces alojados | feature | P2 | XL | P9-01 |
+| 87 | S22 | P9-04 | Generador de distribuciones con IA (texto → comandos con vista previa) | feature | P2 | XL | P9-03, P9-02 |
+| 88 | S23 | P9-09 | Selección múltiple, medición y recorrido en primera persona | feature | P3 | L | P8-06 |
+| 89 | S24 | P9-05 | Planes, límites y pagos (Stripe) | feature | P3 | XL | P9-02 |
+| 90 | S25 | P9-06 | Catálogo premium y marketplace de packs | feature | P3 | XL | P9-05 |
+| 91 | S26 | P9-07 | Colaboración en tiempo real | feature | P3 | XL | P9-02 |
+| 92 | S27 | P9-08 | Habitaciones poligonales, varias plantas y otros tipos de vivienda | feature | P3 | XL | P8-06 |
 
 ### Resumen por sprint
 
@@ -133,7 +134,7 @@ La columna «Sprint» agrupa secuencialmente en bloques de 5 días ideales (≈ 
 | S6 | 5 | P3-01, P3-02, P3-07 |
 | S7 | 5 | P3-04, P3-05, P3-06, P3-11 |
 | S8 | 5 | P3-15, P3-12, P3-13 |
-| S9 | 4 | P3-14, P4-02, P4-04, P4-06 |
+| S9 | 5 | P3-16, P3-14, P4-02, P4-04, P4-06 |
 | S10 | 5 | P4-03, P4-10, P4-07 |
 | S11 | 5 | P4-08, P4-05, P4-09 |
 | S12 | 4 | P5-01, P5-02, P5-03, P5-04 |
@@ -218,7 +219,7 @@ La columna «Sprint» agrupa secuencialmente en bloques de 5 días ideales (≈ 
 - **P8-03** Producción: dominio, despliegue en Cloudflare, cabeceras y aprobación manual — _M8, M_
 - **P8-06** Release v0.1.0-beta: checklist, rollback y changelog — _M8, S_
 
-### P1 (19 issues, 21 días)
+### P1 (20 issues, 22 días)
 
 - **P1-07** Playwright con WebGL y tests e2e de humo en CI — _M1, S_
 - **P1-09** Activar la revisión con Codex y validar el flujo con un PR de prueba — _M1, S_
@@ -227,6 +228,7 @@ La columna «Sprint» agrupa secuencialmente en bloques de 5 días ideales (≈ 
 - **P3-12** scene: aperturas en paredes (huecos, colocar y deslizar) — _M3, L_
 - **P3-13** core + scene: colocación sobre superficies (objetos sobre escritorios) — _M3, L_
 - **P3-15** ui: panel de escena (outliner) — _M3, M_
+- **P3-16** core + ui: controlar la altura (elevación) de los objetos — _M3, M_
 - **P4-05** scene: constructor de objetos paramétricos — _M4, M_
 - **P4-09** content: lote C — almacenamiento, entretenimiento y decoración (10 items) — _M4, L_
 - **P5-07** scene: resplandor (bloom) selectivo según calidad — _M5, M_
@@ -262,7 +264,7 @@ La columna «Sprint» agrupa secuencialmente en bloques de 5 días ideales (≈ 
 
 - **E1** Épica: Fundamentos del proyecto — 9 issues, 6,5 días
 - **E2** Épica: Motor 3D (core de dominio + motor de escena base) — 11 issues, 10,5 días
-- **E3** Épica: Editor interactivo — 15 issues, 20 días
+- **E3** Épica: Editor interactivo — 16 issues, 21 días
 - **E4** Épica: Catálogo de objetos (30 items) — 10 issues, 14 días
 - **E5** Épica: Materiales e iluminación (RGB, día/noche) — 10 issues, 12 días
 - **E6** Épica: Persistencia y exportación — 9 issues, 10,5 días
