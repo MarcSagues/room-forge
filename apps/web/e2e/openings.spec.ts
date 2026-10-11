@@ -172,3 +172,70 @@ test('Esc during a slide puts the opening back and records nothing', async ({ pa
   // The only entry was adding the window.
   await expect.poll(() => openingIds(page)).not.toContain('window');
 });
+
+/** Screen point of the middle of a wall's stretch at `offset` (measured with a probe opening). */
+async function wallPoint(page: Page, wall: WallId, offset: number) {
+  await addOpening(page, 'probe', 'window.standard', wall, offset);
+  const point = await openingPoint(page, 'probe');
+  await page.evaluate(() => {
+    const hook = window.__RF__;
+    hook?.session.execute(hook.commands.removeOpenings(['probe' as never]));
+    // The probe is test scaffolding: forget it, so the next undo is the user's.
+    hook?.session.undo();
+    hook?.session.undo();
+  });
+  await settle(page);
+  return point;
+}
+
+async function dragFromStructure(page: Page, name: RegExp, to: { x: number; y: number }) {
+  const item = page.getByRole('list', { name: 'Doors and windows' }).getByRole('button', { name });
+  const box = await item.boundingBox();
+  if (!box) throw new Error(`${name} is not in the Structure tab`);
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(to.x, to.y, { steps: 14 });
+  await settle(page);
+}
+
+test('a door and a window dragged from the Structure tab cut their wall; undo removes them', async ({
+  page,
+}) => {
+  const wall = await solidWall(page);
+  const doorAt = await wallPoint(page, wall, 0.3);
+  const windowAt = await wallPoint(page, wall, 2);
+  const idle = await info(page);
+  await page.getByRole('tab', { name: 'Structure' }).click();
+
+  await dragFromStructure(page, /^Door /, doorAt);
+  // Live: the wall already shows the hole and the door, the document has nothing yet.
+  expect((await info(page))?.triangles).toBeGreaterThan(idle?.triangles ?? 0);
+  expect(await openingIds(page)).toEqual([]);
+  await page.mouse.up();
+  await expect.poll(() => openingIds(page)).toHaveLength(1);
+  await expect(page.getByText('Door placed.')).toBeAttached();
+
+  await dragFromStructure(page, /^Window /, windowAt);
+  await page.mouse.up();
+  await expect.poll(() => openingIds(page)).toHaveLength(2);
+  const placed = await page.evaluate(() =>
+    Object.values(window.__RF__?.session.getState().document.openings ?? {}).map((o) => ({
+      variant: o.variant,
+      wall: o.wall,
+    })),
+  );
+  expect(placed).toEqual(
+    expect.arrayContaining([
+      { variant: 'door.single', wall },
+      { variant: 'window.standard', wall },
+    ]),
+  );
+  expect(await selection(page)).toHaveLength(1);
+
+  await page.keyboard.press('Control+z');
+  await expect.poll(() => openingIds(page)).toHaveLength(1);
+  await page.keyboard.press('Control+z');
+  await expect.poll(() => openingIds(page)).toHaveLength(0);
+  await settle(page);
+  expect((await info(page))?.triangles).toBe(idle?.triangles);
+});
