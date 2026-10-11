@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { LIMITS, type PlacedObject, SCHEMA_VERSION, type SceneDocument } from '../domain';
 import { checkInvariants } from '../session/invariants';
 import { arbitraryDocument, buildDocument, buildObject, createFixtureCatalog } from '../testing';
+import { migrateDocument } from './migrations';
 import { GOLDEN_CASES } from './migrations/golden';
 import {
   type ImportError,
@@ -227,7 +228,9 @@ describe('parseProjectFile: old files', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.migratedFrom).toBe(golden.from);
-    expect(result.value.document).toEqual(golden.expected);
+    // The golden is one step; later migrations take it the rest of the way.
+    const rest = migrateDocument(golden.expected, golden.from + 1);
+    expect(rest.ok && result.value.document).toEqual(rest.ok && rest.document);
   });
 
   it('does not report a migration for a current document', () => {

@@ -103,7 +103,10 @@ test('files that cannot be imported say why, in words, and change nothing', asyn
     ],
     [
       'a scene that is not valid',
-      JSON.stringify({ ...JSON.parse(valid), document: { schemaVersion: 1, rooms: 'many' } }),
+      JSON.stringify({
+        ...JSON.parse(valid),
+        document: { ...JSON.parse(valid).document, rooms: 'many' },
+      }),
       /scene inside this file is not valid/,
     ],
   ];

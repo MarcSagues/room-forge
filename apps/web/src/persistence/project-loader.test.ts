@@ -2,6 +2,7 @@ import {
   createStarterDocument,
   type ProjectRepository,
   RepositoryError,
+  SCHEMA_VERSION,
   type SceneDocument,
 } from '@roomforge/core';
 import { createFakeClock, createFixtureCatalog, createSeqIdGen } from '@roomforge/core/testing';
@@ -198,8 +199,8 @@ describe('opening brings an old document up to date', () => {
     const result = await open('old');
     if (!result.ok) throw new Error(JSON.stringify(result.error));
     expect(result.value.migrated).toBe(true);
-    expect(result.value.project.document.schemaVersion).toBe(1);
-    expect((await repository.get(id('old')))?.document.schemaVersion).toBe(1);
+    expect(result.value.project.document.schemaVersion).toBe(SCHEMA_VERSION);
+    expect((await repository.get(id('old')))?.document.schemaVersion).toBe(SCHEMA_VERSION);
   });
 
   it('does not rewrite a project that is already current', async () => {

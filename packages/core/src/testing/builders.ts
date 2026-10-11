@@ -38,6 +38,7 @@ export function buildOpening(overrides: Overrides<Opening> = {}): Opening {
     width: 0.9,
     height: 2.1,
     sill: 0,
+    ...(rest.kind === 'window' ? {} : { swing: 'in', hinge: 'left', open: 0 }),
     ...rest,
     id: id as OpeningId,
     roomId: roomId as RoomId,

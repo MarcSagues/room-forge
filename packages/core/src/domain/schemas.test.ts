@@ -11,6 +11,7 @@ import {
   PlacedObjectSchema,
   parseSceneDocument,
   RoomSchema,
+  SCHEMA_VERSION,
   type SceneDocument,
   SceneDocumentSchema,
 } from './schemas';
@@ -83,6 +84,15 @@ describe('OpeningSchema', () => {
   it('accepts doors at floor level and windows with a sill', () => {
     expect(OpeningSchema.safeParse(buildOpening({ kind: 'door', sill: 0 })).success).toBe(true);
     expect(OpeningSchema.safeParse(buildOpening({ kind: 'window', sill: 0.9 })).success).toBe(true);
+  });
+
+  it('requires the door state on doors and refuses it on windows (v2)', () => {
+    const { open: _open, ...noOpen } = buildOpening();
+    expect(errorsOf(OpeningSchema.safeParse(noOpen)).join()).toMatch(/open/);
+    const window = { ...buildOpening({ kind: 'window', sill: 0.9 }), hinge: 'left' };
+    expect(errorsOf(OpeningSchema.safeParse(window)).join()).toMatch(/hinge/);
+    expect(OpeningSchema.safeParse(buildOpening({ open: 1.2 })).success).toBe(false);
+    expect(OpeningSchema.safeParse({ ...buildOpening(), swing: 'sideways' }).success).toBe(false);
   });
 
   it('rejects a door with a sill', () => {
@@ -175,7 +185,8 @@ describe('SceneDocumentSchema', () => {
 
   it('rejects other schema versions and units', () => {
     expect(
-      SceneDocumentSchema.safeParse({ ...createEmptyDocument(), schemaVersion: 2 }).success,
+      SceneDocumentSchema.safeParse({ ...createEmptyDocument(), schemaVersion: SCHEMA_VERSION + 1 })
+        .success,
     ).toBe(false);
     expect(SceneDocumentSchema.safeParse({ ...createEmptyDocument(), units: 'cm' }).success).toBe(
       false,

@@ -3,6 +3,8 @@ import { createEmptyDocument } from '../domain/document';
 import type { ObjectId, OpeningId, RoomId } from '../domain/ids';
 import { LIMITS } from '../domain/limits';
 import {
+  DOOR_HINGES,
+  DOOR_SWINGS,
   type HexColor,
   type LightState,
   type MaterialRef,
@@ -74,8 +76,13 @@ const openingData = fc
     width: real(0.3, 3),
     height: real(0.3, 2.4),
     sill: real(0, 1.5),
+    door: fc.record({
+      swing: fc.constantFrom(...DOOR_SWINGS),
+      hinge: fc.constantFrom(...DOOR_HINGES),
+      open: real(0, 1),
+    }),
   })
-  .map((o) => (o.kind === 'door' ? { ...o, sill: 0 } : o));
+  .map(({ door, ...o }) => (o.kind === 'door' ? { ...o, ...door, sill: 0 } : o));
 
 const objectData = fc.record(
   {

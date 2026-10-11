@@ -18,7 +18,9 @@ export type CommandErrorCode =
   | 'limit-reached'
   | 'overlap'
   | 'exception'
-  | 'read-only';
+  | 'read-only'
+  /** Something physical is in the way (a door leaf would cross a wall). */
+  | 'blocked';
 
 export interface CommandError {
   readonly code: CommandErrorCode;

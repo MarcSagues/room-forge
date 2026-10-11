@@ -12,7 +12,7 @@ import {
   type SceneDocument,
   type WallId,
 } from '../domain';
-import { footprintInside, GEOMETRY_TOLERANCE } from '../geometry';
+import { doorSweepFits, footprintInside, GEOMETRY_TOLERANCE } from '../geometry';
 import type { CatalogProvider } from '../ports';
 
 /**
@@ -159,7 +159,10 @@ function wallLength(room: DeepReadonly<Room>, wall: WallId): number {
   return wall === 'north' || wall === 'south' ? room.shape.width : room.shape.depth;
 }
 
-/** I4: openings fit in their wall (length and height) and do not overlap on the same wall. */
+/**
+ * I4: openings fit in their wall (length and height) and do not overlap on the same wall, and an
+ * open door leaf does not cross a wall (DOMAIN_MODEL §8.1).
+ */
 function openingViolations(doc: Doc): InvariantViolation[] {
   const violations: InvariantViolation[] = [];
   const t = GEOMETRY_TOLERANCE;
@@ -182,6 +185,13 @@ function openingViolations(doc: Doc): InvariantViolation[] {
         invariant: 'I4',
         path: ['openings', id],
         message: `"${id}" is taller than the room`,
+      });
+    }
+    if (opening.kind === 'door' && !doorSweepFits(room.shape, opening)) {
+      violations.push({
+        invariant: 'I4',
+        path: ['openings', id, 'open'],
+        message: `The open leaf of "${id}" would cross the opposite wall`,
       });
     }
     const key = `${opening.roomId}:${opening.wall}`;
