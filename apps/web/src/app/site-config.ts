@@ -30,12 +30,7 @@ export function readSiteConfig(env: Record<string, string | undefined>): SiteCon
 
 export const site: SiteConfig = readSiteConfig(process.env);
 
-/** Public pages, by locale. The editor, the project list and shared views are not listed. */
-export const PUBLIC_PAGES = {
-  home: { en: '/', es: '/es/' },
-} as const;
-
-export type PublicPage = keyof typeof PUBLIC_PAGES;
+export { PUBLIC_PAGES, type PublicPage } from '@/ui';
 
 /** `/es/` → `https://roomforge.app/es/`. */
 export function absoluteUrl(path: string, config: SiteConfig = site): string {

@@ -1,16 +1,20 @@
 // Tests for the supply-chain checks (tools/checks/supply-chain.mjs).
 // Run with: pnpm test:arch   (node --test, no extra dependencies)
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
 import {
   findInstallScripts,
   flatten,
   installScriptProblems,
   isAllowed,
+  LICENSE_DATA_FILE,
   licenseProblems,
+  productionRowsOf,
+  renderLicenseData,
   renderReport,
 } from './supply-chain.mjs';
 
@@ -180,4 +184,26 @@ test('the report lists production dependencies and only counts the development o
     report,
     /Development dependencies only[\s\S]*\| MIT \| 1 \|[\s\S]*\| OFL-1\.1 \| 1 \|/,
   );
+});
+
+test('the page data and the report list the same production dependencies', () => {
+  const production = [
+    { name: 'zod', versions: ['4.0.0'], license: 'MIT' },
+    { name: 'react', versions: ['18.0.0', '19.0.0'], license: 'MIT' },
+  ];
+  const report = renderReport(production, production, policy);
+  const data = JSON.parse(renderLicenseData(production));
+  assert.deepEqual(
+    data.packages.map((row) => row.name),
+    ['react', 'zod'],
+  );
+  assert.deepEqual(productionRowsOf(report), data.packages);
+});
+
+test('the committed /licenses/ data matches docs/LICENSES.md (run pnpm licenses:report)', () => {
+  const root = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
+  const report = readFileSync(join(root, 'docs/LICENSES.md'), 'utf8');
+  const data = JSON.parse(readFileSync(join(root, LICENSE_DATA_FILE), 'utf8'));
+  assert.ok(data.packages.length > 0);
+  assert.deepEqual(productionRowsOf(report), data.packages);
 });

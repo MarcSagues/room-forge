@@ -19,6 +19,25 @@ test('the landing leads to the editor, the projects and the Spanish version', as
   await expect(page).toHaveURL(/\/editor\/$/);
 });
 
+test('the footer leads to the legal pages in both languages', async ({ page }) => {
+  await page.goto('/');
+  const footer = page.getByRole('contentinfo');
+  await footer.getByRole('link', { name: 'Privacy' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Privacy policy' })).toBeVisible();
+  await expect(page.getByRole('note')).toContainText('Draft pending legal review');
+  await page.getByRole('link', { name: 'Leer en español' }).click();
+  await expect(page).toHaveURL(/\/es\/privacidad\/$/);
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Política de privacidad' }),
+  ).toBeVisible();
+  await page.getByRole('contentinfo').getByRole('link', { name: 'Licencias' }).click();
+  await expect(
+    page.getByRole('heading', { level: 2, name: 'Modelos 3D del catálogo' }),
+  ).toBeVisible();
+  await page.getByRole('contentinfo').getByRole('link', { name: 'Términos' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Términos de uso' })).toBeVisible();
+});
+
 test('the FAQ opens from the keyboard and the skip link reaches the content', async ({ page }) => {
   await page.goto('/');
   await page.keyboard.press('Tab');
@@ -81,7 +100,7 @@ test.describe('accessibility', () => {
   // axe is injected as a script tag: the page's CSP would refuse it.
   test.use({ bypassCSP: true });
 
-  for (const path of ['/', '/es/']) {
+  for (const path of ['/', '/es/', '/privacy/', '/es/privacidad/', '/terms/', '/es/licencias/']) {
     test(`${path} has no serious accessibility violations (axe, with contrast)`, async ({
       page,
     }) => {
