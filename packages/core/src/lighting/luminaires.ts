@@ -8,6 +8,7 @@ import type {
   Vec3,
 } from '../domain';
 import type { CatalogItem, CatalogProvider, LightCapability } from '../ports';
+import { hexToRgb, rgbToHex } from './effects';
 
 /** The two kinds of three.js light the pool holds (no `RectAreaLight` in the MVP, P2-11). */
 export type PoolLightType = 'point' | 'spot';
@@ -19,7 +20,7 @@ export function poolLightType(kind: LightCapability['kind']): PoolLightType {
 
 /** The light of an object: its own state, or the item's defaults when it was never set. */
 export function lightStateOf(
-  object: Pick<DeepReadonly<PlacedObject>, 'light'>,
+  object: { readonly light?: DeepReadonly<LightState> | undefined },
   item: CatalogItem | undefined,
 ): LightState {
   if (object.light) {
@@ -32,6 +33,19 @@ export function lightStateOf(
     intensity: 1,
     effect: { kind: 'static' },
   };
+}
+
+/** Black: what a luminaire's light slot glows with when it is off. */
+export const NO_GLOW: HexColor = '#000000';
+
+/**
+ * The colour a luminaire's light slot glows in (P5-05): its light colour scaled by its intensity,
+ * or black when it is off. One colour per state, so slots in the same state share a material.
+ */
+export function glowColor(state: Pick<LightState, 'on' | 'color' | 'intensity'>): HexColor {
+  if (!state.on || state.intensity <= 0) return NO_GLOW;
+  const [r, g, b] = hexToRgb(state.color);
+  return rgbToHex([r * state.intensity, g * state.intensity, b * state.intensity]);
 }
 
 /** A luminaire as the light allocator and the light pool see it, in world coordinates (metres). */

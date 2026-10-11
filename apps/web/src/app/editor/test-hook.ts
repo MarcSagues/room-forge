@@ -4,15 +4,24 @@ import {
   createRoom,
   type EditorSession,
   type EntityId,
+  moveObjects,
   moveOpening,
   type RoomId,
   removeObjects,
   removeOpenings,
   resizeRoom,
+  setAllLights,
+  setLight,
   setSurfaceMaterial,
 } from '@roomforge/core';
 import type { Autosave, SaveState } from '@/persistence';
-import type { RenderInfo, RoomDisplay, SceneCamera, SceneHandle } from '@/scene-engine';
+import type {
+  LightPoolInfo,
+  RenderInfo,
+  RoomDisplay,
+  SceneCamera,
+  SceneHandle,
+} from '@/scene-engine';
 
 /**
  * Test hook for Playwright (TESTING_STRATEGY §5). Only builds with `NEXT_PUBLIC_E2E=1` expose
@@ -27,13 +36,18 @@ export interface RoomForgeTestHook {
     resizeRoom: typeof resizeRoom;
     addObject: typeof addObject;
     removeObjects: typeof removeObjects;
+    moveObjects: typeof moveObjects;
     addOpening: typeof addOpening;
     moveOpening: typeof moveOpening;
     removeOpenings: typeof removeOpenings;
     setSurfaceMaterial: typeof setSurfaceMaterial;
+    setLight: typeof setLight;
+    setAllLights: typeof setAllLights;
   };
   /** Renderer counters; `null` until the canvas is mounted. */
   info(): RenderInfo | null;
+  /** The light pool (size, luminaires lit) and the scene's light count; `null` until mounted. */
+  lights(): (LightPoolInfo & { sceneLights: number }) | null;
   /** Camera state and the same moves a user can make; inert until the canvas is mounted. */
   camera: SceneCamera;
   /** How a room is drawn (wall opacity and height, ceiling); `null` until it is drawn. */
@@ -73,12 +87,16 @@ export function installTestHook(
       resizeRoom,
       addObject,
       removeObjects,
+      moveObjects,
       addOpening,
       moveOpening,
       removeOpenings,
       setSurfaceMaterial,
+      setLight,
+      setAllLights,
     },
     info: () => deps.getScene()?.renderInfo() ?? null,
+    lights: () => deps.getScene()?.lights() ?? null,
     camera: {
       fit: () => deps.getScene()?.camera.fit(),
       snapshot: () => deps.getScene()?.camera.snapshot() ?? null,

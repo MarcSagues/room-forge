@@ -4,12 +4,20 @@ import { addAfterEffect, Canvas, useThree } from '@react-three/fiber';
 import {
   type EditorSession,
   type EntityId,
+  type LightQuality,
   type RoomId,
   WALL_IDS,
   type WallId,
 } from '@roomforge/core';
 import { type RefObject, useEffect, useMemo, useRef } from 'react';
-import { type Material, type Mesh, NeutralToneMapping, type Object3D, Vector3 } from 'three';
+import {
+  type Light,
+  type Material,
+  type Mesh,
+  NeutralToneMapping,
+  type Object3D,
+  Vector3,
+} from 'three';
 import type { CameraHandle, CameraSnapshot } from '../camera/camera-director';
 import { CameraRig } from '../camera/camera-rig';
 import { type LiveTransform, liveTransformOf } from '../interaction/live-transform';
@@ -17,6 +25,8 @@ import { OpeningPlaceController } from '../interaction/opening-place-controller'
 import { PlaceController } from '../interaction/place-controller';
 import { createPlacementApi, type PlacementApi } from '../interaction/placement-api';
 import { createTransientStore } from '../interaction/transient-store';
+import type { LightPoolInfo } from '../lighting/light-pool';
+import type { LightPoolDriver } from '../lighting/light-pool-driver';
 import { MaterialsProvider } from '../materials/materials-context';
 import { createEntityRegistry, type EntityRegistry } from '../objects/entity-registry';
 import { ModelsProvider } from '../resources/models-context';
@@ -59,6 +69,11 @@ export interface SceneHandle {
   project(id: EntityId, local?: readonly [number, number, number]): { x: number; y: number } | null;
   /** Renderer counters (frame, draw calls, triangles, programs...). */
   renderInfo(): RenderInfo;
+  /**
+   * The light pool (how many lights of each type, which luminaires have one now) and how many
+   * three.js lights the whole scene has, which must never change (ADR-0006).
+   */
+  lights(): LightPoolInfo & { sceneLights: number };
   /** Run a direct three.js mutation and request a frame. */
   mutate: Mutate;
   invalidate(): void;
@@ -80,6 +95,8 @@ export interface SceneCanvasProps {
   onContextRestored?: () => void;
   /** Dev overlay with renderer counters. Defaults to on outside production builds. */
   showStats?: boolean;
+  /** Graphics quality: the size of the light pool (P5-05). Defaults to medium until P5-10. */
+  quality?: LightQuality;
 }
 
 const showStatsByDefault = process.env.NODE_ENV !== 'production';
@@ -97,9 +114,11 @@ export function SceneCanvas(props: SceneCanvasProps) {
     onContextLost,
     onContextRestored,
     showStats = showStatsByDefault,
+    quality = 'medium',
   } = props;
   const statsRef = useRef<HTMLPreElement>(null);
   const cameraRef = useRef<CameraHandle | null>(null);
+  const lightPoolRef = useRef<LightPoolDriver | null>(null);
   const registry = useMemo(() => createEntityRegistry(), []);
   const transient = useMemo(() => createTransientStore(), []);
   return (
@@ -121,11 +140,16 @@ export function SceneCanvas(props: SceneCanvasProps) {
           <SessionBridge />
           <ContextWatcher onLost={onContextLost} onRestored={onContextRestored} />
           <CameraRig handleRef={cameraRef} />
-          <ReadyReporter onReady={onReady} camera={cameraRef} registry={registry} />
+          <ReadyReporter
+            onReady={onReady}
+            camera={cameraRef}
+            registry={registry}
+            lightPool={lightPoolRef}
+          />
           {showStats && <StatsWriter target={statsRef} />}
           <MaterialsProvider>
             <ModelsProvider>
-              <SceneContent registry={registry} />
+              <SceneContent registry={registry} quality={quality} lightPool={lightPoolRef} />
             </ModelsProvider>
           </MaterialsProvider>
         </SceneSessionProvider>
@@ -174,8 +198,9 @@ function ReadyReporter(props: {
   onReady: ((handle: SceneHandle) => void) | undefined;
   camera: RefObject<CameraHandle | null>;
   registry: EntityRegistry;
+  lightPool: RefObject<LightPoolDriver | null>;
 }) {
-  const { camera, registry } = props;
+  const { camera, registry, lightPool } = props;
   const session = useSceneSession();
   const catalog = useSceneCatalog();
   const transient = useTransientStore();
@@ -206,6 +231,10 @@ function ReadyReporter(props: {
   const handle = useMemo<SceneHandle>(
     () => ({
       renderInfo: () => readRenderInfo(gl.info),
+      lights: () => ({
+        ...(lightPool.current?.info() ?? { points: 0, spots: 0, lit: [] }),
+        sceneLights: countLights(scene),
+      }),
       roomDisplay: (roomId) => readRoomDisplay(scene, roomId),
       project: (id, local) => projectEntity(registry.get(id), get().camera, gl.domElement, local),
       mutate: createMutate(invalidate),
@@ -222,12 +251,31 @@ function ReadyReporter(props: {
         setInputBlocked: (blocked) => camera.current?.setInputBlocked(blocked),
       },
     }),
-    [gl, scene, get, invalidate, camera, registry, placement, openingPlacement, transient],
+    [
+      gl,
+      scene,
+      get,
+      invalidate,
+      camera,
+      registry,
+      placement,
+      openingPlacement,
+      transient,
+      lightPool,
+    ],
   );
   useEffect(() => {
     callback.current?.(handle);
   }, [handle]);
   return null;
+}
+
+function countLights(scene: Object3D): number {
+  let count = 0;
+  scene.traverse((node) => {
+    if ((node as Light).isLight) count += 1;
+  });
+  return count;
 }
 
 const projected = new Vector3();

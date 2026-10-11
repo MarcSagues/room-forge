@@ -357,6 +357,9 @@ flowchart LR
 
 - **Luminarias** = objetos del catálogo con capacidad `light` (tira, barra, panel, lámpara, neón). Cada una declara su *coste* de luz.
 - Visual emisivo (material con `toneMapped=false`) para **todas**; luz real solo para las que caben en el pool.
+- **Pool fijo** (`scene-engine/lighting`, P5-05): Baja 4 Point · Media 8 Point + 2 Spot · Alta 12 Point + 4 Spot (`LIGHT_POOL_SIZES` en core), creado una vez por calidad, sin sombras; una luz libre queda con `intensity = 0` (nunca `visible = false`).
+- **Asignador puro** (`allocateLights` en `core/lighting`): importancia = intensidad × cercanía a la cámara × orientación hacia ella × selección (× 0,9 si coste 2); las de coste 0, apagadas o a intensidad 0 solo brillan. Histéresis ×1,25 y cada luminaria conserva su ranura. Los focos (`spot`) toman Spot y, si no quedan, una Point. Se reasigna al cambiar documento o selección y cuando la cámara se ha movido ≥ 0,5 m o girado ≥ 12° (como mucho cada 200 ms), nunca por frame.
+- El brillo del *slot* emisivo sigue el estado de luz (color × intensidad; negro si está apagada) y se comparte por clave en `MaterialFactory`: encender, apagar o cambiar el color no recompila.
 - **Día:** luz direccional con sombra (sol) + hemisférica; entorno `Lightformer`; color de cielo visible por ventanas.
 - **Noche:** ambiente bajo azulado, sin sol; luces de usuario dominan; bloom activo según calidad.
 - Transición día↔noche animada interpolando parámetros (sin remontar nada).

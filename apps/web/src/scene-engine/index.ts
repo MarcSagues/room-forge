@@ -12,3 +12,4 @@ export {
 } from './canvas/scene-canvas';
 export type { LiveTransform } from './interaction/live-transform';
 export type { PlacementApi } from './interaction/placement-api';
+export type { LightPoolInfo } from './lighting/light-pool';
