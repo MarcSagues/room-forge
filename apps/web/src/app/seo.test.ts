@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { pageMetadata, robotsFor, sitemapFor } from './seo';
+import { legalMetadata, pageMetadata, robotsFor, sitemapFor } from './seo';
 import { absoluteUrl, PLACEHOLDER_SITE_URL, readSiteConfig } from './site-config';
 
 const production = { url: 'https://rooms.test', indexable: true };
@@ -43,6 +43,12 @@ describe('sitemapFor', () => {
     expect(entries.map((entry) => entry.url)).toEqual([
       'https://rooms.test/',
       'https://rooms.test/es/',
+      'https://rooms.test/privacy/',
+      'https://rooms.test/es/privacidad/',
+      'https://rooms.test/terms/',
+      'https://rooms.test/es/terminos/',
+      'https://rooms.test/licenses/',
+      'https://rooms.test/es/licencias/',
     ]);
     expect(entries[1]?.alternates?.languages).toEqual({
       en: 'https://rooms.test/',
@@ -62,5 +68,13 @@ describe('pageMetadata', () => {
     expect(meta.openGraph).toMatchObject({ url: '/es/', locale: 'es_ES', title: 'T' });
     expect(meta.openGraph?.images).toEqual([expect.objectContaining({ url: '/og.png' })]);
     expect(meta.twitter).toMatchObject({ card: 'summary_large_image', description: 'D' });
+  });
+});
+
+describe('legalMetadata', () => {
+  it('suffixes the title with the site name', () => {
+    const meta = legalMetadata('privacy', 'es', { title: 'Privacidad', description: 'D' });
+    expect(meta.title).toEqual({ absolute: 'Privacidad · RoomForge' });
+    expect(meta.alternates?.canonical).toBe('/es/privacidad/');
   });
 });

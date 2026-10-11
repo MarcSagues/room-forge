@@ -43,6 +43,15 @@ export function pageMetadata(
   };
 }
 
+/** A secondary public page: "<title> · RoomForge". */
+export function legalMetadata(
+  page: PublicPage,
+  locale: Locale,
+  text: { title: string; description: string },
+): Metadata {
+  return pageMetadata(page, locale, { ...text, title: `${text.title} · RoomForge` });
+}
+
 /**
  * Crawlers may read the public pages but not the app routes: the editor and project list are
  * shells without content, and a shared view (`/view/#…`) belongs to whoever shared it. A preview
