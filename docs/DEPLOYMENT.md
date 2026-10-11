@@ -215,6 +215,7 @@ Notas:
 - Un script en línea nuevo no necesita tocar nada: su hash se calcula solo. Un script **externo** de otro origen sí (y se discute en la PR).
 - El límite de Cloudflare es 2 000 caracteres por línea y 100 reglas: un test lo vigila.
 - `scripts/serve-static.mjs` aplica `out/_headers` igual que el host, de modo que el E2E prueba la política real.
+- `/sw.js` (P8-05, lo escribe `write-service-worker.mjs` tras el build) lleva `Cache-Control: no-cache` y su propia CSP (`default-src 'self'; script-src 'none'`: el worker solo pide a su origen). Las páginas ya permiten registrarlo con `worker-src 'self'`.
 - Los assets 3D llevan hash en el nombre (inmutables). Brotli lo aplica Cloudflare.
 
 ## 8. Costes
@@ -233,7 +234,7 @@ Alertas: avisos de uso en la cuenta de Cloudflare y revisión mensual de minutos
 
 1. **Producción:** volver a desplegar el commit/tag anterior (`workflow_dispatch` con `ref` o revertir en `main` y aprobar). Objetivo: < 10 min (ensayado en P8-03).
 2. **Datos de usuario:** viven en su navegador; un rollback **no** los toca. Por eso las migraciones de esquema deben ser **hacia delante y tolerantes**: la versión anterior debe rechazar con mensaje claro un archivo de versión futura (nunca corromperlo).
-3. **Service worker (si P8-05):** estrategia de invalidación explícita y «kill switch».
+3. **Service worker (P8-05):** cada despliegue con ficheros distintos publica un `/sw.js` distinto (manifiesto con versión = hash del contenido), que se instala junto al anterior y espera a que la persona acepte «Reload»; volver a desplegar el commit anterior es, para el navegador, otra versión nueva más. **Kill switch:** si un worker roto impide usar la app, desplegar un `sw.js` mínimo que en `install` llame a `self.skipWaiting()` y en `activate` borre las cachés `roomforge-*` y haga `self.registration.unregister()` (y luego `clients.matchAll()` → `client.navigate(client.url)`). Un 404 en `/sw.js` **no** desinstala el worker: el navegador sigue con el que tiene.
 
 ## 10. Proceso de release
 

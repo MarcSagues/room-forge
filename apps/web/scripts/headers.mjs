@@ -50,6 +50,9 @@ export function contentSecurityPolicy(scriptHashes) {
   ].join('; ');
 }
 
+/** The policy of the service worker script, which governs what the worker itself may fetch. */
+export const SERVICE_WORKER_POLICY = "default-src 'self'; script-src 'none'";
+
 /** `editor/index.html` → `/editor/`, `index.html` → `/`, `404.html` → `/404.html`. */
 export function urlPathOf(file) {
   const normalized = file.replaceAll('\\', '/');
@@ -73,6 +76,13 @@ export function renderHeaders(pages) {
       '  Permissions-Policy: camera=(), microphone=(), geolocation=()',
     ].join('\n'),
     ['/_next/static/*', '  Cache-Control: public, max-age=31536000, immutable'].join('\n'),
+    // The service worker (P8-05): always revalidated, so a deploy reaches it at the next check; it
+    // only ever fetches from its own origin.
+    [
+      '/sw.js',
+      '  Cache-Control: no-cache',
+      `  Content-Security-Policy: ${SERVICE_WORKER_POLICY}`,
+    ].join('\n'),
   ];
   const sorted = [...pages].sort(([a], [b]) => a.localeCompare(b));
   for (const [file, html] of sorted) {
