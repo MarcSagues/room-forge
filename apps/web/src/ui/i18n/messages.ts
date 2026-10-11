@@ -191,6 +191,9 @@ export const en = {
   'storageRisk.body':
     'It has not promised to keep them (private window, low space or browser settings). Export a copy to keep your work safe.',
   'storageRisk.dismiss': 'Got it',
+  'update.title': 'Update available',
+  'update.body': 'A new version of RoomForge is ready. Your work is saved before reloading.',
+  'update.reload': 'Reload',
   'shell.undo': 'Undo',
   'shell.redo': 'Redo',
   'history.undoLabel': 'Undo: {label}',

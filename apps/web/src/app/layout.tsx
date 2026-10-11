@@ -3,6 +3,7 @@ import './globals.css';
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { Providers, translate } from '@/ui';
+import { ServiceWorkerRegistrar } from './service-worker/service-worker-registrar';
 
 export const metadata: Metadata = {
   title: translate('en', 'app.name'),
@@ -18,6 +19,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </head>
       <body>
         <Providers>{children}</Providers>
+        <ServiceWorkerRegistrar />
       </body>
     </html>
   );
