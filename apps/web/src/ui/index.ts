@@ -1,5 +1,10 @@
 /** Public API of the ui module: other modules import only from here (no deep imports). */
-export { CatalogPanel, type CatalogPanelItem, type CatalogPlacement } from './catalog';
+export {
+  type CatalogCategoryOption,
+  CatalogPanel,
+  type CatalogPanelItem,
+  type CatalogPlacement,
+} from './catalog';
 export { Button, buttonVariants } from './components/button';
 export { UiKit } from './dev/ui-kit';
 export {

@@ -1,1 +1,2 @@
-export { CatalogPanel, type CatalogPanelItem, type CatalogPlacement } from './catalog-panel';
+export { CatalogPanel } from './catalog-panel';
+export type { CatalogCategoryOption, CatalogPanelItem, CatalogPlacement } from './catalog-types';

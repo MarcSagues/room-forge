@@ -1,15 +1,52 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import axe from 'axe-core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { CatalogPanel, type CatalogPanelItem } from './catalog-panel';
+import { CatalogPanel } from './catalog-panel';
+import type { CatalogCategoryOption, CatalogPanelItem } from './catalog-types';
 
 const ITEMS: CatalogPanelItem[] = [
-  { id: 'desk', name: 'Desk', color: '#8b6f9e', size: { w: 1.4, h: 0.75, d: 0.7 } },
-  { id: 'chair', name: 'Office chair', color: '#4a5568', size: { w: 0.6, h: 1, d: 0.6 } },
-  { id: 'bed', name: 'Single bed', color: '#8fb8de', size: { w: 0.9, h: 0.5, d: 2 } },
+  {
+    id: 'desk',
+    name: 'Desk',
+    color: '#8b6f9e',
+    size: { w: 1.4, h: 0.75, d: 0.7 },
+    category: 'desk',
+    keywords: ['Escritorio', 'office'],
+    thumbnail: '/assets/thumbnails/desk.0123456789.webp',
+  },
+  {
+    id: 'chair',
+    name: 'Office chair',
+    color: '#4a5568',
+    size: { w: 0.6, h: 1, d: 0.6 },
+    category: 'seating',
+    keywords: ['Silla de oficina'],
+  },
+  {
+    id: 'bed',
+    name: 'Single bed',
+    color: '#8fb8de',
+    size: { w: 0.9, h: 0.5, d: 2 },
+    keywords: ['Cama individual'],
+  },
+  {
+    id: 'lamp',
+    name: 'Floor lamp',
+    color: '#f4d58d',
+    size: { w: 0.4, h: 1.6, d: 0.4 },
+    category: 'lighting',
+    keywords: ['Lámpara de pie', 'light'],
+    thumbnail: '/assets/thumbnails/lamp.0123456789.webp',
+  },
+];
+const CATEGORIES: CatalogCategoryOption[] = [
+  { id: 'desk', label: 'Desks' },
+  { id: 'seating', label: 'Seating' },
+  { id: 'lighting', label: 'Lighting' },
 ];
 
-function setup(onPlaceResult = true) {
+function setup(onPlaceResult = true, items: readonly CatalogPanelItem[] = ITEMS) {
   const placement = {
     begin: vi.fn((_id: string) => true),
     move: vi.fn((_x: number, _y: number, _free: boolean) => {}),
@@ -18,57 +55,211 @@ function setup(onPlaceResult = true) {
   };
   const onPlace = vi.fn((_id: string) => onPlaceResult);
   const { unmount } = render(
-    <CatalogPanel items={ITEMS} placement={placement} onPlace={onPlace} />,
+    <CatalogPanel items={items} categories={CATEGORIES} placement={placement} onPlace={onPlace} />,
   );
-  const item = (name: string) => screen.getByRole('button', { name: new RegExp(name, 'i') });
+  const item = (name: string) =>
+    within(screen.getByRole('list', { name: 'Catalog items' })).getByRole('button', {
+      name: new RegExp(`^${name}`, 'i'),
+    });
   return { placement, onPlace, item, unmount };
 }
+
+const names = () =>
+  within(screen.getByRole('list', { name: 'Catalog items' }))
+    .getAllByRole('listitem')
+    .map((entry) => entry.querySelector('.font-medium')?.textContent);
+const search = () => screen.getByRole('searchbox', { name: 'Search the catalog' });
+const category = (name: string) => screen.getByRole('button', { name });
 
 beforeEach(() => {
   document.body.innerHTML = '';
 });
 
-describe('CatalogPanel: list and search', () => {
+describe('CatalogPanel: cards', () => {
   it('lists every item with its name and footprint in centimetres', () => {
-    setup();
-    const list = screen.getByRole('list', { name: 'Catalog items' });
-    expect(within(list).getAllByRole('listitem')).toHaveLength(3);
-    expect(screen.getByRole('button', { name: /Desk/ })).toHaveTextContent('140 × 70 cm');
-    expect(screen.getByRole('button', { name: /Single bed/ })).toHaveTextContent('90 × 200 cm');
+    const { item } = setup();
+    expect(names()).toEqual(['Desk', 'Office chair', 'Single bed', 'Floor lamp']);
+    expect(item('Desk')).toHaveTextContent('140 × 70 cm');
+    expect(item('Single bed')).toHaveTextContent('90 × 200 cm');
   });
 
-  it('filters by name as you type, ignoring case and spaces around it', async () => {
-    setup();
-    const search = screen.getByRole('searchbox', { name: 'Search the catalog' });
-    await userEvent.type(search, '  CHAIR ');
-    expect(screen.getAllByRole('listitem')).toHaveLength(1);
-    expect(screen.getByRole('button', { name: /Office chair/ })).toBeInTheDocument();
-    await userEvent.clear(search);
-    expect(screen.getAllByRole('listitem')).toHaveLength(3);
+  it('shows a lazy, sized, decorative thumbnail, or a swatch of the colour without one', () => {
+    const { item } = setup();
+    const picture = item('Desk').querySelector('img');
+    expect(picture).toHaveAttribute('src', '/assets/thumbnails/desk.0123456789.webp');
+    expect(picture).toHaveAttribute('loading', 'lazy');
+    expect(picture).toHaveAttribute('width', '128');
+    expect(picture).toHaveAttribute('height', '128');
+    expect(picture).toHaveAttribute('alt', '');
+    expect(item('Desk')).toHaveAccessibleName('Desk 140 × 70 cm');
+
+    expect(item('Office chair').querySelector('img')).toBeNull();
+    const swatch = item('Office chair').querySelector('[aria-hidden="true"]');
+    expect(swatch).toHaveStyle({ backgroundColor: '#4a5568' });
   });
 
-  it('says so when nothing matches', async () => {
-    setup();
-    await userEvent.type(screen.getByRole('searchbox'), 'zzz');
-    expect(screen.queryByRole('list')).not.toBeInTheDocument();
-    expect(screen.getByText('No items match "zzz".')).toBeInTheDocument();
+  it('falls back to the swatch when the thumbnail fails to load', () => {
+    const { item } = setup();
+    const picture = item('Floor lamp').querySelector('img');
+    if (!picture) throw new Error('no thumbnail');
+    fireEvent.error(picture);
+    expect(item('Floor lamp').querySelector('img')).toBeNull();
+    expect(item('Floor lamp').querySelector('[aria-hidden="true"]')).toBeInTheDocument();
   });
 
   it('explains how to place an item', () => {
     setup();
     expect(screen.getByText(/Drag an item into the room, or press Enter/)).toBeInTheDocument();
   });
+
+  it('has no serious accessibility violations (axe)', async () => {
+    setup();
+    await userEvent.click(category('Lighting'));
+    const results = await axe.run(document.body, {
+      // happy-dom does not lay out or paint: contrast is checked in the browser (e2e).
+      rules: { 'color-contrast': { enabled: false } },
+    });
+    const serious = results.violations.filter(
+      (v) => v.impact === 'serious' || v.impact === 'critical',
+    );
+    expect(serious.map((v) => `${v.id}: ${v.nodes.map((n) => n.html).join(' | ')}`)).toEqual([]);
+  });
+});
+
+describe('CatalogPanel: search', () => {
+  it('filters by name as you type, ignoring case and spaces around it', async () => {
+    setup();
+    await userEvent.type(search(), '  CHAIR ');
+    expect(names()).toEqual(['Office chair']);
+    await userEvent.clear(search());
+    expect(names()).toHaveLength(4);
+  });
+
+  it('ignores accents and finds the name in the other language and the tags', async () => {
+    setup();
+    await userEvent.type(search(), 'lamp');
+    expect(names()).toEqual(['Floor lamp']);
+    await userEvent.clear(search());
+    await userEvent.type(search(), 'lámp');
+    expect(names()).toEqual(['Floor lamp']); // its Spanish name, "Lámpara de pie"
+    await userEvent.clear(search());
+    await userEvent.type(search(), 'LAMPARA');
+    expect(names()).toEqual(['Floor lamp']);
+    await userEvent.clear(search());
+    await userEvent.type(search(), 'office');
+    expect(names()).toEqual(['Desk', 'Office chair']); // a tag, and a name
+  });
+
+  it('needs every word, in any order', async () => {
+    setup();
+    await userEvent.type(search(), 'chair office');
+    expect(names()).toEqual(['Office chair']);
+    await userEvent.clear(search());
+    await userEvent.type(search(), 'silla cama');
+    expect(screen.queryByRole('list', { name: 'Catalog items' })).not.toBeInTheDocument();
+  });
+
+  it('says so when nothing matches, and offers to show everything again', async () => {
+    setup();
+    await userEvent.type(search(), 'zzz');
+    expect(screen.queryByRole('list')).not.toBeInTheDocument();
+    expect(screen.getByText('No items match "zzz".')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Show everything' }));
+    expect(search()).toHaveValue('');
+    expect(names()).toHaveLength(4);
+  });
+
+  it('says the catalog is empty when it has no items', () => {
+    setup(true, []);
+    expect(screen.getByText('There is nothing in the catalog yet.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Show everything' })).not.toBeInTheDocument();
+  });
+});
+
+describe('CatalogPanel: categories', () => {
+  it('offers All and the host categories; All is pressed at first', () => {
+    setup();
+    const group = screen.getByRole('group', { name: 'Categories' });
+    expect(
+      within(group)
+        .getAllByRole('button')
+        .map((button) => button.textContent),
+    ).toEqual(['All', 'Desks', 'Seating', 'Lighting']);
+    expect(category('All')).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('filters by category, together with the search; items without one are under All only', async () => {
+    setup();
+    await userEvent.click(category('Seating'));
+    expect(category('Seating')).toHaveAttribute('aria-pressed', 'true');
+    expect(category('All')).toHaveAttribute('aria-pressed', 'false');
+    expect(names()).toEqual(['Office chair']);
+
+    await userEvent.type(search(), 'desk');
+    expect(screen.getByText('Nothing in Seating matches "desk".')).toBeInTheDocument();
+    await userEvent.click(category('Desks'));
+    expect(names()).toEqual(['Desk']);
+
+    await userEvent.clear(search());
+    await userEvent.click(category('All'));
+    expect(names()).toContain('Single bed');
+  });
+
+  it('is hidden when the host gives no categories', () => {
+    render(
+      <CatalogPanel
+        items={ITEMS}
+        placement={{ begin: () => true, move: () => {}, end: () => true, cancel: () => {} }}
+        onPlace={() => true}
+      />,
+    );
+    expect(screen.queryByRole('group', { name: 'Categories' })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('listitem')).toHaveLength(4);
+  });
 });
 
 describe('CatalogPanel: placing from the keyboard or with a click', () => {
-  it('Enter on a focused item places it in the middle of the view and announces it', async () => {
+  it('the cards are one tab stop; Enter places the focused one and announces it', async () => {
     const { onPlace, item } = setup();
     await userEvent.tab(); // the search box
-    await userEvent.tab(); // the first item
+    for (let i = 0; i <= CATEGORIES.length; i += 1) await userEvent.tab(); // All and the categories
+    await userEvent.tab(); // the cards
     expect(item('Desk')).toHaveFocus();
+    expect(item('Office chair')).toHaveAttribute('tabindex', '-1');
     await userEvent.keyboard('{Enter}');
     expect(onPlace).toHaveBeenCalledExactlyOnceWith('desk');
     expect(screen.getByRole('status')).toHaveTextContent('Desk placed.');
+    await userEvent.tab();
+    expect(document.body).toHaveFocus(); // past the cards in one step
+  });
+
+  it('the arrow keys move along rows and columns (two per row), Home and End to the ends', async () => {
+    const { onPlace, item } = setup();
+    item('Desk').focus();
+    await userEvent.keyboard('{ArrowRight}');
+    expect(item('Office chair')).toHaveFocus();
+    await userEvent.keyboard('{ArrowDown}');
+    expect(item('Floor lamp')).toHaveFocus();
+    await userEvent.keyboard('{ArrowDown}'); // no row below: stays
+    expect(item('Floor lamp')).toHaveFocus();
+    await userEvent.keyboard('{ArrowLeft}');
+    expect(item('Single bed')).toHaveFocus();
+    await userEvent.keyboard('{ArrowUp}');
+    expect(item('Desk')).toHaveFocus();
+    await userEvent.keyboard('{End}');
+    expect(item('Floor lamp')).toHaveFocus();
+    expect(item('Floor lamp')).toHaveAttribute('tabindex', '0');
+    await userEvent.keyboard('{Home}');
+    expect(item('Desk')).toHaveFocus();
+    await userEvent.keyboard('{End}{Enter}');
+    expect(onPlace).toHaveBeenCalledExactlyOnceWith('lamp');
+  });
+
+  it('keeps a tab stop when a filter removes the card that had it', async () => {
+    const { item } = setup();
+    item('Floor lamp').focus();
+    await userEvent.click(category('Seating'));
+    expect(item('Office chair')).toHaveAttribute('tabindex', '0');
   });
 
   it('a click places it too; a refusal is announced', async () => {
