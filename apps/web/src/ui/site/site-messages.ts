@@ -36,6 +36,7 @@ export interface SiteMessages {
     readonly privacy: string;
     readonly terms: string;
     readonly licenses: string;
+    readonly feedback: string;
   };
   readonly legal: { readonly updated: string; readonly draft: string; readonly reference: string };
   readonly licensesPage: {
@@ -159,6 +160,7 @@ const en: SiteMessages = {
     privacy: 'Privacy',
     terms: 'Terms',
     licenses: 'Licences',
+    feedback: 'Send feedback',
   },
   legal: {
     updated: 'Last updated: {date}',
@@ -287,6 +289,7 @@ const es: SiteMessages = {
     privacy: 'Privacidad',
     terms: 'Términos',
     licenses: 'Licencias',
+    feedback: 'Enviar comentarios',
   },
   legal: {
     updated: 'Última actualización: {date}',
