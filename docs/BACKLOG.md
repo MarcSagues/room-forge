@@ -120,7 +120,7 @@ La columna «Sprint» agrupa secuencialmente en bloques de 5 días ideales (≈ 
 | 88 | S24 | P9-05 | Planes, límites y pagos (Stripe) | feature | P3 | XL | P9-02 |
 | 89 | S25 | P9-06 | Catálogo premium y marketplace de packs | feature | P3 | XL | P9-05 |
 | 90 | S26 | P9-07 | Colaboración en tiempo real | feature | P3 | XL | P9-02 |
-| 91 | S27 | P9-08 | Habitaciones poligonales, varias plantas y otros tipos de vivienda | feature | P3 | XL | P8-06 |
+| 91 | S27 | P9-08 | Paredes en ángulo libre, varias plantas y otros tipos de vivienda | feature | P3 | XL | P8-06 |
 | 92 | S27 | P10-01 | docs: ADR HomeForge (modos Habitación/Casa y planes gratuito/premium) | task | P1 | S | — |
 | 93 | S28 | P10-02 | puertas que se abren y se cierran | feature | P1 | M | P10-01 |
 | 94 | S28 | P10-08 | renombrar RoomForge a HomeForge (producto y código) | task | P1 | L | P10-01 |
@@ -279,7 +279,7 @@ La columna «Sprint» agrupa secuencialmente en bloques de 5 días ideales (≈ 
 - **P9-05** Planes, límites y pagos (Stripe) — _M9, XL_
 - **P9-06** Catálogo premium y marketplace de packs — _M9, XL_
 - **P9-07** Colaboración en tiempo real — _M9, XL_
-- **P9-08** Habitaciones poligonales, varias plantas y otros tipos de vivienda — _M9, XL_
+- **P9-08** Paredes en ángulo libre, varias plantas y otros tipos de vivienda — _M9, XL_
 - **P9-09** Selección múltiple, medición y recorrido en primera persona — _M9, L_
 
 ## 4. Épicas
