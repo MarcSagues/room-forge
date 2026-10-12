@@ -16,5 +16,6 @@ Las ADR de la Fase 0 fueron **aceptadas el 2026-10-08** (aprobación global del 
 | [0009](0009-git-workflow.md) | Flujo Git, rama por defecto y revisión | Aceptada | P0-03 |
 | [0010](0010-share-links-url-fragment.md) | Enlaces compartibles en el fragmento de URL | Aceptada | P6-08 |
 | [0011](0011-respectful-analytics.md) | Analítica respetuosa: apagada por defecto, sin cookies ni terceros | Propuesta | Q6 / P8-03 |
+| [0012](0012-homeforge-modes-and-plans.md) | HomeForge: modos Habitación/Casa y planes gratuito/premium | Aceptada (2026-10-11) | P9-01 / P9-05 / P10-05 |
 
 Para añadir una decisión: copiar la plantilla, numerar secuencialmente, abrir PR `docs(adr): …`.
