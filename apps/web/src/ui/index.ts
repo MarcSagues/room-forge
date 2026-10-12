@@ -2,6 +2,7 @@
 export { CatalogPanel, type CatalogPanelItem, type CatalogPlacement } from './catalog';
 export { Button, buttonVariants } from './components/button';
 export { UiKit } from './dev/ui-kit';
+export { attachDoorFeedback } from './editor/door-feedback';
 export {
   ProjectStatusProvider,
   type ShareOutcome,

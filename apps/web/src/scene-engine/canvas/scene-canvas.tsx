@@ -11,6 +11,7 @@ import {
 } from '@roomforge/core';
 import { type RefObject, useEffect, useMemo, useRef } from 'react';
 import {
+  type InstancedMesh,
   type Light,
   type Material,
   type Mesh,
@@ -54,6 +55,8 @@ export interface RoomDisplay {
   wallOpacity: Record<WallId, number>;
   wallHeightScale: number;
   ceilingVisible: boolean;
+  /** The instance matrices (16 numbers each, in order) of the door leaves of each wall. */
+  leaves: Record<WallId, number[]>;
 }
 
 /** What the host (app, E2E hook) can do with a mounted scene. */
@@ -303,11 +306,15 @@ function readRoomDisplay(scene: Object3D, roomId: RoomId): RoomDisplay | null {
   const ceiling = scene.getObjectByName(roomObjectName.ceiling(roomId));
   if (!walls || !ceiling) return null;
   const wallOpacity = {} as Record<WallId, number>;
+  const leaves = {} as Record<WallId, number[]>;
   for (const wall of WALL_IDS) {
     const mesh = scene.getObjectByName(roomObjectName.wall(roomId, wall)) as Mesh | undefined;
     wallOpacity[wall] = (mesh?.material as Material | undefined)?.opacity ?? Number.NaN;
+    const fittings = scene.getObjectByName(roomObjectName.openings(roomId, wall));
+    const leaf = fittings?.getObjectByName('openings:leaf') as InstancedMesh | undefined;
+    leaves[wall] = leaf ? Array.from(leaf.instanceMatrix.array.slice(0, leaf.count * 16)) : [];
   }
-  return { wallOpacity, wallHeightScale: walls.scale.y, ceilingVisible: ceiling.visible };
+  return { wallOpacity, wallHeightScale: walls.scale.y, ceilingVisible: ceiling.visible, leaves };
 }
 
 /**

@@ -121,6 +121,24 @@ describe('SceneOutliner: keyboard', () => {
     expect(doc().objects[DESK]).toMatchObject({ hidden: false, locked: false });
   });
 
+  it('opens and closes a door with O, announced, shown on the row and undoable', async () => {
+    const door = () => doc().openings['door-1' as never];
+    await on('Door, south wall', 'o');
+    expect(door()?.open).toBe(1);
+    expect(status()).toHaveTextContent('Door, south wall opened');
+    expect(row('Door, south wall open')).toBeInTheDocument();
+    expect(
+      within(row(/Door, south wall/)).getByRole('button', { name: 'Close Door, south wall' }),
+    ).toHaveAttribute('aria-pressed', 'true');
+    act(() => {
+      session.undo();
+    });
+    expect(door()?.open).toBe(0);
+    // O does nothing on a window.
+    await on('Window, north wall', 'o');
+    expect(doc().openings['window-1' as never]).not.toHaveProperty('open');
+  });
+
   it('renames with F2 and Enter; Escape keeps the old name; one undo restores it', async () => {
     const user = await on('Desk', '{F2}');
     const field = screen.getByRole('textbox', { name: 'Name of Desk' });

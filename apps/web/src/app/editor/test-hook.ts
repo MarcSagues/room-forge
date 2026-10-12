@@ -11,8 +11,10 @@ import {
   removeOpenings,
   resizeRoom,
   setAllLights,
+  setDoorOpen,
   setLight,
   setSurfaceMaterial,
+  toggleDoor,
 } from '@roomforge/core';
 import type { Autosave, SaveState } from '@/persistence';
 import type {
@@ -40,6 +42,8 @@ export interface RoomForgeTestHook {
     addOpening: typeof addOpening;
     moveOpening: typeof moveOpening;
     removeOpenings: typeof removeOpenings;
+    setDoorOpen: typeof setDoorOpen;
+    toggleDoor: typeof toggleDoor;
     setSurfaceMaterial: typeof setSurfaceMaterial;
     setLight: typeof setLight;
     setAllLights: typeof setAllLights;
@@ -91,6 +95,8 @@ export function installTestHook(
       addOpening,
       moveOpening,
       removeOpenings,
+      setDoorOpen,
+      toggleDoor,
       setSurfaceMaterial,
       setLight,
       setAllLights,
