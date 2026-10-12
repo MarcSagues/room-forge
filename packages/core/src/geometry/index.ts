@@ -45,3 +45,12 @@ export {
   WALL_SNAP_DISTANCE,
   type WallGuide,
 } from './placement';
+export {
+  footprintOnSupport,
+  intersectRaySupport,
+  roomToSupport,
+  type SupportFrame,
+  type SupportPlacementInput,
+  solveOnSupport,
+  supportToRoom,
+} from './surfaces';

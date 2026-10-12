@@ -37,6 +37,17 @@ export const CatalogSlotSchema = z.object({
   emissive: z.exactOptional(z.literal(true)),
 });
 
+/** A flat area other items stand on, in the item's frame (SupportSurface in the catalog port). */
+export const CatalogSupportSchema = z.object({
+  y: z.number().check(z.nonnegative(), z.lte(LIMITS.maxScale)),
+  rect: z.object({
+    x: z.number().check(z.gte(-LIMITS.maxScale), z.lte(LIMITS.maxScale)),
+    z: z.number().check(z.gte(-LIMITS.maxScale), z.lte(LIMITS.maxScale)),
+    w: metres,
+    d: metres,
+  }),
+});
+
 export const CatalogLicenseSchema = z.object({
   /** An SPDX id, or `LicenseRef-…` for terms SPDX does not list (our own models). */
   spdx: z.string().check(z.regex(/^(LicenseRef-)?[A-Za-z0-9.+-]+$/)),
@@ -57,6 +68,8 @@ export const CatalogManifestItemSchema = z.object({
   /** Real bounding box in metres: placement, footprints and placeholders use it. */
   size: z.object({ w: metres, h: metres, d: metres }),
   placement: z.object({ surfaces: z.tuple([SurfaceSchema], SurfaceSchema) }),
+  /** Where tabletop items can stand on this one (a desk top). */
+  supports: z.exactOptional(z.array(CatalogSupportSchema).check(z.maxLength(4))),
   slots: z.array(CatalogSlotSchema).check(z.maxLength(LIMITS.maxMaterialSlots)),
   light: z.exactOptional(
     z.object({
@@ -90,6 +103,7 @@ export function toCatalogItem(item: CatalogManifestItem): CatalogItem {
     id: item.id,
     size: item.size,
     placement: { surfaces: item.placement.surfaces },
+    ...(item.supports ? { supports: item.supports } : {}),
     slots: item.slots.map((slot) => ({
       id: slot.id,
       default: slot.default,

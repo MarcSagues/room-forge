@@ -46,7 +46,12 @@ describe('checkInvariants', () => {
   describe('I2: stacking depth', () => {
     it('allows an object on a floor object but not on a stacked one', () => {
       const desk = buildObject({ id: 'desk' });
-      const monitor = buildObject({ id: 'monitor', catalogId: 'monitor.27', parentId: 'desk' });
+      const monitor = buildObject({
+        id: 'monitor',
+        catalogId: 'monitor.27',
+        parentId: 'desk',
+        transform: { position: [0, 0.75, 0], rotationY: 0 },
+      });
       const ok = withEntities({ objects: [desk, monitor] });
       expect(checkInvariants(ok, catalog)).toEqual([]);
 
@@ -104,6 +109,58 @@ describe('checkInvariants', () => {
         transform: { position: [-5, 0, -5], rotationY: 0 },
       });
       expect(checkInvariants(withEntities({ objects: [shelf, unknown] }), catalog)).toEqual([]);
+    });
+  });
+
+  describe('objects standing on a support surface (P3-13)', () => {
+    // Fixture desk top: 1.2 m × 0.6 m at 0.75 m. Monitor footprint: 0.62 m × 0.2 m.
+    const desk = buildObject({ id: 'desk' });
+    const onDesk = (
+      catalogId: string,
+      x: number,
+      z: number,
+      rotationY = 0,
+      scale?: [number, number, number],
+    ) =>
+      buildObject({
+        id: 'child',
+        catalogId,
+        parentId: 'desk',
+        transform: scale
+          ? { position: [x, 0.75, z], rotationY, scale }
+          : { position: [x, 0.75, z], rotationY },
+      });
+    const check = (child: PlacedObject, parent = desk) =>
+      invariantsOf(withEntities({ objects: [parent, child] }));
+
+    it('keeps the footprint of a child inside the top (I3), turned and scaled', () => {
+      expect(check(onDesk('monitor.27', 0.29, 0.2))).toEqual([]);
+      expect(check(onDesk('monitor.27', 0.4, 0))).toContain('I3');
+      expect(check(onDesk('monitor.27', 0, 0.25))).toContain('I3');
+      // Turned 90° the monitor is 0.62 m deep: more than the 0.6 m top.
+      expect(check(onDesk('monitor.27', 0, 0, Math.PI / 2))).toContain('I3');
+      expect(check(onDesk('monitor.27', 0, 0, 0, [2, 1, 1]))).toContain('I3');
+    });
+
+    it('measures the top in the desk frame, whatever the desk turn or scale', () => {
+      const turned = buildObject({
+        id: 'desk',
+        transform: { position: [2, 0, 1.5], rotationY: Math.PI / 2, scale: [1.5, 1, 1.5] },
+      });
+      expect(check(onDesk('monitor.27', 0.29, 0.2), turned)).toEqual([]);
+    });
+
+    it('lets only tabletop items stand on an object, and only on one with a surface (I2)', () => {
+      expect(check(onDesk('chair.office', 0, 0))).toContain('I2');
+      const chair = buildObject({ id: 'desk', catalogId: 'chair.office' });
+      expect(check(onDesk('monitor.27', 0, 0), chair)).toContain('I2');
+      expect(check(onDesk('led.strip.1m', 0, 0))).toEqual([]);
+    });
+
+    it('skips children or parents unknown to the catalog (I6)', () => {
+      expect(check(onDesk('removed.item', 5, 5))).toEqual([]);
+      const ghost = buildObject({ id: 'desk', catalogId: 'removed.desk' });
+      expect(check(onDesk('monitor.27', 5, 5), ghost)).toEqual([]);
     });
   });
 
