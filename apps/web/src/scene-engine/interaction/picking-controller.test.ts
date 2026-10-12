@@ -11,6 +11,7 @@ function setup() {
   const pick = vi.fn((ndcX: number) => (ndcX < 0 ? ('a' as ObjectId) : null));
   const onHover = vi.fn();
   const onClick = vi.fn();
+  const onDoubleClick = vi.fn();
   const drag = {
     start: vi.fn((_id: ObjectId, _x: number, _y: number) => true),
     move: vi.fn(),
@@ -31,6 +32,7 @@ function setup() {
     pick,
     onHover,
     onClick,
+    onDoubleClick,
     drag,
     rotate,
     requestFrame: (callback) => frames.push(callback),
@@ -50,7 +52,19 @@ function setup() {
     element.dispatchEvent(event);
     return event;
   };
-  return { element, pick, onHover, onClick, drag, rotate, detach, flush, pointer, wheel };
+  return {
+    element,
+    pick,
+    onHover,
+    onClick,
+    onDoubleClick,
+    drag,
+    rotate,
+    detach,
+    flush,
+    pointer,
+    wheel,
+  };
 }
 
 let ctx: ReturnType<typeof setup>;
@@ -125,6 +139,20 @@ describe('attachPicking: click', () => {
     ctx.flush();
     expect(ctx.onClick).not.toHaveBeenCalled();
     expect(ctx.pick).not.toHaveBeenCalled();
+  });
+});
+
+describe('attachPicking: double click', () => {
+  it('reports what is under a left double click, and nothing for other buttons', () => {
+    ctx.element.dispatchEvent(new MouseEvent('dblclick', { clientX: 20, clientY: 50 }));
+    expect(ctx.onDoubleClick).toHaveBeenCalledWith('a');
+    ctx.element.dispatchEvent(new MouseEvent('dblclick', { clientX: 180, clientY: 50 }));
+    expect(ctx.onDoubleClick).toHaveBeenLastCalledWith(null);
+    ctx.element.dispatchEvent(new MouseEvent('dblclick', { clientX: 20, clientY: 50, button: 2 }));
+    expect(ctx.onDoubleClick).toHaveBeenCalledTimes(2);
+    ctx.detach();
+    ctx.element.dispatchEvent(new MouseEvent('dblclick', { clientX: 20, clientY: 50 }));
+    expect(ctx.onDoubleClick).toHaveBeenCalledTimes(2);
   });
 });
 

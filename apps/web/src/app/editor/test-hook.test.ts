@@ -46,8 +46,10 @@ describe('installTestHook', () => {
       'removeOpenings',
       'resizeRoom',
       'setAllLights',
+      'setDoorOpen',
       'setLight',
       'setSurfaceMaterial',
+      'toggleDoor',
     ]);
     expect(hook?.info()).toEqual(info);
   });

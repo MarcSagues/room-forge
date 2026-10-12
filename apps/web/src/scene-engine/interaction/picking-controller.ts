@@ -36,6 +36,8 @@ export interface PickingDeps {
   onHover(id: EntityId | null): void;
   /** A left click without drag: the picked object (null on empty space) and whether Shift was held. */
   onClick(id: EntityId | null, additive: boolean): void;
+  /** A left double click: what is under it (null on empty space). Its two clicks came first. */
+  onDoubleClick?(id: EntityId | null): void;
   /** Dragging an object with the left button (optional). */
   drag?: DragHandlers;
   /** Turning an object with its rotation handle (optional). */
@@ -214,6 +216,11 @@ export function attachPicking(deps: PickingDeps): () => void {
     }
   };
 
+  const onDoubleClick = (event: MouseEvent) => {
+    if (event.button !== 0 || !deps.onDoubleClick) return;
+    deps.onDoubleClick(pickAt(event.clientX, event.clientY));
+  };
+
   const onWheel = (event: WheelEvent) => {
     if (!dragging || !active?.turn) return;
     // The camera is locked while dragging: the wheel turns the object instead of zooming.
@@ -226,6 +233,7 @@ export function attachPicking(deps: PickingDeps): () => void {
   element.addEventListener('pointerdown', onDown);
   element.addEventListener('pointerup', onUp);
   element.addEventListener('wheel', onWheel, { passive: false });
+  element.addEventListener('dblclick', onDoubleClick);
   // Capture phase, so it runs before the editor's Escape hotkey.
   keyTarget?.addEventListener('keydown', onKey as EventListener, true);
   return () => {
@@ -237,6 +245,7 @@ export function attachPicking(deps: PickingDeps): () => void {
     element.removeEventListener('pointerdown', onDown);
     element.removeEventListener('pointerup', onUp);
     element.removeEventListener('wheel', onWheel);
+    element.removeEventListener('dblclick', onDoubleClick);
     keyTarget?.removeEventListener('keydown', onKey as EventListener, true);
   };
 }

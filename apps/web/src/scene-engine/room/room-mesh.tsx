@@ -40,7 +40,11 @@ export const roomObjectName = {
   walls: (roomId: RoomId) => `room:${roomId}:walls`,
   wall: (roomId: RoomId, wall: WallId) => `room:${roomId}:wall:${wall}`,
   ceiling: (roomId: RoomId) => `room:${roomId}:ceiling`,
+  openings: (roomId: RoomId, wall: WallId) => `room:${roomId}:openings:${wall}`,
 };
+
+/** How long a door takes to swing fully open or shut (P10-02); 0 with reduced motion. */
+export const DOOR_SWING_MS = 320;
 
 /**
  * One room: floor, ceiling and four walls from the pure geometry builder, positioned at the room's
@@ -169,6 +173,9 @@ const WallView = memo(function WallView(props: {
   const session = useSceneSession();
   const transient = useTransientStore();
   const layer = useMemo(() => new WallOpeningsLayer(), []);
+  const invalidate = useThree((state) => state.invalidate);
+  const swingMs = useMemo(() => (prefersReducedMotion() ? 0 : DOOR_SWING_MS), []);
+  layer.group.name = roomObjectName.openings(roomId, wall);
   const live = useMemo(
     () =>
       new LiveWall({ session, transient, layer, roomId, wall, shift, thickness: WALL_THICKNESS }),
@@ -192,7 +199,15 @@ const WallView = memo(function WallView(props: {
     layer.begin();
     for (const o of openings) layer.add(o, shift + o.offset + o.width / 2, o.sill, WALL_THICKNESS);
     layer.commit();
-  }, [layer, live, openings, shift, length, height]);
+    // A door that was opened or closed swings there over the next frames (see below).
+    if (layer.swinging) invalidate();
+  }, [layer, live, openings, shift, length, height, invalidate]);
+  // The swing: a bounded loop of requested frames that ends when every leaf is where it goes.
+  // Nothing allocates here (rule 3); without a swing it returns at once.
+  useFrame((_, delta) => {
+    if (!layer.swinging) return;
+    if (layer.step(Math.min(delta * 1000, MAX_STEP_MS), swingMs)) invalidate();
+  });
   const onMaterial = useCallback(
     (material: MeshStandardMaterial | null) => {
       refs.material(material);

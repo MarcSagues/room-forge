@@ -232,7 +232,7 @@ function liveField(
   };
 }
 
-function SwitchRow(props: {
+export function SwitchRow(props: {
   id: string;
   label: string;
   checked: boolean;

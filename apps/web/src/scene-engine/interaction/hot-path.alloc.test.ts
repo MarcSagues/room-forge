@@ -430,6 +430,55 @@ describe('hot path: no allocations per step', () => {
       );
     }
   });
+  it(
+    'a door swinging (WallOpeningsLayer.step, one animation frame of P10-02)',
+    async () => {
+      const layer = new WallOpeningsLayer();
+      const door = {
+        id: 'd1',
+        kind: 'door' as const,
+        variant: 'door.double',
+        width: 1.6,
+        height: 2.1,
+        swing: 'in' as const,
+        hinge: 'left' as const,
+        open: 0,
+      };
+      const window = {
+        id: 'w1',
+        kind: 'window' as const,
+        variant: 'window.large',
+        width: 1.8,
+        height: 1.4,
+      };
+      const openDoor = { ...door, open: 1 };
+      const closedDoor = door;
+      const layout = (open: number) => {
+        layer.begin();
+        layer.add(open === 1 ? openDoor : closedDoor, 1.2, 0, WALL_THICKNESS);
+        layer.add(window, 3.5, 0.7, WALL_THICKNESS);
+        layer.commit();
+      };
+      layout(0);
+      let target = 1;
+      layout(target);
+      // Back and forth for ever: every call steps a swinging leaf and redraws the wall.
+      expectQuiet(
+        await largeBytesPerCall(() => {
+          if (!layer.step(16, 320)) {
+            target = 1 - target;
+            layer.begin();
+            layer.add(target === 1 ? openDoor : closedDoor, 1.2, 0, WALL_THICKNESS);
+            layer.add(window, 3.5, 0.7, WALL_THICKNESS);
+            layer.commit();
+          }
+        }),
+      );
+      layer.dispose();
+    },
+    SLOW,
+  );
+
   describe('OpeningPlaceController.update (a window dragged in from the catalog)', () => {
     // From the middle of the fixture room, the pointer turns around: every wall, the gaps between
     // them, over window-1 (an overlap) and up off the walls.

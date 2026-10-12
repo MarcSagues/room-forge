@@ -1,10 +1,11 @@
 'use client';
 
-import type { CatalogProvider, EditorSession, ObjectId } from '@roomforge/core';
+import type { CatalogProvider, EditorSession, ObjectId, OpeningId } from '@roomforge/core';
 import { useStore } from 'zustand';
 import { useShallow } from 'zustand/react/shallow';
 import { translate } from '@/ui/i18n';
 import { PanelHint } from '@/ui/shell/side-panel';
+import { DoorProperties } from './door-properties';
 import { type LiveTransform, ObjectProperties } from './object-properties';
 
 const t = (key: Parameters<typeof translate>[1], vars?: Record<string, string | number>) =>
@@ -30,13 +31,18 @@ export function SelectionSummary({
     session.store,
     useShallow((state) => {
       const id = state.selection[0] as ObjectId | undefined;
+      const door = id ? state.document.openings[id as string as OpeningId] : undefined;
       return {
         count: state.selection.length,
         id: id && state.document.objects[id] ? id : undefined,
+        door: door?.kind === 'door' ? door.id : undefined,
       };
     }),
   );
 
+  if (selected.count === 1 && selected.door) {
+    return <DoorProperties session={session} id={selected.door} />;
+  }
   if (selected.count === 0 || !selected.id) {
     return <PanelHint>{t('shell.propertiesHint')}</PanelHint>;
   }

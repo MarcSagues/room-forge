@@ -11,10 +11,12 @@ import {
   removeOpenings,
   reorderObject,
   setObjectProps,
+  toggleDoor,
 } from '@roomforge/core';
 import {
   BoxIcon,
   ChevronRightIcon,
+  DoorClosedIcon,
   DoorOpenIcon,
   EyeIcon,
   EyeOffIcon,
@@ -58,7 +60,7 @@ const KIND_ICONS = {
 /**
  * The Scene tab: rooms, openings and objects as a tree (WAI-ARIA tree pattern, roving tabindex).
  * The accessible way to work without the canvas: arrows move, Enter selects, F2 renames, H hides,
- * L locks, Delete removes and Alt+arrows reorder. Every change is a command, so it can be undone,
+ * L locks, O opens or closes a door, Delete removes and Alt+arrows reorder. Every change is a command, so it can be undone,
  * and every action is announced.
  */
 export function SceneOutliner({
@@ -154,6 +156,12 @@ export function SceneOutliner({
       t(row.locked ? 'outliner.unlocked' : 'outliner.locked', { name: labelOf(row) }),
     );
 
+  const toggleOpen = (row: OutlineRow) =>
+    run(
+      toggleDoor(row.id as OpeningId),
+      t(row.open ? 'outliner.doorClosed' : 'outliner.doorOpened', { name: labelOf(row) }),
+    );
+
   const select = (row: OutlineRow) => {
     session.select([row.id]);
     setActiveId(row.id);
@@ -220,6 +228,9 @@ export function SceneOutliner({
       case 'l':
       case 'L':
         return ifObject(() => toggleLocked(row));
+      case 'o':
+      case 'O':
+        return row.kind === 'door' ? () => toggleOpen(row) : null;
       default:
         return null;
     }
@@ -265,6 +276,7 @@ export function SceneOutliner({
             onToggle={setOpen}
             onHide={toggleHidden}
             onLock={toggleLocked}
+            onOpen={toggleOpen}
             onRename={rename}
             onStartRename={setEditingId}
           />
@@ -304,6 +316,7 @@ interface RowProps {
   onToggle: (id: EntityId, open: boolean) => void;
   onHide: (row: OutlineRow) => void;
   onLock: (row: OutlineRow) => void;
+  onOpen: (row: OutlineRow) => void;
   onRename: (row: OutlineRow, value: string | null) => void;
   onStartRename: (id: EntityId) => void;
 }
@@ -317,6 +330,7 @@ function OutlinerRow(props: RowProps) {
   const states = [
     row.hidden ? t('outliner.stateHidden') : null,
     row.locked ? t('outliner.stateLocked') : null,
+    row.open ? t('outliner.stateOpen') : null,
   ].filter(Boolean);
 
   return (
@@ -376,6 +390,15 @@ function OutlinerRow(props: RowProps) {
       <span id={`${id}-state`} className="sr-only">
         {states.join(', ')}
       </span>
+      {row.kind === 'door' && (
+        <RowToggle
+          on={row.open}
+          label={t(row.open ? 'outliner.closeDoor' : 'outliner.openDoor', { name: label })}
+          onClick={() => props.onOpen(row)}
+        >
+          {row.open ? <DoorOpenIcon /> : <DoorClosedIcon />}
+        </RowToggle>
+      )}
       {isObject && (
         <>
           <RowToggle

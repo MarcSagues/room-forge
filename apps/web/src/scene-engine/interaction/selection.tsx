@@ -1,7 +1,7 @@
 'use client';
 
 import { useFrame, useThree } from '@react-three/fiber';
-import type { EntityId, ObjectId, OpeningId } from '@roomforge/core';
+import { type EntityId, type ObjectId, type OpeningId, toggleDoor } from '@roomforge/core';
 import { useEffect, useMemo, useRef } from 'react';
 import {
   Color,
@@ -111,6 +111,11 @@ export function Picking() {
       onClick: (id, additive) => {
         if (id) session.select([id], additive ? 'toggle' : 'replace');
         else if (!additive) session.select([]);
+      },
+      // Double-clicking a door opens or closes it: one command, so one history entry.
+      onDoubleClick: (id) => {
+        const opening = id ? session.getState().document.openings[id as OpeningId] : undefined;
+        if (opening?.kind === 'door') session.execute(toggleDoor(opening.id));
       },
       drag: {
         start: (id, x, y) => {

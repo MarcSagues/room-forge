@@ -31,6 +31,7 @@ import {
 } from '@/persistence';
 import { type LiveTransform, SceneCanvas, type SceneHandle } from '@/scene-engine';
 import {
+  attachDoorFeedback,
   CatalogPanel,
   type CatalogPanelItem,
   ContextNotice,
@@ -168,6 +169,9 @@ export function Workspace(props: {
       }),
     [session, autosaveRef],
   );
+
+  // Doors refused by a wall, or sweeping over furniture, say so (P10-02).
+  useEffect(() => attachDoorFeedback(session, appCatalog), [session]);
 
   // Autosave lives as long as the editor does: it listens to the session, and when the editor goes
   // away (or the page does) whatever is pending is written first. A read-only tab saves nothing.

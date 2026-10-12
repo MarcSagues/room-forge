@@ -20,6 +20,8 @@ export interface OutlineRow {
   readonly detail: string;
   readonly hidden: boolean;
   readonly locked: boolean;
+  /** A door that is open (at all). */
+  readonly open: boolean;
 }
 
 type Doc = DeepReadonly<SceneDocument>;
@@ -44,7 +46,11 @@ export function buildOutline(doc: Doc): OutlineRow[] {
     add({ ...base(id, 'room', null), name: room.name });
   }
   for (const opening of Object.values(doc.openings)) {
-    add({ ...base(opening.id, opening.kind, opening.roomId), detail: opening.wall });
+    add({
+      ...base(opening.id, opening.kind, opening.roomId),
+      detail: opening.wall,
+      open: (opening.open ?? 0) > 0,
+    });
   }
   for (const id of doc.objectOrder) {
     const object = doc.objects[id];
@@ -77,7 +83,17 @@ export function buildOutline(doc: Doc): OutlineRow[] {
 }
 
 function base(id: EntityId, kind: OutlineKind, parent: EntityId | null): Draft {
-  return { id, kind, level: 0, parent, name: undefined, detail: '', hidden: false, locked: false };
+  return {
+    id,
+    kind,
+    level: 0,
+    parent,
+    name: undefined,
+    detail: '',
+    hidden: false,
+    locked: false,
+    open: false,
+  };
 }
 
 /** Rows not inside a collapsed row. */
