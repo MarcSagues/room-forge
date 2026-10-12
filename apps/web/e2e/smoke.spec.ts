@@ -32,10 +32,12 @@ test('editor loads the shell and exposes the E2E hook', async ({ page }) => {
     'camera',
     'commands',
     'info',
+    'invalidate',
     'lights',
     'project',
     'roomDisplay',
     'session',
+    'shadowRefreshes',
   ]);
   expect(errors).toEqual([]);
 });

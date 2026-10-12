@@ -56,6 +56,8 @@ describe('installTestHook', () => {
     installTestHook(window, { session, getScene: () => null }, true);
     expect(window.__RF__?.info()).toBeNull();
     expect(window.__RF__?.lights()).toBeNull();
+    expect(window.__RF__?.shadowRefreshes()).toBeNull();
+    expect(() => window.__RF__?.invalidate()).not.toThrow();
   });
 
   it('forwards camera calls to the mounted scene and is inert before that', () => {

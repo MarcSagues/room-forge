@@ -12,6 +12,15 @@ async function openEditor(page: Page) {
 const frame = (page: Page) => page.evaluate(() => window.__RF__?.info()?.frame ?? -1);
 const info = (page: Page) => page.evaluate(() => window.__RF__?.info() ?? null);
 
+/** Counters of a frame without the sun's shadow pass (a change redraws it once, P5-06). */
+async function plainInfo(page: Page) {
+  await settle(page);
+  const before = await frame(page);
+  await page.evaluate(() => window.__RF__?.invalidate());
+  await page.waitForFunction((f) => (window.__RF__?.info()?.frame ?? 0) > f, before);
+  return info(page);
+}
+
 async function settle(page: Page) {
   let previous = await frame(page);
   for (let i = 0; i < 40; i += 1) {
@@ -76,18 +85,21 @@ test.beforeEach(async ({ page }) => {
 
 test('a door and a window cut their wall and draw frame, leaf and glass', async ({ page }) => {
   const wall = await solidWall(page);
-  const before = await info(page);
+  const before = await plainInfo(page);
   await addOpening(page, 'door', 'door.single', wall, 0.3);
-  const door = await info(page);
+  const door = await plainInfo(page);
   await addOpening(page, 'window', 'window.large', wall, 1.6);
-  const both = await info(page);
+  const both = await plainInfo(page);
   if (!before || !door || !both) throw new Error('no renderer info');
   // A hole adds faces to the wall; the fittings are instanced: a few draw calls, not one per part.
   expect(door.triangles).toBeGreaterThan(before.triangles);
   expect(both.triangles).toBeGreaterThan(door.triangles);
   expect(both.calls - before.calls).toBeLessThanOrEqual(3);
-  // Programs: the instanced variant of the standard material, compiled once.
-  expect(both.programs - before.programs).toBeLessThanOrEqual(1);
+  // Programs: the instanced variants of the standard material and of the depth material that
+  // draws the frames into the sun's shadow map (P5-06), compiled once. three.js keys the depth
+  // shader of the very first shadow map without lights (it draws it before setting them up), so
+  // the first switch to an instanced caster also compiles the plain one again: once per page.
+  expect(both.programs - before.programs).toBeLessThanOrEqual(3);
   console.log('renderer.info', JSON.stringify({ before, door, both }));
 });
 

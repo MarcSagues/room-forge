@@ -1,14 +1,17 @@
 'use client';
 
+import { useThree } from '@react-three/fiber';
 import type { LightQuality } from '@roomforge/core';
-import type { RefObject } from 'react';
+import { type RefObject, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { DragGuides } from '../interaction/drag-guides';
 import { PlacementGhost } from '../interaction/placement-ghost';
 import { RotationHandle } from '../interaction/rotation-handle';
 import { ObjectKeys, Picking, SelectionOutline } from '../interaction/selection';
+import { GlobalLighting, type GlobalLightingReport } from '../lighting/global-lights-view';
 import type { LightPoolDriver } from '../lighting/light-pool-driver';
 import { LightPool } from '../lighting/light-pool-view';
+import { createShadowRefresh, ShadowRefreshContext } from '../lighting/shadow-refresh';
 import { type EntityRegistry, EntityRegistryProvider } from '../objects/entity-registry';
 import { ObjectList } from '../objects/object-views';
 import { RoomMesh } from '../room/room-mesh';
@@ -19,15 +22,23 @@ export function SceneContent({
   registry,
   quality = 'medium',
   lightPool,
+  lighting,
 }: {
   registry?: EntityRegistry;
   quality?: LightQuality;
   lightPool?: RefObject<LightPoolDriver | null>;
+  lighting?: RefObject<GlobalLightingReport | null>;
 }) {
   const roomIds = useSessionState(useShallow((state) => state.document.roomOrder));
+  const shadowMap = useThree((state) => state.gl.shadowMap);
+  const shadows = useMemo(() => createShadowRefresh(shadowMap), [shadowMap]);
   return (
-    <>
-      <PlaceholderLights />
+    <ShadowRefreshContext.Provider value={shadows}>
+      <GlobalLighting
+        quality={quality}
+        shadows={shadows}
+        {...(lighting ? { report: lighting } : {})}
+      />
       <LightPool quality={quality} {...(lightPool ? { driverRef: lightPool } : {})} />
       <EntityRegistryProvider {...(registry ? { registry } : {})}>
         {/* Rooms register their openings, so they share the registry with the objects. */}
@@ -42,16 +53,6 @@ export function SceneContent({
         <RotationHandle />
         <ObjectKeys />
       </EntityRegistryProvider>
-    </>
-  );
-}
-
-/** Neutral daylight stand-in until the day/night lighting (P5-06). */
-function PlaceholderLights() {
-  return (
-    <>
-      <hemisphereLight args={['#ffffff', '#8d939c', 1.4]} />
-      <directionalLight position={[3, 8, 4]} intensity={1.6} />
-    </>
+    </ShadowRefreshContext.Provider>
   );
 }

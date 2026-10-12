@@ -6,7 +6,8 @@ import type { OpeningSlot } from './opening-parts';
  * stretched per part through instancing, and one material per slot. Meshes use them with
  * `dispose={null}`; they live as long as the page, like the placeholder resources. All three are
  * flagged transparent (frame and leaf stay fully opaque), so they share one shader program: the
- * glass needs it, and opaque and transparent materials compile to different programs.
+ * glass needs it, and opaque and transparent materials compile to different programs. Day and
+ * night (P5-06) drive the glass emissive colour and opacity: the sky seen through the windows.
  */
 let shared:
   | { geometry: BoxGeometry; materials: Readonly<Record<OpeningSlot, MeshStandardMaterial>> }

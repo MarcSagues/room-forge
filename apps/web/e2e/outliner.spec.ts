@@ -26,6 +26,15 @@ async function settle(page: Page) {
   throw new Error('the canvas never went idle');
 }
 
+/** Counters of a frame without the sun's shadow pass (a change redraws it once, P5-06). */
+async function plainInfo(page: Page) {
+  await settle(page);
+  const before = (await info(page))?.frame ?? -1;
+  await page.evaluate(() => window.__RF__?.invalidate());
+  await page.waitForFunction((f) => (window.__RF__?.info()?.frame ?? 0) > f, before);
+  return info(page);
+}
+
 /** Two named placeholder cubes (0.5 m) in the 4 × 4.5 m demo room. */
 async function addCubes(page: Page) {
   await page.evaluate(() => {
@@ -85,12 +94,12 @@ test('selects, hides and locks from the keyboard; the viewport follows and undo 
 
   // Hiding it takes it out of the picture: fewer triangles drawn.
   await settle(page);
-  const before = await info(page);
+  const before = await plainInfo(page);
   await page.keyboard.press('h');
   await settle(page);
   expect((await object(page, 'a')).hidden).toBe(true);
   await expect(row(page, 'Cube A hidden')).toBeVisible();
-  const hidden = await info(page);
+  const hidden = await plainInfo(page);
   expect(hidden?.triangles).toBeLessThan(before?.triangles ?? 0);
 
   await page.keyboard.press('l');
@@ -101,7 +110,7 @@ test('selects, hides and locks from the keyboard; the viewport follows and undo 
   await page.keyboard.press('Control+z');
   await settle(page);
   expect(await object(page, 'a')).toMatchObject({ hidden: false, locked: false });
-  expect((await info(page))?.triangles).toBe(before?.triangles);
+  expect((await plainInfo(page))?.triangles).toBe(before?.triangles);
 });
 
 test('a selection made in the viewport shows in the tree', async ({ page }) => {

@@ -78,6 +78,8 @@ export const ObjectView = memo(function ObjectView({ id }: { id: ObjectId }) {
       ) : (
         <mesh
           geometry={geometry}
+          castShadow
+          receiveShadow
           material={material}
           scale={[size.w, size.h, size.d]}
           dispose={null}

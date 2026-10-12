@@ -17,9 +17,9 @@
     "limits": {
       "calls": 48,
       "triangles": 600,
-      "programs": 5,
+      "programs": 6,
       "geometries": 12,
-      "textures": 3
+      "textures": 6
     }
   }
 }

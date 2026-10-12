@@ -52,6 +52,9 @@ export class LiveWall {
     this.deps = deps;
     this.mesh.visible = false;
     this.mesh.frustumCulled = false;
+    // It stands in for the wall, so it casts and takes the sun's shadow like it.
+    this.mesh.castShadow = true;
+    this.mesh.receiveShadow = true;
     this.outline.visible = false;
     this.outline.renderOrder = 10;
     for (let i = 0; i < MAX_OPENINGS; i += 1) this.holes.push({ u0: 0, u1: 0, v0: 0, v1: 0 });

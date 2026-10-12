@@ -25,6 +25,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { prefersReducedMotion } from '../camera/reduced-motion';
 import { useSceneSession, useTransientStore } from '../canvas/scene-context';
 import { useSessionState } from '../canvas/use-session-state';
+import { useShadowRefresh } from '../lighting/shadow-refresh';
 import { useMaterial } from '../materials/use-material';
 import { useRegisterEntity } from '../objects/entity-registry';
 import { useMeshGeometry } from './buffer-geometry';
@@ -105,7 +106,7 @@ function RoomModel({
   const { width, depth } = geometry;
   return (
     <group position={[room.origin[0], 0, room.origin[1]]}>
-      <Surface mesh={geometry.floor} material={room.floor.material} />
+      <Surface mesh={geometry.floor} material={room.floor.material} receiveShadow />
       <Surface
         name={roomObjectName.ceiling(room.id)}
         mesh={geometry.ceiling}
@@ -260,6 +261,7 @@ function WallFader(props: {
   const { walls, materials, openings, roomHeight } = props;
   const session = useSceneSession();
   const invalidate = useThree((state) => state.invalidate);
+  const shadows = useShadowRefresh();
   const duration = useMemo(() => (prefersReducedMotion() ? 0 : WALL_TRANSITION_MS), []);
   // The first frame lands directly on the target: walls should not animate on load.
   const settled = useRef(false);
@@ -288,12 +290,20 @@ function WallFader(props: {
       if (material.opacity !== target) moving = true;
       // Doors and windows of a faded wall would float in the air: they go with it.
       const fittings = openings.current[wall];
-      if (fittings) fittings.visible = material.opacity > OPENINGS_HIDDEN_BELOW;
+      const shown = material.opacity > OPENINGS_HIDDEN_BELOW;
+      if (fittings && fittings.visible !== shown) {
+        fittings.visible = shown;
+        // Their frames no longer block the sun (or block it again).
+        if (hasShownChild(fittings)) shadows.request();
+      }
     }
     const group = walls.current;
     if (group) {
       const target = wallHeightScale(mode, roomHeight);
-      group.scale.y = approach(group.scale.y, target, step, ease);
+      const before = group.scale.y;
+      group.scale.y = approach(before, target, step, ease);
+      // Lower or taller walls throw another shadow: the static shadow map must be redrawn.
+      if (group.scale.y !== before) shadows.request();
       if (group.scale.y !== target) moving = true;
     }
     if (moving) state.invalidate();
@@ -311,6 +321,8 @@ const Surface = memo(function Surface(props: {
   position?: Vec3;
   rotationY?: number;
   visible?: boolean;
+  /** The sun's shadow (P5-06): walls cast and take it, the floor takes it, the ceiling neither. */
+  receiveShadow?: boolean;
   /** A wall: see-through and with a material of its own, so that it can fade by itself. */
   wall?: boolean;
   materialRef?: (material: MeshStandardMaterial | null) => void;
@@ -339,8 +351,16 @@ const Surface = memo(function Surface(props: {
       position={position}
       rotation-y={rotationY}
       visible={visible}
+      castShadow={wall}
+      receiveShadow={wall || props.receiveShadow === true}
     >
       {material ? <primitive object={material} attach="material" dispose={null} /> : null}
     </mesh>
   );
 });
+
+/** Whether a wall has any doors or windows drawn (an allocation-free loop: it runs per frame). */
+function hasShownChild(group: Group): boolean {
+  for (const child of group.children) if (child.visible) return true;
+  return false;
+}

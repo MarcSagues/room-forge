@@ -93,8 +93,9 @@ test('another preset with the same kind of surface adds no shader either', async
   const after = await page.evaluate(info);
   // Every one of those is a textured, opaque, standard material: the same shader.
   expect(after?.programs).toBe(idle?.programs);
-  // Textures come and go with the presets that use them; none is left over.
-  expect(after?.textures).toBeLessThanOrEqual(2);
+  // Textures come and go with the presets that use them; none is left over. Three are fixed: the
+  // sun's shadow map (colour and depth) and the procedural environment (P5-06).
+  expect(after?.textures).toBeLessThanOrEqual(3 + 2);
 });
 
 test('going from a textured preset to a plain paint and back leaks nothing', async ({ page }) => {

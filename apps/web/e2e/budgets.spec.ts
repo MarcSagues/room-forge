@@ -128,6 +128,10 @@ test('the pattern scene stays inside the scene budget', async ({ page }, testInf
     previous = now;
     await page.waitForTimeout(150);
   }
+  // A plain frame: the last one after a change also redrew the sun's static shadow map (P5-06),
+  // which happens once per change, not on the frames of an orbit.
+  await page.evaluate(() => window.__RF__?.invalidate());
+  await page.waitForFunction((f) => (window.__RF__?.info()?.frame ?? 0) > f, previous);
   const info = await page.evaluate(() => window.__RF__?.info());
   if (!info) throw new Error('no render info');
   expect(

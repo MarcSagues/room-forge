@@ -25,6 +25,7 @@ import { OpeningPlaceController } from '../interaction/opening-place-controller'
 import { PlaceController } from '../interaction/place-controller';
 import { createPlacementApi, type PlacementApi } from '../interaction/placement-api';
 import { createTransientStore } from '../interaction/transient-store';
+import type { GlobalLightingReport } from '../lighting/global-lights-view';
 import type { LightPoolInfo } from '../lighting/light-pool';
 import type { LightPoolDriver } from '../lighting/light-pool-driver';
 import { MaterialsProvider } from '../materials/materials-context';
@@ -74,6 +75,8 @@ export interface SceneHandle {
    * three.js lights the whole scene has, which must never change (ADR-0006).
    */
   lights(): LightPoolInfo & { sceneLights: number };
+  /** How many times the sun's static shadow map was asked to redraw (0 before the lights mount). */
+  shadowRefreshes(): number;
   /** Run a direct three.js mutation and request a frame. */
   mutate: Mutate;
   invalidate(): void;
@@ -119,6 +122,7 @@ export function SceneCanvas(props: SceneCanvasProps) {
   const statsRef = useRef<HTMLPreElement>(null);
   const cameraRef = useRef<CameraHandle | null>(null);
   const lightPoolRef = useRef<LightPoolDriver | null>(null);
+  const lightingRef = useRef<GlobalLightingReport | null>(null);
   const registry = useMemo(() => createEntityRegistry(), []);
   const transient = useMemo(() => createTransientStore(), []);
   return (
@@ -145,11 +149,17 @@ export function SceneCanvas(props: SceneCanvasProps) {
             camera={cameraRef}
             registry={registry}
             lightPool={lightPoolRef}
+            lighting={lightingRef}
           />
           {showStats && <StatsWriter target={statsRef} />}
           <MaterialsProvider>
             <ModelsProvider>
-              <SceneContent registry={registry} quality={quality} lightPool={lightPoolRef} />
+              <SceneContent
+                registry={registry}
+                quality={quality}
+                lightPool={lightPoolRef}
+                lighting={lightingRef}
+              />
             </ModelsProvider>
           </MaterialsProvider>
         </SceneSessionProvider>
@@ -199,8 +209,9 @@ function ReadyReporter(props: {
   camera: RefObject<CameraHandle | null>;
   registry: EntityRegistry;
   lightPool: RefObject<LightPoolDriver | null>;
+  lighting: RefObject<GlobalLightingReport | null>;
 }) {
-  const { camera, registry, lightPool } = props;
+  const { camera, registry, lightPool, lighting } = props;
   const session = useSceneSession();
   const catalog = useSceneCatalog();
   const transient = useTransientStore();
@@ -235,6 +246,7 @@ function ReadyReporter(props: {
         ...(lightPool.current?.info() ?? { points: 0, spots: 0, lit: [] }),
         sceneLights: countLights(scene),
       }),
+      shadowRefreshes: () => lighting.current?.shadowRefreshes() ?? 0,
       roomDisplay: (roomId) => readRoomDisplay(scene, roomId),
       project: (id, local) => projectEntity(registry.get(id), get().camera, gl.domElement, local),
       mutate: createMutate(invalidate),
@@ -262,6 +274,7 @@ function ReadyReporter(props: {
       openingPlacement,
       transient,
       lightPool,
+      lighting,
     ],
   );
   useEffect(() => {
