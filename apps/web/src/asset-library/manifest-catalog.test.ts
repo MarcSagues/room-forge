@@ -27,6 +27,7 @@ const sample: CatalogManifest = {
       placement: { surfaces: ['floor'] },
       slots: [slot('top', '#aabbcc'), slot('frame', '#000000')],
       source: { kind: 'glb', file: 'models/desk.a.glb', triangles: 10, bytes: 100 },
+      thumbnail: 'thumbnails/desk.a.webp',
       license,
     },
     {
@@ -72,6 +73,12 @@ describe('createManifestCatalog', () => {
     expect(catalog.modelUrlOf('desk.a')).toBe('/base/models/desk.a.glb');
     expect(catalog.modelUrlOf('nope')).toBeUndefined();
   });
+
+  it('tells the panel where the thumbnail is, when the item has one (P4-03)', () => {
+    expect(catalog.thumbnailUrlOf('desk.a')).toBe('/base/thumbnails/desk.a.webp');
+    expect(catalog.thumbnailUrlOf('chair.b')).toBeUndefined();
+    expect(catalog.thumbnailUrlOf('nope')).toBeUndefined();
+  });
 });
 
 describe('modelCatalog', () => {
@@ -80,8 +87,8 @@ describe('modelCatalog', () => {
     expect(modelCatalog.getItem('desk.office.140')?.size).toEqual({ w: 1.4, h: 0.74, d: 0.7 });
     expect(modelCatalog.byCategory('computing')).toHaveLength(3);
     expect(modelCatalog.byCategory('lighting')).toHaveLength(6);
-    expect(modelCatalog.modelUrlOf('chair.gaming.racing')).toBe(
-      '/assets/models/chair.gaming.racing.glb',
+    expect(modelCatalog.modelUrlOf('chair.gaming.racing')).toMatch(
+      /^\/assets\/models\/chair\.gaming\.racing\.[0-9a-f]{10}\.glb$/,
     );
   });
 });

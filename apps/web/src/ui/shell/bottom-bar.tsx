@@ -43,7 +43,10 @@ const wallName = (mode: WallMode) => t(`bar.wall.${mode}` as MessageKey);
 export function BottomBar({ session }: { session?: EditorSession | undefined }) {
   return (
     <TooltipProvider delayDuration={400}>
-      <footer className="flex h-11 shrink-0 items-center gap-1 overflow-x-auto border-t bg-card px-3">
+      <footer
+        data-tour="bottom-bar"
+        className="flex h-11 shrink-0 items-center gap-1 overflow-x-auto border-t bg-card px-3"
+      >
         <fieldset className="flex items-center gap-1">
           <legend className="sr-only">{t('shell.tools')}</legend>
           <Button variant="secondary" size="sm" aria-pressed="true">

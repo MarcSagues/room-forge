@@ -65,6 +65,12 @@ describe('CatalogManifestSchema', () => {
     expect(CatalogManifestSchema.safeParse(input).success).toBe(true);
   });
 
+  it('accepts a thumbnail under thumbnails/ (P4-03)', () => {
+    const thumbnail = 'thumbnails/desk.office.140.0a1b2c3d4e.webp';
+    const parsed = CatalogManifestSchema.parse(manifest(item('desk.office.140', { thumbnail })));
+    expect(parsed.items[0]?.thumbnail).toBe(thumbnail);
+  });
+
   it.each([
     ['an id with capitals', { id: 'Desk.office' }],
     ['an id without a family', { id: 'desk' }],
@@ -88,6 +94,8 @@ describe('CatalogManifestSchema', () => {
         ],
       },
     ],
+    ['a thumbnail outside thumbnails/', { thumbnail: '../x.webp' }],
+    ['a thumbnail that is not WebP', { thumbnail: 'thumbnails/desk.png' }],
     ['a licence without author', { license: { spdx: 'CC0-1.0', origin: 'x', attribution: 'y' } }],
     [
       'a slot marked emissive: false',
@@ -142,6 +150,16 @@ describe('validateCatalogManifest', () => {
 
   it('fails when the file does not exist', () => {
     expect(codes(manifest(item('desk.office.140')), () => undefined)).toEqual(['missing-file']);
+  });
+
+  it('fails when the thumbnail does not exist', () => {
+    const input = manifest(item('desk.office.140', { thumbnail: 'thumbnails/desk.webp' }));
+    expect(codes(input)).toEqual(['missing-file']);
+    const exists = (file: string) => ({
+      triangles: 3300,
+      bytes: file.endsWith('.glb') ? 98108 : 9,
+    });
+    expect(codes(input, exists)).toEqual([]);
   });
 
   it('fails when the declared stats are not the file', () => {

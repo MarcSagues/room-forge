@@ -223,7 +223,7 @@ Los comandos y patches de Immer son el punto de partida; evaluar Yjs frente a un
 ### Tests esperados
 - Tests de convergencia con operaciones concurrentes aleatorias (fast-check).
 
-## ISSUE P9-08 — Habitaciones poligonales, varias plantas y otros tipos de vivienda
+## ISSUE P9-08 — Paredes en ángulo libre, varias plantas y otros tipos de vivienda
 
 - **Tipo:** feature
 - **Prioridad:** P3
@@ -234,18 +234,18 @@ Los comandos y patches de Immer son el punto de partida; evaluar Yjs frente a un
 - **Depende de:** P8-06
 
 ### Descripción
-Dibujar paredes libres, salas poligonales, varias plantas (`Level`) y catálogo de dormitorio/salón/cocina/baño, con migración de esquema v2.
+Paredes en ángulos libres (no solo 90°), varias plantas (`Level`) y catálogo de dormitorio/salón/cocina/baño. Las salas poligonales ortogonales (L, U, T) y la migración de esquema v2 ya llegan con [P10-09](10-home.md) y [P10-10](10-home.md), antes de la beta.
 
 ### Contexto
 [DOMAIN_MODEL §8](../DOMAIN_MODEL.md) describe el camino de evolución sin romper proyectos.
 
 ### Requisitos
-- Migración v1→v2 con golden tests.
-- Generación de mallas de paredes arbitrarias y aperturas sobre segmentos.
+- Migración de esquema con golden tests si cambia el formato (p. ej. `Level`).
+- Generación de mallas de paredes en ángulos arbitrarios y aperturas sobre esos segmentos.
 
 ### Criterios de aceptación
-- [ ] Un proyecto v1 abre en v2 sin cambios visibles.
-- [ ] Se puede dibujar una sala en L y colocar objetos y aperturas en ella.
+- [ ] Un proyecto anterior abre sin cambios visibles.
+- [ ] Se puede dibujar una sala con una pared en diagonal y colocar objetos y aperturas en ella.
 
 ### Tests esperados
 - Golden de migración; propiedades de invariantes con polígonos.

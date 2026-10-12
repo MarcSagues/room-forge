@@ -26,7 +26,10 @@ const leftPanel = () => screen.getByRole('complementary', { name: 'Catalog panel
 const rightPanel = () =>
   screen.getByRole('complementary', { name: 'Properties panel', hidden: true });
 
-beforeEach(() => localStorage.clear());
+beforeEach(() => {
+  localStorage.clear();
+  localStorage.setItem('roomforge.tutorialSeen', '1'); // the tour has tests of its own
+});
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();

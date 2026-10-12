@@ -2,7 +2,8 @@
 // reviewed, and every dependency's license must be usable in a commercial product.
 //
 //   node tools/checks/supply-chain.mjs                 check, exit 1 on a problem
-//   node tools/checks/supply-chain.mjs --write-report  also rewrite docs/LICENSES.md
+//   node tools/checks/supply-chain.mjs --write-report  also rewrite docs/LICENSES.md and the data of
+//                                                      the /licenses/ page (LICENSE_DATA_FILE)
 //
 // The policy is tools/checks/supply-chain-policy.json. Pure functions are exported for the tests.
 import { execFileSync } from 'node:child_process';
@@ -197,6 +198,30 @@ ${table(devOnly)}
 `;
 }
 
+/** The production dependencies as the /licenses/ page renders them: the same rows as LICENSES.md. */
+export const LICENSE_DATA_FILE = 'apps/web/src/ui/site/legal/dependencies.json';
+
+export function renderLicenseData(production) {
+  const packages = [...production]
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((row) => ({ name: row.name, versions: row.versions, license: row.license }));
+  return `${JSON.stringify({ generatedBy: 'pnpm licenses:report', packages }, null, 2)}\n`;
+}
+
+/** The rows of the production table of docs/LICENSES.md, to check the page data against it. */
+export function productionRowsOf(markdown) {
+  const section = markdown.split('## Production dependencies')[1]?.split('\n## ')[0] ?? '';
+  return section
+    .split(/\r?\n/)
+    .map((line) => /^\| (\S+) \| ([^|]+) \| ([^|]+) \|$/.exec(line.trim()))
+    .filter((match) => match !== null && match[1] !== 'Package' && match[1] !== 'License')
+    .map(([, name, versions, license]) => ({
+      name,
+      versions: versions.trim().split(', '),
+      license: license.trim(),
+    }));
+}
+
 // ── Command line ────────────────────────────────────────────────
 
 function listLicenses(production) {
@@ -241,7 +266,8 @@ function main() {
 
   if (process.argv.includes('--write-report')) {
     writeFileSync(join(root, 'docs/LICENSES.md'), renderReport(production, everything, policy));
-    console.log('docs/LICENSES.md written');
+    writeFileSync(join(root, LICENSE_DATA_FILE), renderLicenseData(production));
+    console.log(`docs/LICENSES.md and ${LICENSE_DATA_FILE} written`);
   }
   if (failed) process.exit(1);
   console.log(

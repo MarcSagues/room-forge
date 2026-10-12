@@ -22,9 +22,11 @@ export interface ManifestCatalog {
   colorOf(id: CatalogId): string | undefined;
   /** Where the item's model is served from. */
   modelUrlOf(id: CatalogId): string | undefined;
+  /** Where the item's thumbnail is served from (P4-03), if it has one. */
+  thumbnailUrlOf(id: CatalogId): string | undefined;
 }
 
-/** `assetsBase` is the public folder the manifest's `models/…` paths are relative to. */
+/** `assetsBase` is the public folder the manifest's `models/…` and `thumbnails/…` paths are in. */
 export function createManifestCatalog(
   manifest: CatalogManifest,
   assetsBase = '/assets/',
@@ -41,6 +43,10 @@ export function createManifestCatalog(
     modelUrlOf: (id) => {
       const item = byId.get(id);
       return item && `${assetsBase}${item.source.file}`;
+    },
+    thumbnailUrlOf: (id) => {
+      const thumbnail = byId.get(id)?.thumbnail;
+      return thumbnail && `${assetsBase}${thumbnail}`;
     },
   };
 }

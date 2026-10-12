@@ -1,20 +1,27 @@
-// Builds RoomForge's own catalog models (ADR-0007) from the code in models.mjs: the GLB files, the
-// catalog manifest that describes them and docs/ATTRIBUTION.md. Nothing in the output is edited by
-// hand. Usage, from the repository root:
-//   node tools/catalog/build-models.mjs           writes the files (pnpm catalog:build)
-//   node tools/catalog/build-models.mjs --check   writes nothing; fails if a committed file differs
+// Builds RoomForge's own catalog models (ADR-0007) from the code in models.mjs: the optimised GLB
+// files and their thumbnails (P4-03), the catalog manifest that describes them and
+// docs/ATTRIBUTION.md. Nothing in the output is edited by hand. Usage, from the repository root
+// (see tools/catalog/README.md):
+//   node tools/catalog/build-models.mjs                writes the files (pnpm catalog:build)
+//   node tools/catalog/build-models.mjs --thumbnails   also renders every thumbnail again
+//   node tools/catalog/build-models.mjs --check        writes nothing; fails if anything differs
 import { execFileSync } from 'node:child_process';
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { renderAttribution } from './attribution.mjs';
+import { budgetReport, hasContentHash, hashedName, quantizeGeometry } from './optimize.mjs';
+import { renderThumbnails } from './thumbnails.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '../..');
 export const MODELS_DIR = resolve(root, 'apps/web/public/assets');
 export const MANIFEST_FILE = resolve(root, 'apps/web/src/asset-library/manifest/catalog.json');
 export const ATTRIBUTION_FILE = resolve(root, 'docs/ATTRIBUTION.md');
+/** The folders the build owns: any file in them the manifest does not name is removed. */
+const OUTPUT_FOLDERS = { models: '.glb', thumbnails: '.webp' };
+const BUDGET = { triangles: 20_000, bytes: 300_000 };
 
 /**
  * Generator variant → catalog item. Ids follow DOMAIN_MODEL (`family.style.size`) and the item list
@@ -78,7 +85,7 @@ const LICENSE = {
 };
 
 /** Loads models.mjs with the three.js the web app already depends on (no new dependency). */
-async function loadGenerator() {
+export async function loadGenerator() {
   const requireWeb = createRequire(resolve(root, 'apps/web/package.json'));
   const threeRoot = resolve(dirname(requireWeb.resolve('three')), '..');
   const url = (path) => JSON.stringify(pathToFileURL(resolve(threeRoot, path)).href);
@@ -89,10 +96,10 @@ async function loadGenerator() {
     `data:text/javascript;base64,${Buffer.from(source).toString('base64')}`
   );
   const THREE = await import(pathToFileURL(resolve(threeRoot, 'build/three.module.js')).href);
-  const { GLTFExporter } = await import(
-    pathToFileURL(resolve(threeRoot, 'examples/jsm/exporters/GLTFExporter.js')).href
-  );
-  return { generator, THREE, GLTFExporter };
+  const addon = (path) => import(pathToFileURL(resolve(threeRoot, 'examples/jsm', path)).href);
+  const { GLTFExporter } = await addon('exporters/GLTFExporter.js');
+  const { GLTFLoader } = await addon('loaders/GLTFLoader.js');
+  return { generator, THREE, GLTFExporter, GLTFLoader };
 }
 
 /** Same triangles seen from behind: reversed winding, flipped normals. */
@@ -120,7 +127,21 @@ function withBackFaces(THREE, geometry) {
 
 const round = (value) => Math.round(value * 1000) / 1000;
 
-export async function buildModels() {
+/** Exports a model as a binary glTF (GLB). */
+async function exportGlb(GLTFExporter, model) {
+  return Buffer.from(await new GLTFExporter().parseAsync(model, { binary: true }));
+}
+
+/**
+ * Builds every model. `previous` is the committed manifest: a thumbnail whose model file did not
+ * change is kept. `render` draws the others (`null` when checking: nothing is drawn then, and
+ * their ids are returned in `staleThumbnails`); `rerender` draws every thumbnail again.
+ */
+export async function buildModels({
+  previous = { items: [] },
+  render = null,
+  rerender = false,
+} = {}) {
   const { generator, THREE, GLTFExporter } = await loadGenerator();
   globalThis.FileReader ??= class {
     async readAsArrayBuffer(blob) {
@@ -128,8 +149,11 @@ export async function buildModels() {
       this.onloadend?.();
     }
   };
+  const before = new Map(previous.items.map((item) => [item.id, item]));
   const files = new Map();
   const items = [];
+  const report = [];
+  const toRender = [];
   for (const variant of generator.variants) {
     const row = CATALOG[variant.id];
     if (!row) throw new Error(`${variant.id}: no catalog id`);
@@ -159,10 +183,35 @@ export async function buildModels() {
       throw new Error(`${meta.id}: geometry outside its declared box ${variant.size}`);
     }
     const triangles = model.children.reduce((sum, mesh) => sum + mesh.geometry.index.count / 3, 0);
-    const bytes = Buffer.from(await new GLTFExporter().parseAsync(model, { binary: true }));
-    const file = `models/${meta.id}.glb`;
+    const unoptimized = await exportGlb(GLTFExporter, model);
+    // The generator already welds (mergeVertices) and the exporter writes only what the scene
+    // holds, one material per slot: nothing is left to dedupe or prune. Quantisation is the step.
+    for (const mesh of model.children) {
+      const { offset, scale } = quantizeGeometry(THREE, mesh.geometry);
+      mesh.position.fromArray(offset);
+      mesh.scale.setScalar(scale);
+    }
+    const bytes = await exportGlb(GLTFExporter, model);
+    const file = `models/${hashedName(meta.id, bytes, 'glb')}`;
     files.set(file, bytes);
     const materials = new Map(model.children.map((mesh) => [mesh.name, mesh.material]));
+    const slots = generator.slots[variant.family].map((slot) => {
+      const material = materials.get(slot.id);
+      return {
+        id: slot.id,
+        label: { en: slot.label.en, es: slot.label.es },
+        default: {
+          presetId: 'paint.satin',
+          tint: slot.color,
+          roughness: round(material.roughness),
+          metalness: round(material.metalness),
+        },
+        ...(slot.emissive ? { emissive: true } : {}),
+      };
+    });
+    const old = before.get(meta.id);
+    const keep = !rerender && old?.source.file === file && old.thumbnail;
+    if (!keep) toRender.push({ id: meta.id, bytes, slots });
     items.push({
       id: meta.id,
       name: meta.name,
@@ -173,20 +222,7 @@ export async function buildModels() {
       ...(supportsOf(variant.family, variant.size) && {
         supports: supportsOf(variant.family, variant.size),
       }),
-      slots: generator.slots[variant.family].map((slot) => {
-        const material = materials.get(slot.id);
-        return {
-          id: slot.id,
-          label: { en: slot.label.en, es: slot.label.es },
-          default: {
-            presetId: 'paint.satin',
-            tint: slot.color,
-            roughness: round(material.roughness),
-            metalness: round(material.metalness),
-          },
-          ...(slot.emissive ? { emissive: true } : {}),
-        };
-      }),
+      slots,
       ...(light && {
         light: {
           kind: light[0],
@@ -195,17 +231,38 @@ export async function buildModels() {
         },
       }),
       source: { kind: 'glb', file, triangles, bytes: bytes.length },
+      ...(keep ? { thumbnail: old.thumbnail } : {}),
       license: LICENSE,
+    });
+    report.push({
+      id: meta.id,
+      triangles,
+      materials: materials.size,
+      textureBytes: 0,
+      before: unoptimized.length,
+      after: bytes.length,
     });
     for (const mesh of model.children) mesh.geometry.dispose();
     generator.disposeModelMaterials(model);
   }
   generator.disposeGeometryCache();
-  const manifest = { version: 1, items };
+  const thumbnails = render && toRender.length > 0 ? await render(toRender) : new Map();
+  const withThumbnails = items.map((item) => {
+    const webp = thumbnails.get(item.id);
+    if (!webp) return item;
+    const thumbnail = `thumbnails/${hashedName(item.id, webp, 'webp')}`;
+    files.set(thumbnail, webp);
+    // Same key order as a kept thumbnail: after the model, before the licence.
+    const { license, ...rest } = item;
+    return { ...rest, thumbnail, license };
+  });
+  const manifest = { version: 1, items: withThumbnails };
   return {
     files,
     manifest: `${JSON.stringify(manifest, null, 2)}\n`,
     attribution: renderAttribution(manifest),
+    report: budgetReport(report, BUDGET),
+    staleThumbnails: toRender.filter((model) => !thumbnails.has(model.id)).map((model) => model.id),
   };
 }
 
@@ -223,33 +280,73 @@ const same = (path, current, built) =>
     ? JSON.stringify(JSON.parse(current.toString('utf8'))) === JSON.stringify(JSON.parse(built))
     : current.equals(built);
 
+/** The files of the build's own folders that the manifest does not name. */
+async function strayFiles(manifest) {
+  const named = new Set(manifest.items.flatMap((item) => [item.source.file, item.thumbnail]));
+  const stray = [];
+  for (const [folder, extension] of Object.entries(OUTPUT_FOLDERS)) {
+    const entries = await readdir(resolve(MODELS_DIR, folder)).catch(() => []);
+    for (const name of entries) {
+      if (name.endsWith(extension) && !named.has(`${folder}/${name}`)) {
+        stray.push(resolve(MODELS_DIR, folder, name));
+      }
+    }
+  }
+  return stray;
+}
+
+/** Thumbnails the manifest names that are missing or do not carry their content hash. */
+async function badThumbnails(manifest) {
+  const bad = [];
+  for (const { thumbnail } of manifest.items) {
+    if (!thumbnail) continue;
+    const bytes = await readOrNull(resolve(MODELS_DIR, thumbnail));
+    if (!bytes || !hasContentHash(thumbnail, bytes)) bad.push(resolve(MODELS_DIR, thumbnail));
+  }
+  return bad;
+}
+
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const check = process.argv.includes('--check');
-  const built = await buildModels();
+  const committed = await readOrNull(MANIFEST_FILE);
+  const built = await buildModels({
+    previous: committed ? JSON.parse(committed.toString('utf8')) : undefined,
+    render: check ? null : (models) => renderThumbnails(resolve(root, 'apps/web'), models),
+    rerender: process.argv.includes('--thumbnails'),
+  });
+  const manifest = JSON.parse(built.manifest);
   const outputs = [
     ...[...built.files].map(([file, bytes]) => [resolve(MODELS_DIR, file), bytes]),
     [MANIFEST_FILE, Buffer.from(built.manifest)],
     [ATTRIBUTION_FILE, Buffer.from(built.attribution)],
   ];
-  const stale = [];
+  const stale = built.staleThumbnails.map((id) => `thumbnail of ${id}`);
   for (const [path, bytes] of outputs) {
-    if (!check) await writeFile(path, bytes);
-    else {
+    if (!check) {
+      await mkdir(dirname(path), { recursive: true });
+      await writeFile(path, bytes);
+    } else {
       const current = await readOrNull(path);
       if (!current || !same(path, current, bytes)) stale.push(path);
     }
   }
+  for (const path of await strayFiles(manifest)) {
+    if (check) stale.push(`${path} (not in the manifest)`);
+    else await rm(path);
+  }
+  stale.push(...(await badThumbnails(manifest)));
   if (!check) {
     const biome = resolve(root, 'node_modules/@biomejs/biome/bin/biome');
     execFileSync(process.execPath, [biome, 'format', '--write', MANIFEST_FILE], {
       stdio: 'ignore',
     });
+    console.log(built.report);
   }
   if (stale.length > 0) {
     console.error(`Out of date (run pnpm catalog:build):\n${stale.join('\n')}`);
     process.exit(1);
   }
   console.log(
-    `${check ? 'Checked' : 'Wrote'} ${built.files.size} models, the manifest and ATTRIBUTION.md`,
+    `${check ? 'Checked' : 'Wrote'} ${manifest.items.length} models, their thumbnails, the manifest and ATTRIBUTION.md`,
   );
 }
