@@ -10,6 +10,15 @@ export {
   type SceneCanvasProps,
   type SceneHandle,
 } from './canvas/scene-canvas';
+export {
+  type CapturedImage,
+  CaptureError,
+  type CaptureErrorCode,
+  type CaptureLighting,
+  type CaptureLimits,
+  type CaptureRequest,
+  type SceneImageApi,
+} from './capture/image-api';
 export type { LiveTransform } from './interaction/live-transform';
 export type { PlacementApi } from './interaction/placement-api';
 export type { LightPoolInfo } from './lighting/light-pool';

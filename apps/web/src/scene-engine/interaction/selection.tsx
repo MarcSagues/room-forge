@@ -13,6 +13,7 @@ import {
   Vector2,
   Vector3,
 } from 'three';
+import { markOverlay } from '../canvas/overlay';
 import { useSceneCatalog, useSceneSession, useTransientStore } from '../canvas/scene-context';
 import { useEntityRegistry } from '../objects/entity-registry';
 import { objectSize } from '../objects/placeholder-resources';
@@ -222,7 +223,7 @@ export function SelectionOutline() {
       line.matrixAutoUpdate = false;
       line.visible = false;
       line.renderOrder = 10;
-      return line;
+      return markOverlay(line);
     };
     return { hover: make(0.6), selection: make(1), accent, danger };
   }, []);
