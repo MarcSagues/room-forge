@@ -38,5 +38,8 @@
   { "name": "regression", "color": "D73A4A", "description": "Algo que funcionaba y dejó de hacerlo" },
   { "name": "severity:critical", "color": "B60205", "description": "Bug: pérdida de datos, crash o bloqueo total" },
   { "name": "severity:major", "color": "D93F0B", "description": "Bug: funcionalidad principal degradada" },
-  { "name": "severity:minor", "color": "FBCA04", "description": "Bug: molestia con workaround" }
+  { "name": "severity:minor", "color": "FBCA04", "description": "Bug: molestia con workaround" },
+
+  { "name": "beta", "color": "0E8A16", "description": "Comentario de la beta (botón «Enviar comentarios» o plantillas beta-*)" },
+  { "name": "needs-triage", "color": "FBCA04", "description": "Pendiente del triage semanal (docs/BETA_TRIAGE.md)" }
 ]

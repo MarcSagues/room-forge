@@ -135,7 +135,7 @@ Proceso:
 1. **Triage semanal** (15 min): reproducir, etiquetar (`severity:*`, `area:*`, `regression`?), asignar prioridad e hito.
 2. **Regresión** (`regression`): primero test que falla, luego arreglo; añadir al E2E si es un flujo crítico.
 3. Un bug se cierra con **test de regresión** (o justificación documentada).
-4. Bugs de la beta: se enlazan al informe de feedback; los duplicados se cierran con referencia.
+4. Bugs de la beta: llegan con `beta` + `needs-triage` (botón «Enviar comentarios», P8-04) y siguen [BETA_TRIAGE.md](BETA_TRIAGE.md); los duplicados se cierran con referencia.
 
 ## 11. Convenciones de código (resumen; reglas completas en AGENTS.md)
 

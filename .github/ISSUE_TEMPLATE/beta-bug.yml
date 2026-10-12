@@ -1,0 +1,43 @@
+name: "Beta: something does not work"
+description: Report a problem you found while using the RoomForge beta
+title: "[Beta bug] "
+labels: ["beta", "needs-triage", "type:bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for trying the beta. **This issue is public: do not write personal data.**
+        Your project is not included. If it helps, export it from the editor and attach the file yourself.
+        The "Send feedback" button in the app fills this form in for you.
+  - type: textarea
+    id: message
+    attributes:
+      label: What happened?
+      description: What you were doing, what you expected and what you got instead. Steps to reproduce help a lot.
+      placeholder: |
+        1. I placed a desk lamp
+        2. I turned the room to night
+        3. The lamp stayed off
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Technical details (optional)
+      description: App version, browser, GPU and quality, renderer counters, recent errors. Filled in by the app when you tick "Include technical details".
+  - type: dropdown
+    id: impact
+    attributes:
+      label: How much does it get in your way?
+      description: The maintainers set the final severity during triage (docs/BETA_TRIAGE.md).
+      options:
+        - "I lost work, or the app does not open or save"
+        - "A main feature does not work"
+        - "It is annoying, but I can work around it"
+    validations:
+      required: false
+  - type: textarea
+    id: attachments
+    attributes:
+      label: Screenshots or exported project (optional)
+      description: Drag files here. Attach a project only if you want to share it.

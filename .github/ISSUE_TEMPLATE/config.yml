@@ -1,6 +1,8 @@
 blank_issues_enabled: false
-# TODO(P0-03): confirm the final owner/repo name (PRD Q2/Q3) before the repository is created.
 contact_links:
+  - name: RoomForge beta
+    url: https://home-forge.msagues.com/
+    about: Open the app. Its "Send feedback" button fills in a beta issue for you.
   - name: Documentation index
     url: https://github.com/MarcSagues/room-forge/blob/develop/docs/README.md
     about: Product, architecture, roadmap and workflow documents.
