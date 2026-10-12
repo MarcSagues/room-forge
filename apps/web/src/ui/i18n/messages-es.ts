@@ -356,6 +356,12 @@ export const es: Record<MessageKey, string> = {
   'catalog.showAll': 'Ver todo',
   'catalog.categories': 'Categorías',
   'catalog.allCategories': 'Todo',
+  'catalog.favorites': 'Favoritos',
+  'catalog.recent': 'Recientes',
+  'catalog.favorite': 'Favorito: {name}',
+  'catalog.noFavorites':
+    'Aún no hay favoritos. Marca un objeto con la estrella, o pulsa F sobre él, para tenerlo aquí.',
+  'catalog.noRecent': 'Los objetos que colocas aparecen aquí.',
   'catalog.category.desk': 'Escritorios',
   'catalog.category.seating': 'Asientos',
   'catalog.category.storage': 'Almacenaje',
