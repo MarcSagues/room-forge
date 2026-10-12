@@ -4,6 +4,7 @@ import {
   type ProjectId,
   ProjectIdSchema,
   RepositoryError,
+  SCHEMA_VERSION,
 } from '@roomforge/core';
 import { arbitraryDocument, buildDocument, createFixtureCatalog } from '@roomforge/core/testing';
 import fc from 'fast-check';
@@ -184,7 +185,7 @@ describe('readProjectFile', () => {
         'NEWER_VERSION',
       ],
       [envelope('"document":{"schemaVersion":1,"__proto__":{"a":1}}'), 'HOSTILE_INPUT'],
-      [envelope('"document":{"schemaVersion":1}'), 'INVALID_DOCUMENT'],
+      [envelope(`"document":{"schemaVersion":${SCHEMA_VERSION}}`), 'INVALID_DOCUMENT'],
     ];
     for (const [text, code] of cases) {
       const result = await readProjectFile(fileOf(text));

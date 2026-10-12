@@ -12,6 +12,17 @@ export {
   snapToGrid,
 } from './basics';
 export {
+  DOOR_MAX_ANGLE,
+  type DoorShape,
+  doorAngle,
+  doorLeafCount,
+  doorMaxOpen,
+  doorSweepBox,
+  doorSweepDepth,
+  doorSweepFits,
+  type FloorBox,
+} from './doors';
+export {
   intersectRayWall,
   type OpeningOffsetInput,
   type OpeningOffsetReason,

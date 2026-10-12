@@ -17,7 +17,11 @@ export {
 export { LIMITS } from './limits';
 export type { DeepReadonly } from './readonly';
 export {
+  DOOR_HINGES,
+  DOOR_SWINGS,
   type DocumentIssue,
+  type DoorHinge,
+  type DoorSwing,
   documentStructureIssues,
   type HexColor,
   HexColorSchema,

@@ -39,6 +39,9 @@ type DocOpening = {
   width: number;
   height: number;
   sill: number;
+  swing?: 'in' | 'out';
+  hinge?: 'left' | 'right';
+  open?: number;
 };
 type DocLightState = {
   on: boolean;
@@ -68,7 +71,7 @@ type DocPlacedObject = {
 };
 type DocLighting = { mode: 'day' | 'night'; ambient: number; sunAzimuth: number };
 type DocSceneDocument = {
-  schemaVersion: 1;
+  schemaVersion: 2;
   units: 'm';
   rooms: Record<RoomId, DocRoom>;
   roomOrder: RoomId[];

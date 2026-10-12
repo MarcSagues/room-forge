@@ -102,7 +102,16 @@ export type Room = z.infer<typeof RoomSchema>;
 
 const openingSize = positiveUpTo(LIMITS.roomSide.max);
 
+export const DOOR_SWINGS = ['in', 'out'] as const;
+export const DOOR_HINGES = ['left', 'right'] as const;
+export type DoorSwing = (typeof DOOR_SWINGS)[number];
+export type DoorHinge = (typeof DOOR_HINGES)[number];
+
+const DOOR_FIELDS = ['swing', 'hinge', 'open'] as const;
+
 // Fitting inside the wall and not overlapping other openings (I4) needs the room: see invariants.
+// The door state (`swing`, `hinge`, `open`, schema v2) is required on doors and absent on windows
+// (DOMAIN_MODEL §8.1): flat optional fields keep `Opening` one type, the checks below keep it exact.
 export const OpeningSchema = z
   .object({
     id: OpeningIdSchema,
@@ -114,11 +123,27 @@ export const OpeningSchema = z
     width: openingSize,
     height: openingSize,
     sill: between(0, LIMITS.roomHeight.max),
+    /** `in`: the leaf opens into the room that owns the opening. */
+    swing: z.exactOptional(z.enum(DOOR_SWINGS)),
+    /** The jamb of the hinge, seen from inside the room facing the wall. */
+    hinge: z.exactOptional(z.enum(DOOR_HINGES)),
+    /** 0 closed … 1 open at 90°. */
+    open: z.exactOptional(unit),
   })
   .check(
     z.refine((opening) => opening.kind !== 'door' || opening.sill === 0, {
       message: 'A door must start at floor level (sill 0)',
       path: ['sill'],
+    }),
+    z.superRefine((opening, ctx) => {
+      for (const field of DOOR_FIELDS) {
+        const present = opening[field] !== undefined;
+        if (opening.kind === 'door' && !present) {
+          ctx.addIssue({ code: 'custom', path: [field], message: `A door needs "${field}"` });
+        } else if (opening.kind === 'window' && present) {
+          ctx.addIssue({ code: 'custom', path: [field], message: `A window has no "${field}"` });
+        }
+      }
     }),
   );
 export type Opening = z.infer<typeof OpeningSchema>;
@@ -169,7 +194,7 @@ export type PlacedObject = z.infer<typeof PlacedObjectSchema>;
 
 // ── Document ────────────────────────────────────────────────────
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export const SceneDocumentSchema = z
   .object({

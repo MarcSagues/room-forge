@@ -41,6 +41,10 @@ export function buildOpening(overrides: Overrides<Opening> = {}): Opening {
     ...rest,
     id: id as OpeningId,
     roomId: roomId as RoomId,
+    // Door state last, as the schema has it: a door is a window's shape plus three fields.
+    ...(rest.kind === 'window'
+      ? {}
+      : { swing: rest.swing ?? 'in', hinge: rest.hinge ?? 'left', open: rest.open ?? 0 }),
   };
 }
 

@@ -1,5 +1,6 @@
 import type { Migration } from './types';
 import { v0ToV1 } from './v0-to-v1';
+import { v1ToV2 } from './v1-to-v2';
 
 export type { Migration } from './types';
 
@@ -8,7 +9,7 @@ export type { Migration } from './types';
  * field) means raising `SCHEMA_VERSION` and adding a migration here **and its golden file** under
  * `golden/`: the tests fail until both exist.
  */
-export const MIGRATIONS: readonly Migration[] = [v0ToV1];
+export const MIGRATIONS: readonly Migration[] = [v0ToV1, v1ToV2];
 
 export type MigrationResult =
   | { ok: true; document: unknown }

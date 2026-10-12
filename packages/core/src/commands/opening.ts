@@ -25,6 +25,8 @@ export const OPENING_VARIANTS = {
 
 export type OpeningVariant = keyof typeof OPENING_VARIANTS;
 
+const CLOSED_DOOR = { swing: 'in', hinge: 'left', open: 0 } as const;
+
 const invalid = (message: string): CommandError => ({ code: 'invalid', message });
 const notFound = (id: string): CommandError => ({
   code: 'not-found',
@@ -135,6 +137,8 @@ export function addOpening(input: AddOpeningInput): Command {
         width: input.width ?? defaults.width,
         height: input.height ?? defaults.height,
         sill: defaults.kind === 'door' ? 0 : (input.sill ?? defaults.sill),
+        // New doors are closed, open into the room and hinge on the left (DOMAIN_MODEL §8.1).
+        ...(defaults.kind === 'door' ? CLOSED_DOOR : {}),
       });
       if ('code' in fitted) return fitted;
       draft.openings[id] = fitted;

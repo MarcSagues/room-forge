@@ -1,5 +1,7 @@
+import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { SCHEMA_VERSION, SceneDocumentSchema } from '../../domain';
+import { arbitraryDocument } from '../../testing';
 import { GOLDEN_CASES } from './golden';
 import { MIGRATIONS, migrateDocument } from './index';
 
@@ -69,5 +71,35 @@ describe('migrateDocument', () => {
   it('reports a missing step in the chain', () => {
     const result = migrateDocument({}, -5);
     expect(result).toMatchObject({ ok: false });
+  });
+});
+
+describe('v1 → v2 (door state)', () => {
+  it('closes every door of any v1 document and keeps the rest as it was', () => {
+    fc.assert(
+      fc.property(arbitraryDocument(), (current) => {
+        const openings = Object.fromEntries(
+          Object.entries(current.openings).map(([id, opening]) => {
+            const { swing: _swing, hinge: _hinge, open: _open, ...v1 } = opening;
+            return [id, v1];
+          }),
+        );
+        const v1 = { ...clone(current), schemaVersion: 1, openings };
+        const migrated = migrateDocument(clone(v1), 1);
+        expect(migrated.ok).toBe(true);
+        if (!migrated.ok) return;
+        const parsed = SceneDocumentSchema.safeParse(migrated.document);
+        expect(parsed.success).toBe(true);
+        if (!parsed.success) return;
+        for (const [id, opening] of Object.entries(parsed.data.openings)) {
+          const expected =
+            opening.kind === 'door'
+              ? { ...openings[id], swing: 'in', hinge: 'left', open: 0 }
+              : openings[id];
+          expect(opening).toEqual(expected);
+        }
+        expect({ ...parsed.data, openings: {} }).toEqual({ ...clone(current), openings: {} });
+      }),
+    );
   });
 });
