@@ -292,3 +292,67 @@ describe('PlaceController: snap settings from the session', () => {
     expect(transient.ghost()?.rotationY).toBe(0);
   });
 });
+
+describe('PlaceController: on a desk top (P3-13)', () => {
+  // desk-1's top: 1.2 × 0.6 m at 0.75 m, world x 1.4..2.6, z 1.2..1.8.
+  const MONITOR = 'monitor.27';
+  const STRIP = 'led.strip.1m';
+
+  it('stands a tabletop item on the desk under the pointer, inside its top, as its child', () => {
+    controller.begin(MONITOR);
+    controller.update(down(2.33, 1.62), false);
+    const ghost = transient.ghost();
+    // 0.33 m right of centre: the 0.62 m monitor is pulled back onto the top, on the grid.
+    expect(ghost).toMatchObject({ visible: true, valid: true, wall: null });
+    expect(ghost?.x).toBeCloseTo(2.2);
+    expect(ghost?.y).toBeCloseTo(0.75);
+    expect(ghost?.z).toBeCloseTo(1.6);
+    expect(controller.end()?.ok).toBe(true);
+    const [monitor] = added();
+    expect(monitor).toMatchObject({ catalogId: MONITOR, parentId: 'desk-1' });
+    expect(monitor?.transform.position.map((v) => Number(v.toFixed(3)))).toEqual([0.2, 0.75, 0.1]);
+    expect(session.getState().selection).toEqual([monitor?.id]);
+    session.undo();
+    expect(added()).toHaveLength(0);
+  });
+
+  it('follows the turn of the desk', () => {
+    session.execute({
+      type: 'test/turn',
+      label: 'turn',
+      apply(draft) {
+        const desk = draft.objects['desk-1' as never];
+        if (desk) desk.transform.rotationY = Math.PI / 2;
+      },
+    });
+    controller.begin(STRIP);
+    controller.update(down(2, 1.5), false);
+    expect(transient.ghost()?.rotationY).toBeCloseTo(Math.PI / 2);
+    controller.end();
+    expect(added()[0]?.transform.rotationY).toBe(0);
+  });
+
+  it('puts an item that may also go on the floor on the floor beside the desk', () => {
+    controller.begin(STRIP);
+    controller.update(down(1, 2.5), false);
+    expect(transient.ghost()?.y).toBe(0);
+    controller.end();
+    expect(added()[0]).toMatchObject({ parentId: null });
+  });
+
+  it('never puts a floor-only item on the desk', () => {
+    controller.begin(CHAIR);
+    controller.update(down(2, 1.5), false);
+    expect(transient.ghost()).toMatchObject({ y: 0, valid: true });
+    controller.end();
+    expect(added()[0]).toMatchObject({ parentId: null });
+  });
+
+  it('refuses the floor to a tabletop-only item: the ghost turns red and nothing is created', () => {
+    controller.begin(MONITOR);
+    controller.update(down(1, 2.5), false);
+    expect(transient.ghost()).toMatchObject({ visible: true, valid: false });
+    expect(controller.end()).toBeNull();
+    expect(added()).toHaveLength(0);
+  });
+});

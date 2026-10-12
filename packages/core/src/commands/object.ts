@@ -10,7 +10,7 @@ import {
   type Vec3,
   Vec3Schema,
 } from '../domain';
-import { normalizeAngle, solvePlacement } from '../geometry';
+import { normalizeAngle, solveOnSupport, solvePlacement } from '../geometry';
 import type { CatalogProvider } from '../ports';
 import type { Command, CommandError } from '../session';
 
@@ -40,22 +40,25 @@ function describeIssues(error: z.core.$ZodError): string {
 const finite = z.number();
 const scaleSchema = PlacedObjectSchema.shape.transform.shape.scale.def.innerType;
 
+type Placeable = Pick<PlacedObject, 'catalogId' | 'roomId' | 'parentId' | 'transform'>;
+
 /**
- * Floor objects (catalog default surface `floor`, no parent) are kept inside their room: the
- * nearest legal centre for the requested one. Objects on other surfaces, on a parent, or unknown to
- * the catalog (I6) are left where they were asked to go; the invariants still check them.
+ * Where a new object goes. Floor objects (catalog default surface `floor`, no parent) are kept
+ * inside their room: the nearest legal centre for the requested one. Objects on a parent stand on
+ * one of its support surfaces (the one under the requested centre, or the first), inside it, at
+ * its height. Objects on other surfaces, or unknown to the catalog (I6), are left where they were
+ * asked to go; the invariants still check them.
  */
-function placeOnFloor(
+function placeLegally(
   draft: Draft<SceneDocument>,
   catalog: CatalogProvider,
-  object: Pick<PlacedObject, 'catalogId' | 'roomId' | 'parentId' | 'transform'>,
+  object: Placeable,
 ): CommandError | Vec3 {
+  if (object.parentId !== null) return placeOnSupport(draft, catalog, object);
   const [x, y, zPos] = object.transform.position;
   const item = catalog.getItem(object.catalogId);
   const room = draft.rooms[object.roomId];
-  if (object.parentId !== null || !item || !room || item.placement.surfaces[0] !== 'floor') {
-    return [x, y, zPos];
-  }
+  if (!item || !room || item.placement.surfaces[0] !== 'floor') return [x, y, zPos];
   const [sx, , sz] = object.transform.scale ?? [1, 1, 1];
   const solved = solvePlacement({
     room: room.shape,
@@ -66,6 +69,35 @@ function placeOnFloor(
   });
   if (!solved.valid) return invalid(`"${object.catalogId}" does not fit in room "${room.id}"`);
   return [solved.position[0], y, solved.position[1]];
+}
+
+function placeOnSupport(
+  draft: Draft<SceneDocument>,
+  catalog: CatalogProvider,
+  object: Placeable,
+): CommandError | Vec3 {
+  const [x, y, zPos] = object.transform.position;
+  const parent = object.parentId === null ? undefined : draft.objects[object.parentId];
+  const item = catalog.getItem(object.catalogId);
+  const parentItem = parent ? catalog.getItem(parent.catalogId) : undefined;
+  if (!parent || !item || !parentItem) return [x, y, zPos];
+  const supports = parentItem.supports ?? [];
+  const support =
+    supports.find(
+      ({ rect }) => Math.abs(x - rect.x) <= rect.w / 2 && Math.abs(zPos - rect.z) <= rect.d / 2,
+    ) ?? supports[0];
+  if (!support || !item.placement.surfaces.includes('tabletop')) {
+    return invalid(`"${object.catalogId}" cannot stand on "${parent.id}"`);
+  }
+  const [sx, , sz] = object.transform.scale ?? [1, 1, 1];
+  const solved = solveOnSupport({
+    support,
+    size: { w: item.size.w * sx, d: item.size.d * sz },
+    position: [x, zPos],
+    rotationY: object.transform.rotationY,
+  });
+  if (!solved.valid) return invalid(`"${object.catalogId}" does not fit on "${parent.id}"`);
+  return [solved.position[0], support.y, solved.position[1]];
 }
 
 // ── object/add ──────────────────────────────────────────────────
@@ -86,7 +118,8 @@ export interface AddObjectInput {
 
 /**
  * `object/add`. Policy: a floor object asked to stand partly outside its room is moved to the
- * nearest position inside; if it cannot fit at all the command fails with `invalid`. Reaching
+ * nearest position inside, and an object on a parent onto the nearest spot of its surface; if it
+ * cannot fit at all, or cannot stand on that parent, the command fails with `invalid`. Reaching
  * the object limit fails with `limit-reached`.
  */
 export function addObject(input: AddObjectInput): Command {
@@ -121,7 +154,7 @@ export function addObject(input: AddObjectInput): Command {
       });
       if (!candidate.success) return invalid(describeIssues(candidate.error));
       const object = candidate.data;
-      const placed = placeOnFloor(draft, ctx.catalog, object);
+      const placed = placeLegally(draft, ctx.catalog, object);
       if (!Array.isArray(placed)) return placed;
       object.transform.position = placed;
       draft.objects[id] = object;
@@ -198,6 +231,44 @@ export function rotateObjects(rotations: readonly { id: ObjectId; rotationY: num
         if (!angle.success) return invalid(describeIssues(angle.error));
         (found[index] as Draft<PlacedObject>).transform.rotationY = normalizeAngle(angle.data);
       }
+    },
+  };
+}
+
+// ── object/reparent ─────────────────────────────────────────────
+
+export interface ReparentInput {
+  id: ObjectId;
+  /** The object it will stand on, or null for the floor of its room. */
+  parentId: ObjectId | null;
+  /** In the new parent's frame (room-local for the floor). */
+  position: Vec3;
+  rotationY: number;
+}
+
+/**
+ * `object/reparent` (P3-13): stands an object on another one (a monitor on a desk) or back on the
+ * floor, with its pose in the new frame, so a drag from one surface to another is one entry. Like a
+ * move, nothing is clamped: the controller solved a legal pose, and the invariants reject the rest
+ * (a floor item on a desk, off the top, a stack deeper than two, another room).
+ */
+export function reparentObject(input: ReparentInput): Command {
+  return {
+    type: 'object/reparent',
+    label: 'Move object',
+    apply(draft) {
+      const object = draft.objects[input.id];
+      if (!object) return notFound(input.id);
+      const { parentId } = input;
+      if (parentId !== null && !Object.hasOwn(draft.objects, parentId)) return notFound(parentId);
+      if (parentId === input.id) return invalid('An object cannot stand on itself');
+      const position = Vec3Schema.safeParse(input.position);
+      if (!position.success) return invalid(describeIssues(position.error));
+      const angle = finite.safeParse(input.rotationY);
+      if (!angle.success) return invalid(describeIssues(angle.error));
+      object.parentId = parentId;
+      object.transform.position = position.data;
+      object.transform.rotationY = normalizeAngle(angle.data);
     },
   };
 }
@@ -322,7 +393,7 @@ export function duplicateObjects(
         if (!parentCopy) {
           const [x, y, zPos] = source.transform.position;
           object.transform = { ...source.transform, position: [x + dx, y, zPos + dz] };
-          const placed = placeOnFloor(draft, ctx.catalog, object);
+          const placed = placeLegally(draft, ctx.catalog, object);
           if (!Array.isArray(placed)) return placed;
           object.transform.position = placed;
         }

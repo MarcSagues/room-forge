@@ -1,4 +1,5 @@
 import {
+  addObject,
   createEditorSession,
   type EditorSession,
   type ObjectId,
@@ -124,8 +125,7 @@ describe('MoveController', () => {
     expect(desk.position.x).toBeCloseTo(0.65);
   });
 
-  it('only drags objects standing on a room, never stacked or locked ones', () => {
-    expect(controller.begin(MONITOR, down(2, 1.5))).toBe(false);
+  it('never drags unknown or locked objects', () => {
     expect(controller.begin('nope' as ObjectId, down(2, 1.5))).toBe(false);
     session.execute({
       type: 'test/lock',
@@ -262,5 +262,126 @@ describe('MoveController: snap settings from the session', () => {
     expect(desk.position.x).toBeCloseTo(0.6); // kept inside, but not turned against the wall
     expect(desk.rotation.y).toBe(0);
     expect(transient.drag()?.wall ?? null).toBeNull();
+  });
+});
+
+describe('MoveController: objects on a desk top (P3-13)', () => {
+  // The fixture desk top is 1.2 × 0.6 m at 0.75 m: world x 1.4..2.6, z 1.2..1.8. monitor-1 stands
+  // on it at (0, 0.75, -0.2), world (2, 0.75, 1.3); the fixture monitor only goes on tabletops.
+  const STRIP = 'strip' as ObjectId;
+  const doc = () => session.getState().document;
+
+  /** Adds an LED strip (floor or tabletop) and a chair (floor only) on the floor, then mounts all. */
+  function withFloorItems() {
+    session.execute(
+      addObject({
+        id: 'strip',
+        catalogId: 'led.strip.1m',
+        roomId: doc().roomOrder[0] as never,
+        position: [0.8, 0, 0.5],
+        rotationY: 0,
+      }),
+    );
+    session.execute(
+      addObject({
+        id: 'chair',
+        catalogId: 'chair.office',
+        roomId: doc().roomOrder[0] as never,
+        position: [3, 0, 0.5],
+        rotationY: 0,
+      }),
+    );
+    mountObjects(doc() as SceneDocument);
+  }
+
+  it('slides a child along its desk top, clamped on it, with one object/move', () => {
+    const monitor = registry.get(MONITOR) as Object3D;
+    expect(controller.begin(MONITOR, down(2, 1.3))).toBe(true);
+    controller.update(down(2.5, 1.3), false);
+    // 0.5 m right of centre, but the 0.62 m monitor must stay on the top (and on the 10 cm grid).
+    expect(monitor.position.x).toBeCloseTo(0.2);
+    expect(monitor.position.y).toBeCloseTo(0.75);
+    expect(transient.drag()).toMatchObject({ id: MONITOR, valid: true });
+    expect(controller.end()?.ok).toBe(true);
+    expect(doc().objects[MONITOR]).toMatchObject({ parentId: DESK });
+    expect(doc().objects[MONITOR]?.transform.position[0]).toBeCloseTo(0.2);
+    expect(session.getState().history.undoLabel).toBe('Move object');
+  });
+
+  it('puts a floor object on the desk as its child, in one entry that undo takes back', () => {
+    withFloorItems();
+    expect(controller.begin(STRIP, down(0.8, 0.5))).toBe(true);
+    controller.update(down(1.5, 1), false);
+    controller.update(down(2.2, 1.6), false);
+    const strip = registry.get(STRIP) as Object3D;
+    // Hanging from the room still, the node is shown on the top: 1 m long, so x is clamped to 0.1.
+    expect(strip.position.toArray().map((v) => Number(v.toFixed(3)))).toEqual([2.1, 0.75, 1.6]);
+    expect(controller.end()?.ok).toBe(true);
+    expect(doc().objects[STRIP]).toMatchObject({ parentId: DESK });
+    const [x, y, z] = doc().objects[STRIP]?.transform.position ?? [];
+    expect([x, y, z].map((v) => Number(v?.toFixed(3)))).toEqual([0.1, 0.75, 0.1]);
+    session.undo();
+    expect(doc().objects[STRIP]).toMatchObject({
+      parentId: null,
+      transform: { position: [0.8, 0, 0.5] },
+    });
+  });
+
+  it('takes a child off the desk to the floor in one entry, when it may stand on the floor', () => {
+    withFloorItems();
+    controller.begin(STRIP, down(0.8, 0.5));
+    controller.update(down(2.2, 1.6), false);
+    controller.end();
+    mountObjects(doc() as SceneDocument);
+    controller.begin(STRIP, down(2.1, 1.6));
+    controller.update(down(1, 2.5), false);
+    expect(controller.end()?.ok).toBe(true);
+    expect(doc().objects[STRIP]).toMatchObject({
+      parentId: null,
+      transform: { position: [1, 0, 2.5] },
+    });
+    session.undo();
+    expect(doc().objects[STRIP]?.parentId).toBe(DESK);
+  });
+
+  it('refuses the floor to an item that only goes on tabletops: red, and nothing on release', () => {
+    const before = doc();
+    controller.begin(MONITOR, down(2, 1.3));
+    controller.update(down(1, 2.5), false);
+    expect(transient.drag()?.valid).toBe(false);
+    expect(controller.end()).toBeNull();
+    expect(doc()).toBe(before);
+    expect((registry.get(MONITOR) as Object3D).position.toArray()).toEqual([0, 0.75, -0.2]);
+  });
+
+  it('never puts a floor-only item on the desk', () => {
+    withFloorItems();
+    controller.begin('chair' as ObjectId, down(3, 0.5));
+    controller.update(down(2, 1.5), false);
+    controller.end();
+    expect(doc().objects['chair' as ObjectId]).toMatchObject({
+      parentId: null,
+      transform: { position: [2, 0, 1.5] },
+    });
+  });
+
+  it('dragging the desk leaves its children where they are on it', () => {
+    controller.begin(DESK, down(2, 1.5));
+    controller.update(down(1, 1), false);
+    controller.end();
+    expect(doc().objects[DESK]?.transform.position).toEqual([1, 0, 1]);
+    expect(doc().objects[MONITOR]).toMatchObject({
+      parentId: DESK,
+      transform: { position: [0, 0.75, -0.2] },
+    });
+  });
+
+  it('Esc puts a child back on its desk', () => {
+    withFloorItems();
+    controller.begin(MONITOR, down(2, 1.3));
+    controller.update(down(2.3, 1.5), false);
+    controller.cancel();
+    expect((registry.get(MONITOR) as Object3D).position.toArray()).toEqual([0, 0.75, -0.2]);
+    expect(session.getState().history.undoLabel).not.toBe('Move object');
   });
 });

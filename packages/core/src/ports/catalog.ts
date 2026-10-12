@@ -19,6 +19,16 @@ export interface LightCapability {
 }
 
 /**
+ * A flat area of an item other items can stand on (a desk top), in the item's own frame: `y` is its
+ * height above the item's base and `rect` is centred at `(x, z)` from the footprint centre, before
+ * the item's scale. Objects standing on it are stored in that same frame.
+ */
+export interface SupportSurface {
+  readonly y: number;
+  readonly rect: { readonly x: number; readonly z: number; readonly w: number; readonly d: number };
+}
+
+/**
  * The part of a catalog item (DOMAIN_MODEL §3.1) that core needs to check invariants. The full
  * manifest entry (names, models, licences) lives in the web asset library.
  */
@@ -28,6 +38,8 @@ export interface CatalogItem {
   readonly size: { readonly w: number; readonly h: number; readonly d: number };
   /** Allowed surfaces; the first one is the default. */
   readonly placement: { readonly surfaces: readonly [PlacementSurface, ...PlacementSurface[]] };
+  /** Areas `tabletop` items can stand on (a desk top); most items have none. */
+  readonly supports?: readonly SupportSurface[];
   /** The material slots of the item; an item without any cannot be given a material. */
   readonly slots?: readonly MaterialSlot[];
   /** Present only on items that give light: only those take a `light` state. */

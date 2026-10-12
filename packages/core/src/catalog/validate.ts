@@ -36,7 +36,8 @@ export type CatalogIssueCode =
   | 'missing-file'
   | 'stats-mismatch'
   | 'over-budget'
-  | 'license';
+  | 'license'
+  | 'support';
 
 export interface CatalogIssue {
   readonly code: CatalogIssueCode;
@@ -86,6 +87,11 @@ function checkItems(
     if (item.light && !glows) report('light-slot', 'a luminaire needs an emissive slot');
     if (!item.light && glows) report('light-slot', 'only a luminaire has an emissive slot');
 
+    for (const support of item.supports ?? []) {
+      if (!supportInside(support, item.size))
+        report('support', 'a support surface is off the item');
+    }
+
     const { file, triangles, bytes } = item.source;
     const actual = files(file);
     if (!actual) report('missing-file', `${file} does not exist`);
@@ -114,4 +120,17 @@ function checkItems(
     }
   }
   return issues;
+}
+
+/** A support lies on the item: no higher than its top and inside its footprint (1 mm slack). */
+function supportInside(
+  { y, rect }: NonNullable<CatalogManifest['items'][number]['supports']>[number],
+  size: { w: number; h: number; d: number },
+): boolean {
+  const t = 0.001;
+  return (
+    y <= size.h + t &&
+    Math.abs(rect.x) + rect.w / 2 <= size.w / 2 + t &&
+    Math.abs(rect.z) + rect.d / 2 <= size.d / 2 + t
+  );
 }

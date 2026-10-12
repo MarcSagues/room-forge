@@ -17,6 +17,17 @@
       "placement": {
         "surfaces": ["floor"]
       },
+      "supports": [
+        {
+          "y": 0.74,
+          "rect": {
+            "x": 0,
+            "z": 0,
+            "w": 1.4,
+            "d": 0.7
+          }
+        }
+      ],
       "slots": [
         {
           "id": "top",
@@ -88,6 +99,17 @@
       "placement": {
         "surfaces": ["floor"]
       },
+      "supports": [
+        {
+          "y": 0.75,
+          "rect": {
+            "x": 0,
+            "z": 0,
+            "w": 1.6,
+            "d": 0.75
+          }
+        }
+      ],
       "slots": [
         {
           "id": "top",
@@ -159,6 +181,17 @@
       "placement": {
         "surfaces": ["floor"]
       },
+      "supports": [
+        {
+          "y": 0.75,
+          "rect": {
+            "x": 0,
+            "z": 0,
+            "w": 1.6,
+            "d": 0.75
+          }
+        }
+      ],
       "slots": [
         {
           "id": "top",
@@ -441,7 +474,7 @@
         "d": 0.2
       },
       "placement": {
-        "surfaces": ["floor"]
+        "surfaces": ["floor", "tabletop"]
       },
       "slots": [
         {
@@ -512,7 +545,7 @@
         "d": 0.25
       },
       "placement": {
-        "surfaces": ["floor"]
+        "surfaces": ["floor", "tabletop"]
       },
       "slots": [
         {
@@ -583,7 +616,7 @@
         "d": 0.2
       },
       "placement": {
-        "surfaces": ["floor"]
+        "surfaces": ["floor", "tabletop"]
       },
       "slots": [
         {
