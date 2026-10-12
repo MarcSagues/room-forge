@@ -8,6 +8,7 @@ import { ProjectName } from '@/ui/editor/project-name';
 import { useProjectStatus } from '@/ui/editor/project-status';
 import { SaveStatusPill } from '@/ui/editor/save-status';
 import { ShareButton } from '@/ui/editor/share-button';
+import { FeedbackButton } from '@/ui/feedback';
 import { translate } from '@/ui/i18n';
 import { ShortcutHelp } from '@/ui/shortcuts/shortcut-help';
 import { TutorialButton } from '@/ui/tutorial/tutorial-button';
@@ -87,6 +88,7 @@ export function TopBar(props: TopBarProps) {
         </div>
         <TutorialButton />
         <ShortcutHelp />
+        <FeedbackButton locale="en" variant="icon" />
         <Button
           variant="ghost"
           size="icon"

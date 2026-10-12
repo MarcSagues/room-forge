@@ -10,7 +10,7 @@ const es: LegalDocument = {
   title: 'Política de privacidad',
   description:
     'Qué datos trata RoomForge: tus proyectos se quedan en tu navegador, sin cuentas ni cookies.',
-  updated: '2026-10-10',
+  updated: '2026-10-12',
   draft: true,
   sections: [
     {
@@ -53,6 +53,13 @@ const es: LegalDocument = {
       ],
     },
     {
+      heading: 'Comentarios y avisos de errores',
+      paragraphs: [
+        'El botón «Enviar comentarios» no nos envía nada directamente: prepara una issue pública en GitHub que tú revisas y envías con tu cuenta de GitHub, o un texto que puedes copiar. Lo que publiques allí lo trata GitHub según su propia política de privacidad y lo puede ver cualquiera.',
+        'Solo se incluye lo que escribes y, si marcas la casilla, unos detalles técnicos que ves antes de enviar: versión de la app, navegador, tarjeta gráfica y calidad, contadores del renderizador y los últimos errores registrados en tu navegador. Tu proyecto nunca se incluye salvo que exportes el archivo y lo adjuntes tú. No escribas datos personales; si lo haces por error, podemos editarlos o borrar la issue si nos lo pides.',
+      ],
+    },
+    {
       heading: 'Cookies',
       paragraphs: [
         'No usamos cookies. El almacenamiento local que se describe arriba es necesario para que la aplicación funcione como pides (guardar tus proyectos y preferencias) y no se usa para seguirte.',
@@ -78,7 +85,7 @@ const en: LegalDocument = {
   title: 'Privacy policy',
   description:
     'What data RoomForge handles: your projects stay in your browser, with no accounts and no cookies.',
-  updated: '2026-10-10',
+  updated: '2026-10-12',
   draft: true,
   sections: [
     {
@@ -118,6 +125,13 @@ const en: LegalDocument = {
       paragraphs: [
         'RoomForge does not use any analytics tool at the moment.',
         'If we turn analytics on in the future, it will be an aggregate measurement of usage, without cookies and without personal identifiers. It will not include the content of your projects or the addresses of shared links, and it will respect your browser’s “Do Not Track” and “Global Privacy Control” signals. We will update this policy before turning it on.',
+      ],
+    },
+    {
+      heading: 'Feedback and error reports',
+      paragraphs: [
+        'The “Send feedback” button does not send us anything directly: it prepares a public issue on GitHub that you review and submit with your GitHub account, or a text you can copy. What you post there is handled by GitHub under its own privacy policy and anyone can see it.',
+        'Only what you write is included and, if you tick the box, some technical details you see before sending: app version, browser, graphics card and quality, renderer counters and the last errors recorded in your browser. Your project is never included unless you export the file and attach it yourself. Do not write personal data; if you do by mistake, we can edit it out or delete the issue if you ask us.',
       ],
     },
     {

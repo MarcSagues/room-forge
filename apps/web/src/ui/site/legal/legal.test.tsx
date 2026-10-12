@@ -44,7 +44,7 @@ describe('LegalPage', () => {
   it('shows the title, the date, the draft notice and one h2 per section', async () => {
     render(<LegalPage doc={privacyPolicy.es} locale="es" />);
     expect(screen.getByRole('heading', { level: 1, name: 'Política de privacidad' })).toBeVisible();
-    expect(screen.getByText(/Última actualización: 10 de octubre de 2026/)).toBeVisible();
+    expect(screen.getByText(/Última actualización: 12 de octubre de 2026/)).toBeVisible();
     expect(screen.getByRole('note')).toHaveTextContent('Borrador pendiente de revisión legal');
     expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(
       privacyPolicy.es.sections.length,

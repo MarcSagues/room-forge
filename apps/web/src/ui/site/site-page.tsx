@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { buttonVariants } from '../components/button';
+import { FeedbackButton } from '../feedback';
 import type { Locale } from '../i18n';
 import { PUBLIC_PAGES, type PublicPage } from './routes';
 import { siteMessages } from './site-messages';
@@ -61,6 +62,7 @@ export function SitePage({ locale, page, children }: SitePageProps) {
             <Link href={PUBLIC_PAGES.licenses[locale]} className={linkClass}>
               {t.footer.licenses}
             </Link>
+            <FeedbackButton locale={locale} variant="link" label={t.footer.feedback} />
             <a
               href={PUBLIC_PAGES[page][other]}
               hrefLang={siteMessages[other].lang}

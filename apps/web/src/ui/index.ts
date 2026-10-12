@@ -13,6 +13,13 @@ export { SaveNotice, type SaveProblem } from './editor/save-notice';
 export type { SaveIndicator } from './editor/save-status';
 export { SharedLinkUnavailable, SharedViewBanner } from './editor/shared-view';
 export { showBackupReminder, showStorageWarning } from './editor/storage-toasts';
+export {
+  type CollectDetails,
+  errorLines,
+  FeedbackButton,
+  FeedbackDetailsProvider,
+  renderSummary,
+} from './feedback';
 export { DEFAULT_LOCALE, type Locale, type MessageKey, translate } from './i18n';
 export { RoomMaterialsPanel } from './materials';
 export { LazySceneOutliner, SceneOutliner } from './outliner';

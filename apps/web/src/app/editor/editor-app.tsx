@@ -33,15 +33,19 @@ import { type LiveTransform, SceneCanvas, type SceneHandle } from '@/scene-engin
 import {
   CatalogPanel,
   type CatalogPanelItem,
+  type CollectDetails,
   ContextNotice,
   type ContextState,
   EditorShell,
+  errorLines,
+  FeedbackDetailsProvider,
   LazySceneOutliner,
   type MessageKey,
   ProjectUnavailable,
   ReadOnlyNotice,
   RoomMaterialsPanel,
   RoomSizePanel,
+  renderSummary,
   SelectionSummary,
   SharedViewBanner,
   type ShareOutcome,
@@ -315,6 +319,18 @@ export function Workspace(props: {
     [repository, project.id],
   );
 
+  // What "include technical details" adds to feedback: never anything from the document.
+  const collectFeedback = useCallback<CollectDetails>(() => {
+    const handle = scene.current;
+    const graphics = handle?.graphics();
+    return {
+      gpu: graphics?.gpu,
+      quality: graphics?.quality,
+      render: handle ? renderSummary(handle.renderInfo()) : undefined,
+      errors: errorLog ? errorLines(errorLog.entries()) : undefined,
+    };
+  }, [errorLog]);
+
   return (
     <SaveStatusBridge
       autosave={autosave}
@@ -323,52 +339,56 @@ export function Workspace(props: {
       onRename={owner ? rename : undefined}
       onShare={viewer ? undefined : share}
     >
-      <EditorShell
-        session={session}
-        shortcuts={shortcuts}
-        catalog={
-          <CatalogPanel
-            items={CATALOG_ITEMS}
-            placement={placement}
-            onPlace={(id) => scene.current?.placement.placeAtCenter(id) ?? false}
-            structure={structure}
-          />
-        }
-        onPanelError={(error, panel) => errorLog?.record(error, { source: 'react', where: panel })}
-        sharedView={viewer ? <SharedViewBanner name={name} onCopy={viewer.onCopy} /> : undefined}
-        properties={
-          <>
-            <SelectionSummary session={session} catalog={appCatalog} live={live} />
-            <RoomSizePanel session={session} />
-            <RoomMaterialsPanel session={session} />
-          </>
-        }
-        scene={<LazySceneOutliner session={session} itemName={itemName} />}
-        viewport={
-          <>
-            <SceneCanvas
-              session={session}
-              catalog={appCatalog}
-              onReady={(handle) => {
-                scene.current = handle;
-              }}
-              onContextLost={() => {
-                setContext('lost');
-                errorLog?.record('The WebGL context was lost', {
-                  source: 'webgl',
-                  where: 'Viewport',
-                });
-              }}
-              onContextRestored={() => setContext('restored')}
+      <FeedbackDetailsProvider collect={collectFeedback}>
+        <EditorShell
+          session={session}
+          shortcuts={shortcuts}
+          catalog={
+            <CatalogPanel
+              items={CATALOG_ITEMS}
+              placement={placement}
+              onPlace={(id) => scene.current?.placement.placeAtCenter(id) ?? false}
+              structure={structure}
             />
-            <ContextNotice state={context} />
-            {viewer ? null : (
-              <SaveNoticeBridge autosave={autosave} storage={storage} onExport={exportCopy} />
-            )}
-            {owner || viewer ? null : <ReadOnlyNotice onTakeOver={onTakeOver} />}
-          </>
-        }
-      />
+          }
+          onPanelError={(error, panel) =>
+            errorLog?.record(error, { source: 'react', where: panel })
+          }
+          sharedView={viewer ? <SharedViewBanner name={name} onCopy={viewer.onCopy} /> : undefined}
+          properties={
+            <>
+              <SelectionSummary session={session} catalog={appCatalog} live={live} />
+              <RoomSizePanel session={session} />
+              <RoomMaterialsPanel session={session} />
+            </>
+          }
+          scene={<LazySceneOutliner session={session} itemName={itemName} />}
+          viewport={
+            <>
+              <SceneCanvas
+                session={session}
+                catalog={appCatalog}
+                onReady={(handle) => {
+                  scene.current = handle;
+                }}
+                onContextLost={() => {
+                  setContext('lost');
+                  errorLog?.record('The WebGL context was lost', {
+                    source: 'webgl',
+                    where: 'Viewport',
+                  });
+                }}
+                onContextRestored={() => setContext('restored')}
+              />
+              <ContextNotice state={context} />
+              {viewer ? null : (
+                <SaveNoticeBridge autosave={autosave} storage={storage} onExport={exportCopy} />
+              )}
+              {owner || viewer ? null : <ReadOnlyNotice onTakeOver={onTakeOver} />}
+            </>
+          }
+        />
+      </FeedbackDetailsProvider>
     </SaveStatusBridge>
   );
 }
