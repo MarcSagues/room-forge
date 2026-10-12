@@ -42,3 +42,21 @@ export function formatRenderInfo(info: RenderInfo): string {
   const tris = info.triangles >= 1000 ? `${(info.triangles / 1000).toFixed(1)}k` : info.triangles;
   return `frame ${info.frame} · calls ${info.calls} · tris ${tris} · geo ${info.geometries} · tex ${info.textures} · prog ${info.programs}`;
 }
+
+/** The part of a WebGL context `readGpu` uses. */
+export interface GpuContextLike {
+  readonly RENDERER: number;
+  getExtension(name: 'WEBGL_debug_renderer_info'): { UNMASKED_RENDERER_WEBGL: number } | null;
+  getParameter(name: number): unknown;
+}
+
+/** The graphics card as the browser names it (for bug reports); undefined where it does not say. */
+export function readGpu(context: GpuContextLike): string | undefined {
+  try {
+    const debug = context.getExtension('WEBGL_debug_renderer_info');
+    const name = context.getParameter(debug ? debug.UNMASKED_RENDERER_WEBGL : context.RENDERER);
+    return typeof name === 'string' && name !== '' ? name.slice(0, 200) : undefined;
+  } catch {
+    return undefined;
+  }
+}
