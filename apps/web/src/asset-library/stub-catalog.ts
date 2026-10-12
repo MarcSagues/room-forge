@@ -1,4 +1,4 @@
-import type { CatalogId, CatalogItem, CatalogProvider } from '@roomforge/core';
+import type { CatalogCategory, CatalogId, CatalogItem, CatalogProvider } from '@roomforge/core';
 
 /** What the catalog panel shows about an item: the full manifest entry arrives with P4-02. */
 export interface CatalogEntry {
@@ -11,18 +11,24 @@ export interface CatalogEntry {
   readonly color: string;
   /** URL of the picture of the model (P4-03); stub boxes have none. */
   readonly thumbnail?: string;
+  /** The panel's category filter (P4-06); the bed fits none of the manifest's categories. */
+  readonly category?: CatalogCategory;
+  /** Extra words the panel's search finds the item by (manifest tags, in English). */
+  readonly tags?: readonly string[];
 }
 
 /** The five items of the stub manifest: coloured boxes, all standing on the floor. */
 const ENTRIES: readonly CatalogEntry[] = [
   {
     id: 'desk.basic.140',
+    category: 'desk',
     name: { en: 'Desk', es: 'Escritorio' },
     size: { w: 1.4, h: 0.75, d: 0.7 },
     color: '#8b6f9e',
   },
   {
     id: 'chair.office',
+    category: 'seating',
     name: { en: 'Office chair', es: 'Silla de oficina' },
     size: { w: 0.6, h: 1.0, d: 0.6 },
     color: '#4a5568',
@@ -35,12 +41,14 @@ const ENTRIES: readonly CatalogEntry[] = [
   },
   {
     id: 'shelf.tall',
+    category: 'storage',
     name: { en: 'Bookshelf', es: 'Estantería' },
     size: { w: 0.8, h: 1.8, d: 0.3 },
     color: '#d9b45b',
   },
   {
     id: 'plant.floor',
+    category: 'decor',
     name: { en: 'Floor plant', es: 'Planta de suelo' },
     size: { w: 0.4, h: 0.9, d: 0.4 },
     color: '#5a9a5a',

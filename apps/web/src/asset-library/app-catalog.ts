@@ -26,6 +26,8 @@ const ENTRIES: readonly CatalogEntry[] = [
       name: item.name,
       size: item.size,
       color: modelCatalog.colorOf(item.id) ?? '#7aa2d6',
+      category: item.category,
+      tags: item.tags,
       ...(thumbnail ? { thumbnail } : {}),
     };
   }),

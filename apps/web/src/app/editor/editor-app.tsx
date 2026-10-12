@@ -10,7 +10,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { appCatalog, catalogEntries } from '@/asset-library';
+import { appCatalog } from '@/asset-library';
 import {
   createShortcutRegistry,
   type ErrorLog,
@@ -50,6 +50,7 @@ import {
   translate,
 } from '@/ui';
 import type { BootedEditor } from './boot-editor';
+import { CATALOG_CATEGORY_OPTIONS, CATALOG_ITEMS } from './catalog-items';
 import { SaveNoticeBridge, SaveStatusBridge } from './save-bridge';
 import { installStorageCare } from './storage-care';
 import { installTestHook } from './test-hook';
@@ -58,13 +59,6 @@ import { useProjectLock } from './use-project-lock';
 
 const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? 'dev';
 
-/** What the catalog panel lists: the manifest's models, then the stub boxes (P4-06 brings filters). */
-const CATALOG_ITEMS: readonly CatalogPanelItem[] = catalogEntries().map((entry) => ({
-  id: entry.id,
-  name: entry.name.en,
-  color: entry.color,
-  size: entry.size,
-}));
 /** The Structure tab: the four door and window variants (P3-12), sized as their opening. */
 const OPENING_ITEMS: readonly CatalogPanelItem[] = Object.entries(OPENING_VARIANTS).map(
   ([variant, size]) => ({
@@ -329,6 +323,7 @@ export function Workspace(props: {
         catalog={
           <CatalogPanel
             items={CATALOG_ITEMS}
+            categories={CATALOG_CATEGORY_OPTIONS}
             placement={placement}
             onPlace={(id) => scene.current?.placement.placeAtCenter(id) ?? false}
             structure={structure}
