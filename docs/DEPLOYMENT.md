@@ -14,6 +14,13 @@
 
 ## 2. Hosting: decisión y límites
 
+> **Actualización 2026-10-11 (decisión del propietario):** la app se publica en **Vercel**, en **https://home-forge.msagues.com** (proyecto `saguis-projects/home-forge`; el dominio `msagues.com` y su DNS están en Vercel). **Cada merge en `develop`** la publica sola: `.github/workflows/deploy-vercel.yml` compila la exportación estática con `SITE_URL` de producción y la sube tal cual con la CLI de Vercel. Las cabeceras (CSP con hashes por página, caché inmutable) salen del mismo `_headers`: `scripts/write-vercel-config.mjs` escribe `out/vercel.json` a partir de él en cada `pnpm build`.
+> - **Secreto necesario (acción humana):** `VERCEL_TOKEN` en *Settings → Secrets and variables → Actions* del repositorio (token creado en Vercel → *Account Settings → Tokens*, con alcance `saguis-projects`). Sin él, el workflow se salta el despliegue.
+> - **Plan:** el plan Hobby de Vercel es **solo para uso personal no comercial**. Mientras la beta sea gratuita encaja; antes de cobrar el plan premium (P9-05) hay que pasar a **Vercel Pro** o volver al plan de Cloudflare de abajo.
+> - Las URLs `*.vercel.app` quedan tras la protección de despliegues de Vercel; el dominio propio es público.
+>
+> El resto de esta sección describe el plan original con Cloudflare (P1-08, P8-03), que sigue siendo la alternativa.
+
 - **Cloudflare**, sirviendo el directorio estático `apps/web/out` (Next.js `output: 'export'`).
 - Motivo principal: el plan Hobby de Vercel es solo para uso personal no comercial ([docs de Vercel](https://vercel.com/docs/plans/hobby)); Cloudflare no muestra esa restricción en las fuentes consultadas, **pero hay que verificar sus términos antes de producción (P8-03)**.
 - Límites del plan gratuito de Pages relevantes: 500 builds/mes, 20 min por build, 20 000 archivos por proyecto ([límites oficiales](https://developers.cloudflare.com/pages/platform/limits)). Al compilar en GitHub Actions y subir el resultado con `wrangler`, el límite de builds de Cloudflare presumiblemente no aplica (subida directa); **verificarlo en P1-08**.
