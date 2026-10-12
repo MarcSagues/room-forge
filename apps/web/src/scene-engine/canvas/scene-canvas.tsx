@@ -34,7 +34,7 @@ import { roomObjectName } from '../room/room-mesh';
 import { watchContext } from './context-events';
 import { connectInvalidate } from './invalidate-bridge';
 import { createMutate, type Mutate } from './mutate';
-import { formatRenderInfo, type RenderInfo, readRenderInfo } from './render-info';
+import { formatRenderInfo, type RenderInfo, readGpu, readRenderInfo } from './render-info';
 import { SceneContent } from './scene-content';
 import {
   type SceneCatalog,
@@ -69,6 +69,8 @@ export interface SceneHandle {
   project(id: EntityId, local?: readonly [number, number, number]): { x: number; y: number } | null;
   /** Renderer counters (frame, draw calls, triangles, programs...). */
   renderInfo(): RenderInfo;
+  /** The graphics card (as the browser names it) and the quality in use, for bug reports. */
+  graphics(): { gpu: string | undefined; quality: LightQuality };
   /**
    * The light pool (how many lights of each type, which luminaires have one now) and how many
    * three.js lights the whole scene has, which must never change (ADR-0006).
@@ -145,6 +147,7 @@ export function SceneCanvas(props: SceneCanvasProps) {
             camera={cameraRef}
             registry={registry}
             lightPool={lightPoolRef}
+            quality={quality}
           />
           {showStats && <StatsWriter target={statsRef} />}
           <MaterialsProvider>
@@ -199,8 +202,9 @@ function ReadyReporter(props: {
   camera: RefObject<CameraHandle | null>;
   registry: EntityRegistry;
   lightPool: RefObject<LightPoolDriver | null>;
+  quality: LightQuality;
 }) {
-  const { camera, registry, lightPool } = props;
+  const { camera, registry, lightPool, quality } = props;
   const session = useSceneSession();
   const catalog = useSceneCatalog();
   const transient = useTransientStore();
@@ -231,6 +235,7 @@ function ReadyReporter(props: {
   const handle = useMemo<SceneHandle>(
     () => ({
       renderInfo: () => readRenderInfo(gl.info),
+      graphics: () => ({ gpu: readGpu(gl.getContext()), quality }),
       lights: () => ({
         ...(lightPool.current?.info() ?? { points: 0, spots: 0, lit: [] }),
         sceneLights: countLights(scene),
@@ -262,6 +267,7 @@ function ReadyReporter(props: {
       openingPlacement,
       transient,
       lightPool,
+      quality,
     ],
   );
   useEffect(() => {

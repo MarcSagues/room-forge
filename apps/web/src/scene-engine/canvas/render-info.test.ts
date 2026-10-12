@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { formatRenderInfo, type RendererInfoLike, readRenderInfo } from './render-info';
+import {
+  formatRenderInfo,
+  type GpuContextLike,
+  type RendererInfoLike,
+  readGpu,
+  readRenderInfo,
+} from './render-info';
 
 const info: RendererInfoLike = {
   render: { frame: 7, calls: 12, triangles: 2400, points: 0, lines: 4 },
@@ -35,5 +41,33 @@ describe('formatRenderInfo', () => {
     expect(
       formatRenderInfo(readRenderInfo({ ...info, render: { ...info.render, triangles: 12 } })),
     ).toContain('tris 12 ');
+  });
+});
+
+describe('readGpu', () => {
+  const context = (debug: boolean, names: Record<number, unknown>): GpuContextLike => ({
+    RENDERER: 1,
+    getExtension: () => (debug ? { UNMASKED_RENDERER_WEBGL: 2 } : null),
+    getParameter: (name) => names[name],
+  });
+
+  it('prefers the unmasked renderer, and falls back to the plain one', () => {
+    expect(readGpu(context(true, { 1: 'WebKit WebGL', 2: 'ANGLE (Test GPU)' }))).toBe(
+      'ANGLE (Test GPU)',
+    );
+    expect(readGpu(context(false, { 1: 'WebKit WebGL' }))).toBe('WebKit WebGL');
+  });
+
+  it('says nothing when the browser does not tell, or fails', () => {
+    expect(readGpu(context(false, { 1: '' }))).toBeUndefined();
+    expect(
+      readGpu({
+        RENDERER: 1,
+        getExtension: () => {
+          throw new Error('lost');
+        },
+        getParameter: () => null,
+      }),
+    ).toBeUndefined();
   });
 });
