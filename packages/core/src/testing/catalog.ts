@@ -6,6 +6,7 @@ export const FIXTURE_CATALOG_ITEMS: readonly CatalogItem[] = [
     id: 'desk.basic.120',
     size: { w: 1.2, h: 0.75, d: 0.6 },
     placement: { surfaces: ['floor'] },
+    supports: [{ y: 0.75, rect: { x: 0, z: 0, w: 1.2, d: 0.6 } }],
     slots: [
       { id: 'top', default: { presetId: 'wood.oak' } },
       { id: 'frame', default: { presetId: 'metal.black' } },

@@ -4,6 +4,7 @@ export type {
   LightCapability,
   MaterialSlot,
   PlacementSurface,
+  SupportSurface,
 } from './catalog';
 export { type Clock, systemClock } from './clock';
 export {

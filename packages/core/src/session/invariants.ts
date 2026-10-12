@@ -12,7 +12,7 @@ import {
   type SceneDocument,
   type WallId,
 } from '../domain';
-import { footprintInside, GEOMETRY_TOLERANCE } from '../geometry';
+import { footprintInside, footprintOnSupport, GEOMETRY_TOLERANCE } from '../geometry';
 import type { CatalogProvider } from '../ports';
 
 /**
@@ -78,6 +78,7 @@ export function checkInvariants(
   }
   violations.push(...stackingViolations(doc));
   violations.push(...footprintViolations(doc, catalog));
+  violations.push(...surfaceViolations(doc, catalog));
   violations.push(...openingViolations(doc));
   return violations;
 }
@@ -149,6 +150,44 @@ function footprintViolations(doc: Doc, catalog: CatalogProvider): InvariantViola
         invariant: 'I3',
         path: ['objects', id, 'transform'],
         message: `"${id}" does not fit inside room "${room.id}"`,
+      });
+    }
+  }
+  return violations;
+}
+
+/**
+ * Objects standing on another (P3-13): only items that may go on a `tabletop`, only on an item with
+ * a support surface (I2), and with their footprint inside one of its surfaces (I3), measured in the
+ * parent's frame (the child's transform is local to it). Unknown items on either side are skipped.
+ */
+function surfaceViolations(doc: Doc, catalog: CatalogProvider): InvariantViolation[] {
+  const violations: InvariantViolation[] = [];
+  for (const [id, object] of Object.entries(doc.objects)) {
+    if (object.parentId === null) continue;
+    const parent = doc.objects[object.parentId];
+    const item = catalog.getItem(object.catalogId);
+    const parentItem = parent ? catalog.getItem(parent.catalogId) : undefined;
+    if (!parent || !item || !parentItem) continue;
+    const supports = parentItem.supports ?? [];
+    if (!item.placement.surfaces.includes('tabletop') || supports.length === 0) {
+      violations.push({
+        invariant: 'I2',
+        path: ['objects', id, 'parentId'],
+        message: `"${id}" cannot stand on "${parent.id}"`,
+      });
+      continue;
+    }
+    const [x, , z] = object.transform.position;
+    const [sx, , sz] = object.transform.scale ?? [1, 1, 1];
+    const { rotationY } = object.transform;
+    const w = item.size.w * sx;
+    const d = item.size.d * sz;
+    if (!supports.some((support) => footprintOnSupport(support, x, z, w, d, rotationY))) {
+      violations.push({
+        invariant: 'I3',
+        path: ['objects', id, 'transform'],
+        message: `"${id}" is not on a surface of "${parent.id}"`,
       });
     }
   }
