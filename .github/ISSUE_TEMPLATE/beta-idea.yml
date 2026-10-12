@@ -1,0 +1,22 @@
+name: "Beta: idea or comment"
+description: Suggest an improvement, ask for something, or tell us anything else about the RoomForge beta
+title: "[Beta idea] "
+labels: ["beta", "needs-triage", "type:feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for trying the beta. **This issue is public: do not write personal data.**
+        The "Send feedback" button in the app fills this form in for you.
+  - type: textarea
+    id: message
+    attributes:
+      label: Your idea or comment
+      description: What would you like to do, and what gets in the way today?
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Technical details (optional)
+      description: Filled in by the app when you tick "Include technical details".

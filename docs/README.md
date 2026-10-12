@@ -27,6 +27,7 @@ Estado: **Fase 0 — borrador para aprobación** (2026-10-08). Idioma: español 
 | [ROADMAP.md](ROADMAP.md) | 10 fases con objetivo, funcionalidades, dependencias, riesgos, criterios, estimación, entregables; calendario; plan de recorte |
 | [BACKLOG.md](BACKLOG.md) | Backlog priorizado y orden de implementación (**generado**) |
 | [RISKS.md](RISKS.md) | 22 riesgos con mitigación y señales de alerta |
+| [BETA_TRIAGE.md](BETA_TRIAGE.md) | Feedback de la beta: canal (issues de GitHub), etiquetas, severidad, SLA, revisión semanal, cierre del ciclo |
 | [issues/](issues/README.md) | Issues listas para importar a GitHub (fuente de verdad del backlog) |
 
 ## Cómo mantener esto coherente
