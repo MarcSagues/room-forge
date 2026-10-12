@@ -48,8 +48,11 @@ async function floorPoint(page: Page, x: number, z: number) {
   return point;
 }
 
-const catalogItem = (page: Page, name: RegExp | string) =>
-  page.getByRole('list', { name: 'Catalog items' }).getByRole('button', { name });
+/** A card, by the start of its name (each card also has a "Favorite: <name>" star). */
+const catalogItem = (page: Page, name: RegExp) =>
+  page
+    .getByRole('list', { name: 'Catalog items' })
+    .getByRole('button', { name: new RegExp(`^${name.source}`) });
 
 async function center(locator: ReturnType<typeof catalogItem>) {
   // The list is longer than the panel: bring the item into view, as a user would scroll to it.

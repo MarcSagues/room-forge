@@ -94,7 +94,7 @@ test('a model placed from the catalog panel loads lazily, is shared, and is free
 
   await page
     .getByRole('list', { name: 'Catalog items' })
-    .getByRole('button', { name: /Racing gaming chair/ })
+    .getByRole('button', { name: /^Racing gaming chair/ })
     .click();
   await page.waitForFunction(
     (base) => (window.__RF__?.info()?.triangles ?? 0) > base + 4000,

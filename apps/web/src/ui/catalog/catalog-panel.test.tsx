@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import axe from 'axe-core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CatalogPanel } from './catalog-panel';
+import { CATALOG_PREFS_KEY, type CatalogPrefsStorage } from './catalog-prefs';
 import type { CatalogCategoryOption, CatalogPanelItem } from './catalog-types';
 
 const ITEMS: CatalogPanelItem[] = [
@@ -46,7 +47,23 @@ const CATEGORIES: CatalogCategoryOption[] = [
   { id: 'lighting', label: 'Lighting' },
 ];
 
-function setup(onPlaceResult = true, items: readonly CatalogPanelItem[] = ITEMS) {
+/** `localStorage` stand-in; each test gets its own, so favourites do not leak between tests. */
+function memoryStorage(initial: Record<string, string> = {}): CatalogPrefsStorage & {
+  data: Map<string, string>;
+} {
+  const data = new Map(Object.entries(initial));
+  return {
+    data,
+    getItem: (key) => data.get(key) ?? null,
+    setItem: (key, value) => void data.set(key, value),
+  };
+}
+
+function setup(
+  onPlaceResult = true,
+  items: readonly CatalogPanelItem[] = ITEMS,
+  storage: CatalogPrefsStorage = memoryStorage(),
+) {
   const placement = {
     begin: vi.fn((_id: string) => true),
     move: vi.fn((_x: number, _y: number, _free: boolean) => {}),
@@ -55,7 +72,13 @@ function setup(onPlaceResult = true, items: readonly CatalogPanelItem[] = ITEMS)
   };
   const onPlace = vi.fn((_id: string) => onPlaceResult);
   const { unmount } = render(
-    <CatalogPanel items={items} categories={CATEGORIES} placement={placement} onPlace={onPlace} />,
+    <CatalogPanel
+      items={items}
+      categories={CATEGORIES}
+      placement={placement}
+      onPlace={onPlace}
+      prefsStorage={storage}
+    />,
   );
   const item = (name: string) =>
     within(screen.getByRole('list', { name: 'Catalog items' })).getByRole('button', {
@@ -177,14 +200,14 @@ describe('CatalogPanel: search', () => {
 });
 
 describe('CatalogPanel: categories', () => {
-  it('offers All and the host categories; All is pressed at first', () => {
+  it('offers All, Favorites, Recent and the host categories; All is pressed at first', () => {
     setup();
     const group = screen.getByRole('group', { name: 'Categories' });
     expect(
       within(group)
         .getAllByRole('button')
         .map((button) => button.textContent),
-    ).toEqual(['All', 'Desks', 'Seating', 'Lighting']);
+    ).toEqual(['All', 'Favorites', 'Recent', 'Desks', 'Seating', 'Lighting']);
     expect(category('All')).toHaveAttribute('aria-pressed', 'true');
   });
 
@@ -205,16 +228,94 @@ describe('CatalogPanel: categories', () => {
     expect(names()).toContain('Single bed');
   });
 
-  it('is hidden when the host gives no categories', () => {
+  it('offers only All, Favorites and Recent when the host gives no categories', () => {
     render(
       <CatalogPanel
         items={ITEMS}
         placement={{ begin: () => true, move: () => {}, end: () => true, cancel: () => {} }}
         onPlace={() => true}
+        prefsStorage={memoryStorage()}
       />,
     );
-    expect(screen.queryByRole('group', { name: 'Categories' })).not.toBeInTheDocument();
+    const group = screen.getByRole('group', { name: 'Categories' });
+    expect(within(group).getAllByRole('button')).toHaveLength(3);
     expect(screen.getAllByRole('listitem')).toHaveLength(4);
+  });
+});
+
+describe('CatalogPanel: favorites and recent items', () => {
+  const star = (name: string) => screen.getByRole('button', { name: `Favorite: ${name}` });
+  const stored = (storage: { data: Map<string, string> }) =>
+    JSON.parse(storage.data.get(CATALOG_PREFS_KEY) ?? 'null');
+
+  it('stars an item with its star or F, lists it under Favorites, and persists it', async () => {
+    const storage = memoryStorage();
+    const { item, unmount } = setup(true, ITEMS, storage);
+    expect(star('Desk')).toHaveAttribute('aria-pressed', 'false');
+    expect(star('Desk')).toHaveAttribute('tabindex', '-1'); // the cards stay one tab stop
+    await userEvent.click(star('Desk'));
+    expect(star('Desk')).toHaveAttribute('aria-pressed', 'true');
+    item('Floor lamp').focus();
+    await userEvent.keyboard('f');
+    expect(star('Floor lamp')).toHaveAttribute('aria-pressed', 'true');
+    expect(stored(storage)).toEqual({ favorites: ['desk', 'lamp'], recent: [] });
+
+    await userEvent.click(category('Favorites'));
+    expect(names()).toEqual(['Desk', 'Floor lamp']); // in catalog order
+    await userEvent.click(star('Desk'));
+    expect(names()).toEqual(['Floor lamp']);
+
+    unmount();
+    setup(true, ITEMS, storage);
+    expect(star('Floor lamp')).toHaveAttribute('aria-pressed', 'true');
+    expect(star('Desk')).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('lists the items placed, the latest first, under Recent; refusals are not recorded', async () => {
+    const storage = memoryStorage();
+    const { item, onPlace } = setup(true, ITEMS, storage);
+    await userEvent.click(item('Desk'));
+    await userEvent.click(item('Office chair'));
+    onPlace.mockReturnValueOnce(false);
+    await userEvent.click(item('Single bed'));
+    // A drop that creates the object counts too.
+    fireEvent.pointerDown(item('Desk'), { button: 0, clientX: 10, clientY: 10 });
+    fireEvent.pointerMove(window, { clientX: 300, clientY: 200 });
+    fireEvent.pointerUp(window, { clientX: 300, clientY: 200 });
+
+    await userEvent.click(category('Recent'));
+    expect(names()).toEqual(['Desk', 'Office chair']);
+    expect(stored(storage).recent).toEqual(['desk', 'chair']);
+  });
+
+  it('explains the empty Favorites and Recent filters', async () => {
+    setup();
+    await userEvent.click(category('Favorites'));
+    expect(screen.getByText(/No favorites yet/)).toBeInTheDocument();
+    await userEvent.click(category('Recent'));
+    expect(screen.getByText('The items you place show up here.')).toBeInTheDocument();
+  });
+
+  it('works for the visit when the storage throws, and ignores damaged or unknown entries', async () => {
+    const failing: CatalogPrefsStorage = {
+      getItem: () => {
+        throw new DOMException('blocked', 'SecurityError');
+      },
+      setItem: () => {
+        throw new DOMException('full', 'QuotaExceededError');
+      },
+    };
+    const { unmount } = setup(true, ITEMS, failing);
+    await userEvent.click(star('Desk'));
+    expect(star('Desk')).toHaveAttribute('aria-pressed', 'true');
+    unmount();
+
+    const damaged = memoryStorage({
+      [CATALOG_PREFS_KEY]: JSON.stringify({ favorites: ['gone', 7, 'lamp'], recent: {} }),
+    });
+    setup(true, ITEMS, damaged);
+    await userEvent.click(category('Favorites'));
+    expect(names()).toEqual(['Floor lamp']);
   });
 });
 
@@ -222,7 +323,8 @@ describe('CatalogPanel: placing from the keyboard or with a click', () => {
   it('the cards are one tab stop; Enter places the focused one and announces it', async () => {
     const { onPlace, item } = setup();
     await userEvent.tab(); // the search box
-    for (let i = 0; i <= CATEGORIES.length; i += 1) await userEvent.tab(); // All and the categories
+    // All, Favorites, Recent and the categories.
+    for (let i = 0; i < CATEGORIES.length + 3; i += 1) await userEvent.tab();
     await userEvent.tab(); // the cards
     expect(item('Desk')).toHaveFocus();
     expect(item('Office chair')).toHaveAttribute('tabindex', '-1');

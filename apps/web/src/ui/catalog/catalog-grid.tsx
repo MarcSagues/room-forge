@@ -1,5 +1,6 @@
 'use client';
 
+import { StarIcon } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { type MessageKey, translate } from '@/ui/i18n';
 import { cn } from '@/ui/lib/utils';
@@ -29,6 +30,11 @@ export interface CatalogGridProps {
   label: string;
   /** What the card says below the name: the footprint, or the opening of a door. */
   describe(item: CatalogPanelItem): string;
+  /** Starred items; with `onToggleFavorite`, each card gets a star (and the F key). */
+  favorites?: ReadonlySet<string>;
+  onToggleFavorite?(id: string): void;
+  /** An item was placed, by a click, Enter or a drop. */
+  onPlaced?(id: string): void;
 }
 
 /** Where an arrow key, Home or End moves the focus from `index`; null for any other key. */
@@ -57,7 +63,16 @@ function nextIndex(key: string, index: number, count: number): number | null {
  * of the view. The grid is a single tab stop and the arrow keys move between the cards (roving
  * focus). The outcome of each placement is announced to assistive technology.
  */
-export function CatalogGrid({ items, placement, onPlace, label, describe }: CatalogGridProps) {
+export function CatalogGrid({
+  items,
+  placement,
+  onPlace,
+  label,
+  describe,
+  favorites,
+  onToggleFavorite,
+  onPlaced,
+}: CatalogGridProps) {
   const [announcement, setAnnouncement] = useState('');
   const [active, setActive] = useState(0);
   const cards = useRef<(HTMLButtonElement | null)[]>([]);
@@ -65,11 +80,12 @@ export function CatalogGrid({ items, placement, onPlace, label, describe }: Cata
   const press = useRef<Press | null>(null);
   const suppressClick = useRef(false);
   const stop = useRef<(() => void) | null>(null);
-  const latest = useRef({ placement });
-  latest.current = { placement };
+  const latest = useRef({ placement, onPlaced });
+  latest.current = { placement, onPlaced };
 
   const announce = useCallback((item: CatalogPanelItem, placed: boolean) => {
     setAnnouncement(t(placed ? 'catalog.placed' : 'catalog.notPlaced', { name: item.name }));
+    if (placed) latest.current.onPlaced?.(item.id);
   }, []);
 
   // A drag in progress ends with the panel.
@@ -143,6 +159,12 @@ export function CatalogGrid({ items, placement, onPlace, label, describe }: Cata
   // A filter can leave the remembered card past the end of the list.
   const current = Math.min(active, items.length - 1);
   const onKeyDown = (event: React.KeyboardEvent, index: number) => {
+    const plain = !event.ctrlKey && !event.metaKey && !event.altKey;
+    if (onToggleFavorite && plain && event.key.toLowerCase() === 'f') {
+      const item = items[index];
+      if (item) onToggleFavorite(item.id);
+      return;
+    }
     const next = nextIndex(event.key, index, items.length);
     if (next === null) return;
     event.preventDefault();
@@ -157,13 +179,14 @@ export function CatalogGrid({ items, placement, onPlace, label, describe }: Cata
         className="grid min-h-0 grid-cols-2 content-start gap-1.5 overflow-y-auto"
       >
         {items.map((item, index) => (
-          <li key={item.id} className="min-w-0">
+          <li key={item.id} className="relative min-w-0">
             <button
               ref={(element) => {
                 cards.current[index] = element;
               }}
               type="button"
               tabIndex={index === current ? 0 : -1}
+              aria-keyshortcuts={onToggleFavorite ? 'F' : undefined}
               onFocus={() => setActive(index)}
               onKeyDown={(event) => onKeyDown(event, index)}
               onPointerDown={(event) => onPointerDown(event, item)}
@@ -180,6 +203,13 @@ export function CatalogGrid({ items, placement, onPlace, label, describe }: Cata
                 <span className="text-fg-muted text-xs">{describe(item)}</span>
               </span>
             </button>
+            {onToggleFavorite ? (
+              <FavoriteToggle
+                name={item.name}
+                on={favorites?.has(item.id) ?? false}
+                onToggle={() => onToggleFavorite(item.id)}
+              />
+            ) : null}
           </li>
         ))}
       </ul>
@@ -187,6 +217,29 @@ export function CatalogGrid({ items, placement, onPlace, label, describe }: Cata
         {announcement}
       </p>
     </>
+  );
+}
+
+/**
+ * The star over a card. Out of the tab order: the cards are one tab stop and F stars the focused
+ * card; a pointer or a screen reader's virtual cursor still reaches it.
+ */
+function FavoriteToggle({ name, on, onToggle }: { name: string; on: boolean; onToggle(): void }) {
+  return (
+    <button
+      type="button"
+      tabIndex={-1}
+      aria-label={t('catalog.favorite', { name })}
+      aria-pressed={on}
+      onClick={onToggle}
+      className={cn(
+        'absolute top-2 right-2 flex size-6 items-center justify-center rounded-sm bg-surface/80',
+        'text-fg-muted transition-colors hover:bg-hover hover:text-fg',
+        on && 'text-ember hover:text-ember',
+      )}
+    >
+      <StarIcon aria-hidden="true" className={cn('size-4', on && 'fill-current')} />
+    </button>
   );
 }
 

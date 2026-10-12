@@ -43,7 +43,8 @@ async function openEditor(page: Page) {
 }
 
 const list = (page: Page) => page.getByRole('list', { name: 'Catalog items' });
-const cards = (page: Page) => list(page).getByRole('button');
+/** The cards, not their "Favorite: <name>" stars. */
+const cards = (page: Page) => list(page).getByRole('button', { name: /^(?!Favorite: )/ });
 const names = (page: Page) =>
   list(page)
     .getByRole('listitem')
@@ -88,6 +89,8 @@ test('a category and the search narrow the cards; "lámp" finds the lamps', asyn
   const group = page.getByRole('group', { name: 'Categories' });
   await expect(group.getByRole('button')).toHaveText([
     'All',
+    'Favorites',
+    'Recent',
     'Desks',
     'Seating',
     'Storage',
@@ -154,6 +157,24 @@ test('the cards are one tab stop; the arrows move between them and Enter places 
     ),
   );
   expect(placed).toEqual(['chair.gaming.racing']);
+});
+
+test('a starred item and a placed one are under Favorites and Recent after a reload', async ({
+  page,
+}) => {
+  const group = page.getByRole('group', { name: 'Categories' });
+  await page.getByRole('button', { name: 'Favorite: Cone floor lamp' }).click();
+  await list(page)
+    .getByRole('button', { name: /^Office chair/ })
+    .click();
+  await expect(page.getByText('Office chair placed.')).toBeAttached();
+
+  await page.reload();
+  await page.waitForFunction(() => (window.__RF__?.info()?.frame ?? 0) >= 1);
+  await group.getByRole('button', { name: 'Favorites' }).click();
+  expect(await names(page)).toEqual(['Cone floor lamp']);
+  await group.getByRole('button', { name: 'Recent' }).click();
+  expect(await names(page)).toEqual(['Office chair']);
 });
 
 test.describe('accessibility', () => {

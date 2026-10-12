@@ -1,12 +1,22 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/ui/components/button';
 import { Input } from '@/ui/components/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/components/tabs';
 import { type MessageKey, translate } from '@/ui/i18n';
 import { PanelHint } from '@/ui/shell/side-panel';
 import { CatalogGrid } from './catalog-grid';
+import {
+  type CatalogPrefs,
+  type CatalogPrefsStorage,
+  defaultCatalogStorage,
+  loadCatalogPrefs,
+  NO_PREFS,
+  recordPlaced,
+  saveCatalogPrefs,
+  toggleFavorite,
+} from './catalog-prefs';
 import { foldText, matchesWords, queryWords } from './catalog-search';
 import type { CatalogCategoryOption, CatalogPanelItem, CatalogPlacement } from './catalog-types';
 
@@ -18,6 +28,10 @@ const footprint = (item: CatalogPanelItem) =>
 const opening = (item: CatalogPanelItem) =>
   t('catalog.openingDimensions', { width: cm(item.size.w), height: cm(item.size.h) });
 
+/** The two filters that are not manifest categories (ids a manifest category cannot have). */
+const FAVORITES = '@favorites';
+const RECENT = '@recent';
+
 export interface CatalogPanelProps {
   items: readonly CatalogPanelItem[];
   /** The category filter, derived by the host from its manifest; none hides the filter. */
@@ -25,6 +39,8 @@ export interface CatalogPanelProps {
   placement: CatalogPlacement;
   /** Click or Enter: place the item in the middle of the view; true when it was placed. */
   onPlace(id: string): boolean;
+  /** Where the favourites and recent items persist; `localStorage` by default. */
+  prefsStorage?: CatalogPrefsStorage;
   /**
    * Doors and windows (P3-12), shown in a Structure tab next to the objects: dragged onto a wall,
    * or put on the wall in front of the view. Their `size.h` is the height of the opening.
@@ -73,9 +89,11 @@ function ObjectsView({
   categories = [],
   placement,
   onPlace,
+  prefsStorage,
 }: Omit<CatalogPanelProps, 'structure'>) {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<string | null>(null);
+  const { prefs, update } = useCatalogPrefs(prefsStorage);
   const searchable = useMemo(
     () =>
       items.map((item) => ({
@@ -85,14 +103,32 @@ function ObjectsView({
     [items],
   );
 
+  const favorites = useMemo(() => new Set(prefs.favorites), [prefs.favorites]);
+  const scoped =
+    category === RECENT
+      ? prefs.recent.flatMap((id) => searchable.find((entry) => entry.item.id === id) ?? [])
+      : searchable.filter(
+          ({ item }) =>
+            category === null ||
+            (category === FAVORITES ? favorites.has(item.id) : item.category === category),
+        );
   const words = queryWords(query);
-  const shown = searchable
-    .filter(
-      ({ item, text }) =>
-        (category === null || item.category === category) && matchesWords(text, words),
-    )
-    .map(({ item }) => item);
-  const categoryLabel = categories.find((option) => option.id === category)?.label;
+  const shown = scoped.filter(({ text }) => matchesWords(text, words)).map(({ item }) => item);
+  const options = [
+    { id: null, label: t('catalog.allCategories') },
+    { id: FAVORITES, label: t('catalog.favorites') },
+    { id: RECENT, label: t('catalog.recent') },
+    ...categories,
+  ];
+  const categoryLabel = category && options.find((option) => option.id === category)?.label;
+  const emptyMessage =
+    words.length === 0 && category === FAVORITES
+      ? t('catalog.noFavorites')
+      : words.length === 0 && category === RECENT
+        ? t('catalog.noRecent')
+        : categoryLabel
+          ? t('catalog.emptyInCategory', { category: categoryLabel, query: query.trim() })
+          : t('catalog.empty', { query: query.trim() });
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2 p-2">
@@ -103,23 +139,21 @@ function ObjectsView({
         value={query}
         onChange={(event) => setQuery(event.target.value)}
       />
-      {categories.length > 0 ? (
-        <fieldset className="flex flex-wrap gap-1">
-          <legend className="sr-only">{t('catalog.categories')}</legend>
-          {[{ id: null, label: t('catalog.allCategories') }, ...categories].map((option) => (
-            <Button
-              key={option.id ?? 'all'}
-              type="button"
-              size="xs"
-              variant={option.id === category ? 'secondary' : 'outline'}
-              aria-pressed={option.id === category}
-              onClick={() => setCategory(option.id)}
-            >
-              {option.label}
-            </Button>
-          ))}
-        </fieldset>
-      ) : null}
+      <fieldset className="flex flex-wrap gap-1">
+        <legend className="sr-only">{t('catalog.categories')}</legend>
+        {options.map((option) => (
+          <Button
+            key={option.id ?? 'all'}
+            type="button"
+            size="xs"
+            variant={option.id === category ? 'secondary' : 'outline'}
+            aria-pressed={option.id === category}
+            onClick={() => setCategory(option.id)}
+          >
+            {option.label}
+          </Button>
+        ))}
+      </fieldset>
       <p className="px-1 text-fg-subtle text-xs">{t('catalog.hint')}</p>
       {shown.length > 0 ? (
         <CatalogGrid
@@ -128,16 +162,15 @@ function ObjectsView({
           onPlace={onPlace}
           label={t('catalog.list')}
           describe={footprint}
+          favorites={favorites}
+          onToggleFavorite={(id) => update((current) => toggleFavorite(current, id))}
+          onPlaced={(id) => update((current) => recordPlaced(current, id))}
         />
       ) : items.length === 0 ? (
         <PanelHint>{t('catalog.none')}</PanelHint>
       ) : (
         <div className="flex flex-col items-start gap-2">
-          <PanelHint>
-            {categoryLabel
-              ? t('catalog.emptyInCategory', { category: categoryLabel, query: query.trim() })
-              : t('catalog.empty', { query: query.trim() })}
-          </PanelHint>
+          <PanelHint>{emptyMessage}</PanelHint>
           <Button
             type="button"
             size="sm"
@@ -154,4 +187,29 @@ function ObjectsView({
       )}
     </div>
   );
+}
+
+/**
+ * The favourites and recent items, read once the panel is in the browser (never during a server
+ * render) and written on every change. Kept in a ref too: a drop ends in a pointer listener that
+ * was set up before the last change.
+ */
+function useCatalogPrefs(storage: CatalogPrefsStorage | undefined) {
+  const [prefs, setPrefs] = useState<CatalogPrefs>(NO_PREFS);
+  const latest = useRef(prefs);
+  useEffect(() => {
+    const loaded = loadCatalogPrefs(storage ?? defaultCatalogStorage());
+    latest.current = loaded;
+    setPrefs(loaded);
+  }, [storage]);
+  const update = useCallback(
+    (change: (current: CatalogPrefs) => CatalogPrefs) => {
+      const next = change(latest.current);
+      latest.current = next;
+      setPrefs(next);
+      saveCatalogPrefs(storage ?? defaultCatalogStorage(), next);
+    },
+    [storage],
+  );
+  return { prefs, update };
 }
