@@ -248,6 +248,7 @@ export const en = {
   'shortcut.fit': 'Frame the room',
   'shortcut.walls': 'Cycle the walls: up, cutaway, down',
   'shortcut.ceiling': 'Show or hide the ceiling',
+  'shortcut.dayNight': 'Switch between day and night',
   'shortcut.snap': 'Turn snap on or off',
   'shortcut.leftPanel': 'Show or hide the catalog panel',
   'shortcut.rightPanel': 'Show or hide the properties panel',
