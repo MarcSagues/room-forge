@@ -4,6 +4,7 @@ import { createTransientStore, type GhostState, type OpeningDragState } from './
 
 const ghost: GhostState = {
   x: 1,
+  y: 0.75,
   z: 2,
   rotationY: 0.5,
   w: 1.4,

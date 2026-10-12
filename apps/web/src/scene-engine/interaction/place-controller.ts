@@ -6,11 +6,14 @@ import {
   type PlacementInput,
   type PlacementResult,
   type RoomId,
+  type SupportPlacementInput,
+  solveOnSupport,
   solvePlacement,
 } from '@roomforge/core';
 import { Plane, type Ray, Vector3 } from 'three';
 import type { SceneCatalog } from '../canvas/scene-catalog';
 import { objectSize } from '../objects/placeholder-resources';
+import { SupportTarget } from './support-target';
 import type { GhostState, TransientStore } from './transient-store';
 
 export interface PlaceControllerDeps {
@@ -28,19 +31,44 @@ const floor = new Plane(new Vector3(0, 1, 0), 0);
 
 /**
  * Places an item from the catalog (P3-06). While it is dragged in, a ghost of the item follows the
- * pointer over the floor with the same snap rules as moving an object; releasing over a floor
- * creates it with one `object/add` (one history entry) and selects it, releasing anywhere else
- * (outside the viewport, off the floor) creates nothing. The document is untouched until then, and
+ * pointer over the floor with the same snap rules as moving an object, or over a desk top when
+ * the item may stand on one (P3-13); releasing there creates it with one `object/add` (one
+ * history entry; on a desk, as its child) and selects it, releasing anywhere else (outside the
+ * viewport, off the floor) creates nothing. The document is untouched until then, and
  * every per-update object is reused: no allocations on the hot path.
  */
 export class PlaceController {
   private readonly deps: PlaceControllerDeps;
+  private readonly target: SupportTarget;
   private catalogId: string | null = null;
+  /** Whether the item may stand on a desk top, and on the floor. */
+  private toSupport = false;
+  private toFloor = true;
+  /** The desk the ghost stands on, or null for the floor. */
+  private parentId: ObjectId | null = null;
+  private readonly scratch: [number, number] = [0, 0];
+  private readonly onSupport: SupportPlacementInput & {
+    position: [number, number];
+    size: { w: number; d: number };
+  } = {
+    support: { y: 0, rect: { x: 0, z: 0, w: 0, d: 0 } },
+    size: { w: 0, d: 0 },
+    position: [0, 0],
+    rotationY: 0,
+  };
+  private readonly supportResult: PlacementResult = {
+    position: [0, 0],
+    rotationY: 0,
+    valid: true,
+    reason: null,
+    wall: null,
+    guides: [],
+  };
   private readonly hit = new Vector3();
   /** The room the ghost is in (a reference into the document, not a copy), or null. */
   private room: Room | null = null;
   private legal = false;
-  private readonly placed = { x: 0, z: 0, rotationY: 0 };
+  private readonly placed = { x: 0, y: 0, z: 0, rotationY: 0 };
   private readonly input: PlacementInput & {
     position: [number, number];
     size: { w: number; d: number };
@@ -61,6 +89,7 @@ export class PlaceController {
   };
   private readonly ghost: GhostState = {
     x: 0,
+    y: 0,
     z: 0,
     rotationY: 0,
     w: 0,
@@ -74,6 +103,7 @@ export class PlaceController {
 
   constructor(deps: PlaceControllerDeps) {
     this.deps = deps;
+    this.target = new SupportTarget(deps.session, deps.catalog);
   }
 
   get active(): boolean {
@@ -85,6 +115,11 @@ export class PlaceController {
     const { document } = this.deps.session.getState();
     if (document.roomOrder.length === 0) return false;
     const size = objectSize(this.deps.catalog, catalogId);
+    const surfaces = this.deps.catalog.getItem(catalogId)?.placement.surfaces;
+    this.toSupport = surfaces?.includes('tabletop') === true;
+    this.toFloor = !surfaces || surfaces.some((surface) => surface !== 'tabletop');
+    this.onSupport.size.w = size.w;
+    this.onSupport.size.d = size.d;
     this.catalogId = catalogId;
     this.room = null;
     this.legal = false;
@@ -109,6 +144,11 @@ export class PlaceController {
    */
   update(ray: Ray | null, free: boolean): void {
     if (this.catalogId === null) return;
+    if (ray && this.solveOnSupport(ray, free)) {
+      this.deps.transient.publishGhost(this.ghost);
+      this.deps.invalidate();
+      return;
+    }
     const room = ray?.intersectPlane(floor, this.hit) ? this.roomAt(this.hit.x, this.hit.z) : null;
     if (room) {
       this.solve(room, this.hit.x - room.origin[0], this.hit.z - room.origin[1], free);
@@ -152,6 +192,40 @@ export class PlaceController {
     return this.end();
   }
 
+  /** On a desk top under the pointer, when the item may stand there and fits: true, ghost set. */
+  private solveOnSupport(ray: Ray, free: boolean): boolean {
+    const target = this.target;
+    if (!this.toSupport || !target.find(ray, null, null) || !target.support) return false;
+    const { document, snap } = this.deps.session.getState();
+    const room = target.roomId ? document.rooms[target.roomId] : undefined;
+    if (!room) return false;
+    const input = this.onSupport;
+    input.support = target.support;
+    input.position[0] = target.local[0];
+    input.position[1] = target.local[1];
+    input.rotationY = 0;
+    input.gridStep = snap.enabled && !free ? snap.gridStep : undefined;
+    const result = solveOnSupport(input, this.supportResult);
+    if (!result.valid) return false;
+    this.room = room;
+    this.parentId = target.parentId;
+    this.legal = true;
+    this.placed.x = result.position[0];
+    this.placed.y = target.support.y;
+    this.placed.z = result.position[1];
+    this.placed.rotationY = result.rotationY;
+    const ghost = this.ghost;
+    target.toWorld(result.position[0], result.position[1], this.scratch);
+    ghost.x = this.scratch[0];
+    ghost.y = target.height;
+    ghost.z = this.scratch[1];
+    ghost.rotationY = target.frame.rotationY + result.rotationY;
+    ghost.visible = true;
+    ghost.valid = true;
+    ghost.wall = null;
+    return true;
+  }
+
   /** Solves the ghost's pose at `(x, z)` in `room`'s own coordinates and fills the ghost. */
   private solve(room: Room, x: number, z: number, free: boolean) {
     const input = this.input;
@@ -167,16 +241,19 @@ export class PlaceController {
     const result = solvePlacement(input, this.result);
 
     this.room = room;
-    this.legal = result.valid;
+    this.parentId = null;
+    this.legal = result.valid && this.toFloor;
     this.placed.x = result.position[0];
+    this.placed.y = 0;
     this.placed.z = result.position[1];
     this.placed.rotationY = result.rotationY;
     const ghost = this.ghost;
     ghost.x = room.origin[0] + result.position[0];
+    ghost.y = 0;
     ghost.z = room.origin[1] + result.position[1];
     ghost.rotationY = result.rotationY;
     ghost.visible = true;
-    ghost.valid = result.valid;
+    ghost.valid = this.legal;
     ghost.wall = result.wall;
   }
 
@@ -200,7 +277,8 @@ export class PlaceController {
       addObject({
         catalogId,
         roomId: room.id,
-        position: [this.placed.x, 0, this.placed.z],
+        parentId: this.parentId,
+        position: [this.placed.x, this.placed.y, this.placed.z],
         rotationY: this.placed.rotationY,
       }),
     );
@@ -214,6 +292,7 @@ export class PlaceController {
 
   private finish() {
     this.catalogId = null;
+    this.parentId = null;
     this.room = null;
     this.legal = false;
     this.deps.transient.clearGhost();

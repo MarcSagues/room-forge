@@ -18,8 +18,9 @@ export interface DragState {
 
 /** The ghost of an item being dragged in from the catalog: where it would land if dropped. */
 export interface GhostState {
-  /** Centre on the floor, in world metres (the room origin already added). */
+  /** Centre of its base, in world metres (the room origin already added); y > 0 on a desk. */
   x: number;
+  y: number;
   z: number;
   rotationY: number;
   /** Size of the item, in metres. */
@@ -89,6 +90,7 @@ export function createTransientStore(): TransientStore {
   };
   const sharedGhost: GhostState = {
     x: 0,
+    y: 0,
     z: 0,
     rotationY: 0,
     w: 0,
@@ -142,6 +144,7 @@ export function createTransientStore(): TransientStore {
     ghost: () => (ghostActive ? sharedGhost : null),
     publishGhost(state) {
       sharedGhost.x = state.x;
+      sharedGhost.y = state.y;
       sharedGhost.z = state.z;
       sharedGhost.rotationY = state.rotationY;
       sharedGhost.w = state.w;
